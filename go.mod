@@ -1,4 +1,4 @@
-module github.com/KookaS/dressme-scrapper
+module dressme-scrapper
 
 go 1.18
 

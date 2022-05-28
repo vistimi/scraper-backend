@@ -1,4 +1,6 @@
-package schema
+package types
+
+var article = "test"
 
 type album struct {
 	ID     string  `json:"id"`
