@@ -5,6 +5,8 @@ import (
 
 	"dressme-scrapper/src/routes"
 
+	"net/http"
+
 	"dressme-scrapper/src/mongodb"
 )
 
@@ -12,10 +14,13 @@ func main() {
 
 	collection := mongodb.Connect()
 
-	router := gin.Default()
-	router.GET("/albums", routes.GetAlbums)
-	router.GET("/albums/:id", routes.GetAlbumByID)
-	router.POST("/albums", routes.PostAlbums)
+	client := routes.HttpClient()
+	response := routes.SendRequest(client, http.MethodPost)
 
-	router.Run("localhost:8080")
+	// router := gin.Default()
+	// router.GET("/albums", routes.GetAlbums)
+	// router.GET("/albums/:id", routes.GetAlbumByID)
+	// router.POST("/albums", routes.PostAlbums)
+
+	// router.Run("localhost:8080")
 }
