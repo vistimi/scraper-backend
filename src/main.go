@@ -1,21 +1,23 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
+	// "github.com/gin-gonic/gin"
 
-	"dressme-scrapper/src/routes"
+	"dressme-scrapper/src/routes/flickr"
 
-	"net/http"
+	// "net/http"
 
-	"dressme-scrapper/src/mongodb"
+	// "dressme-scrapper/src/mongodb"
 )
 
 func main() {
 
-	collection := mongodb.Connect()
+	// collection := mongodb.Connect()
 
-	client := routes.HttpClient()
-	response := routes.SendRequest(client, http.MethodPost)
+	// client := flickr.HttpClient()
+	flickr.SearchPhoto("4", "model")
+	// response := flickr.SendRequest(client, http.MethodPost)
+	// fmt.Println(response)
 
 	// router := gin.Default()
 	// router.GET("/albums", routes.GetAlbums)

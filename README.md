@@ -32,3 +32,13 @@ import:
 ## build
 
     go build .
+
+# License
+
+must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
+
+# .env
+
+MONGODB_URI=mongodb://localhost:27017
+PRIVATE_KEY=***
+PUBLIC_KEY=***
