@@ -3,7 +3,7 @@ package flickr
 import (
 	"bytes"
 	"crypto/md5"
-	"encoding/xml"
+	// "encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"errors"
 )
 
 // https://github.com/mncaudill/go-flickr/blob/master/flickr.go
@@ -132,6 +133,34 @@ func encodeQuery(args map[string]string) string {
 	return s.String()
 }
 
+func downloadFile(URL, fileName string) error {
+	//Get the response bytes from the url
+	response, err := http.Get(URL)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		return errors.New("Received non 200 response code")
+	}
+	//Create a empty file
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	//Write the bytes to the fiel
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
 func (request *Request) buildPost(url_ string, filename string, filetype string) (*http.Request, error) {
 	real_url, _ := url.Parse(url_)
 
@@ -228,3 +257,4 @@ func sendPost(postRequest *http.Request) (response *Response, err error) {
 
 	return &r, err
 }
+*/

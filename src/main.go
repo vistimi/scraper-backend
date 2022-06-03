@@ -7,15 +7,15 @@ import (
 
 	// "net/http"
 
-	// "dressme-scrapper/src/mongodb"
+	"dressme-scrapper/src/mongodb"
 )
 
 func main() {
 
-	// collection := mongodb.Connect()
-
+	mongoSession := mongodb.Connect()
+	
 	// client := flickr.HttpClient()
-	flickr.SearchPhoto("4", "model")
+	flickr.SearchPhoto("4", "model", "Medium", "~/dressme/images/flickr", mongoSession)
 	// response := flickr.SendRequest(client, http.MethodPost)
 	// fmt.Println(response)
 
