@@ -40,5 +40,8 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 # .env
 
 MONGODB_URI=mongodb://localhost:27017
+SCRAPPER_DB=scrapper
+UNWANTED_TAGS_COLLECTION=unwantedTags
+FLICKR_COLLECTION=flickr
 PRIVATE_KEY=***
 PUBLIC_KEY=***

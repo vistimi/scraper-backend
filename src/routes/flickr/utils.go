@@ -133,7 +133,7 @@ func encodeQuery(args map[string]string) string {
 	return s.String()
 }
 
-func downloadFile(URL, fileName string) error {
+func DownloadFile(URL, fileName string) error {
 	//Get the response bytes from the url
 	response, err := http.Get(URL)
 	if err != nil {

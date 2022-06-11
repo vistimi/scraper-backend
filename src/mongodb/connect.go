@@ -3,15 +3,38 @@ package mongodb
 import (
 	"dressme-scrapper/src/utils"
 
-	"gopkg.in/mgo.v2"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"context"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+
 )
 
-func Connect() *mgo.Session {
+func Connect() *mongo.Client {
 
 	uri := utils.DotEnvVariable("MONGODB_URI")
-	session, err := mgo.Dial(uri)
+
+	// ctx, cancel := context.WithTimeout(context.TODO(), 20*time.Second)
+	// defer cancel()
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
-	return session
+
+	// defer func() {
+	// 	if err = client.Disconnect(context.TODO()); err != nil {
+	// 		panic(err)
+	// 	}
+	// }()
+
+	// Ping the primary
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+
+	return client
+
 }

@@ -2,21 +2,26 @@ package types
 
 import (
 	"gopkg.in/mgo.v2/bson"
+
+	"time"
 )
 
-type FlickrImage struct {
+type Image struct {
 	Id          bson.ObjectId `bson:"_id,omitempty" json:"_id,omitempty"`
-	FlickrId    string        `bson:"flick_id" json:"flick_id"`
+	FlickrId    string        `bson:"flickId" json:"flickId"`
 	Path        string        `bson:"path" json:"path"`
 	Width       uint          `bson:"width" json:"width"`
 	Height      uint          `bson:"height" json:"height"`
 	Title       string        `bson:"title" json:"title"`
 	Description string        `bson:"description" json:"description"`
 	License     string        `bson:"license" json:"license"`
-	Tags        []FlickTag
+	Tags        []Tag
+	CreationDate  time.Time `bson:"creationDate" json:"creationDate"`
 }
 
-type FlickTag struct {
-	ID   string `bson:"tag_id" json:"tag_id"`
-	Name string `bson:"tag_name" json:"tag_name"`
+type Tag struct {
+	Id   string `bson:"tagId" json:"tagId"`
+	Name string `bson:"tagName" json:"tagName"`
+	Origin string `bson:"origin" json:"origin"`
+	CreationDate  time.Time `bson:"creationDate" json:"creationDate"`
 }

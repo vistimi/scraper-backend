@@ -5,6 +5,7 @@ package flickr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -21,7 +22,11 @@ import (
 	"dressme-scrapper/src/utils"
 
 	"github.com/jinzhu/copier"
-	"gopkg.in/mgo.v2"
+
+	"sort"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // To transform the structured extracted data from html into json.
@@ -31,139 +36,133 @@ func toJson(v interface{}) string {
 	return string(data)
 }
 
-// id: "4, 5, 7, 9, 10".
+// licenseId: "4, 5, 7, 9, 10".
 // Find all the photos with specific tags and licenses.
-// Example: https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
-func SearchPhoto(licenseId string, tags string, quality string, folderDir string, mongoSession *mgo.Session) {
+func SearchPhoto(licenseId string, tags string, quality string, folderDir string, mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
+
+	var ids []primitive.ObjectID
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	err := os.MkdirAll(folderDir, os.ModePerm)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	p := pagser.New()
+	parser := pagser.New()
 
-	// TODO: fetch in db the existing licenseId and skip those photos
+	collectionUnwantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	res, err := mongodb.FindTagsUnwanted(collectionUnwantedTags)
+	if err != nil {
+		message:= fmt.Sprintf("FindTagsUnwanted has failed: \n%v", err)
+		return nil, errors.New(message)
+	}
+	var unwantedTags []string
+    for _, tag := range res {
+        unwantedTags = append(unwantedTags, tag.Name)
+    }
+	sort.Strings(unwantedTags)
 
 	page := 1
-	// TODO: loop through all pages
-
-	response := SearchPhotoPerPage(licenseId, tags, strconv.FormatUint(uint64(page), 10))
-
-	var pageData SearchPhotPerPageData
-	err = p.Parse(&pageData, response)
+	pageData, err := SearchPhotoPerPage(parser, licenseId, tags, strconv.FormatUint(uint64(page), 10))
 	if err != nil {
-		log.Fatal(err)
-	}
-	if pageData.Stat != "ok" {
-		log.Printf("SearchPhotoPerPageRequest is not ok\n%v\n", toJson(pageData))
-		// TODO: continue
-	}
-	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
-		log.Println("Some informations are missing from SearchPhotoPerPage!")
-		// TODO: continue
+		message:= fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
+		return nil, errors.New(message)
 	}
 
-	for i, photo := range pageData.Photos {
-
-		// extract the photo download link
-		response := DownloadPhoto(photo.ID)
-		var downloadData DownloadPhotoData
-		err := p.Parse(&downloadData, response)
+	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
+	
+	for page := page; page <= int(pageData.Pages); page++ {
+		pageData, err := SearchPhotoPerPage(parser, licenseId, tags, strconv.FormatUint(uint64(page), 10))
 		if err != nil {
-			log.Fatal(err)
+			message:= fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
+			return nil, errors.New(message)
 		}
-		if pageData.Stat != "ok" {
-			log.Printf("DownloadPhoto is not ok\n%v\n", toJson(downloadData))
-			continue
-		}
+		for _, photo := range pageData.Photos {
 
-		// get the download link for the correct resolution
-		label := "Medium"
-		idx := slices.IndexFunc(downloadData.Photos, func(c DownloadPhotoSingleData) bool { return c.Label == label })
-		if idx == -1 {
-			// TODO: download higher resolution or Medium_...
-			log.Printf("Cannot find label in SearchPhoto! Page %d, image %d, label %s, id %s\n", page, i, label, photo.ID)
-			continue
-		}
+			// look for existing image
+			_, err := mongodb.FindImageId(collectionFlickr, photo.Id)
+			switch err {
+			case mongo.ErrNoDocuments:
+			default:
+				return nil, err
+			}
 
-		// extract the photo informations
-		response = InfoPhoto(photo.ID)
-		var infoData InfoPhotoData
-		err = p.Parse(&infoData, response)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if pageData.Stat != "ok" {
-			log.Printf("InfoPhoto is not ok\n%v\n", toJson(infoData))
-			continue
-		}
+			// extract the photo informations
+			infoData, err := InfoPhoto(parser, photo)
+			if err != nil {
+				message:= fmt.Sprintf("InfoPhoto has failed: \n%v", err)
+				return nil, errors.New(message)
+			}
 
-		if photo.ID != infoData.ID {
-			log.Printf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.ID)
-			continue
-		}
-		if photo.Secret != infoData.Secret {
-			log.Printf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.ID, photo.Secret, infoData.Secret)
-			continue
-		}
+			// only keep images with wanted tags
+			for _, tag := range(infoData.Tags){
+				if( sort.SearchStrings(unwantedTags, tag.Name) != 0 ){continue}
+			}
+	
+			// extract the photo download link
+			downloadData, err := DownloadPhoto(parser, photo.Id)
+			if err != nil {
+				message:= fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
+				return nil, errors.New(message)
+			}
 
-		// download photo into folder and rename it <id>.<format>
-		fileName := fmt.Sprintf("%s.%s", photo.ID, infoData.OriginalFormat)
-		path := fmt.Sprintf(filepath.Join(folderDir, fileName))
-		err = downloadFile(downloadData.Photos[idx].Source, path)
-		if err != nil {
-			log.Fatal(err)
-			// log.Printf("Cannot download photo id: %s into path: %s\n%v\n", photo.ID, path, err)
-			continue
-		}
-
-		sessionCopy := mongoSession.Copy()
-		defer sessionCopy.Close()
-		collection := sessionCopy.DB(utils.DotEnvVariable("SCRAPPER_DB")).C(utils.DotEnvVariable("FLICKR_COLL"))
-
-		var tags []types.FlickTag
-		copier.Copy(&tags, &infoData.Tags)
-		document := types.FlickrImage{
-			FlickrId:    photo.ID,
-			Path:        path,
-			Width:       downloadData.Photos[idx].Width,
-			Height:      downloadData.Photos[idx].Height,
-			Title:       infoData.Title,
-			Description: infoData.Description,
-			License:     licenseId,
-			Tags:        tags,
-		}
-
-		log.Println(document)
-		return
-
-		// return fmt.Sprint(inserted.InsertedID), nil
-		err = mongodb.InsertImage(collection, document)
-		if err != nil {
-			log.Fatal(err)
-			// log.Printf("Cannot download photo id: %s into path: %s\n%v\n", photo.ID, path, err)
-			continue
+			// get the download link for the correct resolution
+			label := "Medium"
+			idx := slices.IndexFunc(downloadData.Photos, func(c DownloadPhotoSingleData) bool { return c.Label == label })
+			if idx == -1 {
+				// TODO: download higher resolution or Medium_...
+				message:= fmt.Sprintf("Cannot find label in SearchPhoto! id %s\n", photo.Id)
+				return nil, errors.New(message)
+			}
+	
+			// download photo into folder and rename it <id>.<format>
+			fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
+			path := fmt.Sprintf(filepath.Join(folderDir, fileName))
+			err = DownloadFile(downloadData.Photos[idx].Source, path)
+			if err != nil {
+				return nil, err
+			}
+	
+			var tags []types.Tag
+			copier.Copy(&tags, &infoData.Tags)
+			document := types.Image{
+				FlickrId:    photo.Id,
+				Path:        path,
+				Width:       downloadData.Photos[idx].Width,
+				Height:      downloadData.Photos[idx].Height,
+				Title:       infoData.Title,
+				Description: infoData.Description,
+				License:     licenseId,
+				Tags:        tags,
+			}
+	
+			insertedId, err := mongodb.InsertImage(collectionFlickr, document)
+			if err != nil {
+				return nil, err
+			}
+			ids = append(ids, insertedId)
 		}
 	}
+	return ids, nil
 }
 
+// https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type SearchPhotPerPageData struct {
 	Stat    string `pagser:"rsp->attr(stat)"`
 	Page    uint   `pagser:"photos->attr(page)"`
 	Pages   uint   `pagser:"photos->attr(pages)"`
 	PerPage uint   `pagser:"photos->attr(perpage)"`
 	Total   uint   `pagser:"photos->attr(total)"`
-	Photos  []struct {
-		ID     string `pagser:"->attr(id)"`
-		Secret string `pagser:"->attr(secret)"`
-		Title  string `pagser:"->attr(title)"`
-	} `pagser:"photo"`
+	Photos  []Photo  `pagser:"photo"`
+}
+type Photo struct {
+	Id     string `pagser:"->attr(id)"`
+	Secret string `pagser:"->attr(secret)"`
+	Title  string `pagser:"->attr(title)"`
 }
 
 // Search images for one page of max 500 images
-func SearchPhotoPerPage(ids string, tags string, page string) string {
+func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page string) (*SearchPhotPerPageData, error) {
 	r := &Request{
 		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
 		Method: "flickr.photos.search",
@@ -177,28 +176,44 @@ func SearchPhotoPerPage(ids string, tags string, page string) string {
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	log.Println(r.URL())
+	// log.Println(r.URL())
 
-	response, err := r.Execute()
+	response, err:= r.Execute()
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
-	return response
+	var pageData SearchPhotPerPageData
+	err = parser.Parse(&pageData, response)
+	if err != nil {
+		return nil, err
+	}
+	if pageData.Stat != "ok" {
+		message:= fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", toJson(pageData))
+		return nil, errors.New(message)
+	}
+	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
+		message:= fmt.Sprintf("Some informations are missing from SearchPhotoPerPage!")
+		return nil, errors.New(message)
+	}
+	return &pageData, nil
 }
 
+// https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type DownloadPhotoSingleData struct {
 	Label  string `pagser:"->attr(label)"`
 	Width  uint   `pagser:"->attr(width)"`
 	Height uint   `pagser:"->attr(height)"`
 	Source string `pagser:"->attr(source)"`
 }
+
+// https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type DownloadPhotoData struct {
 	Stat   string                    `pagser:"rsp->attr(stat)"`
 	Photos []DownloadPhotoSingleData `pagser:"size"`
 }
 
-func DownloadPhoto(id string) string {
+func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error) {
 	r := &Request{
 		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
 		Method: "flickr.photos.getSizes",
@@ -213,43 +228,71 @@ func DownloadPhoto(id string) string {
 
 	response, err := r.Execute()
 	if err != nil {
-		log.Println(err)
+		log.Fatalf("DownloadPhoto has failed: \n%v", err)
 	}
 
-	return response
+	var downloadData DownloadPhotoData
+	err = parser.Parse(&downloadData, response)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if downloadData.Stat != "ok" {
+		message:= fmt.Sprintf("DownloadPhoto is not ok\n%v\n", toJson(downloadData))
+		return nil, errors.New(message)
+	}
+
+	return &downloadData, nil
 }
 
+// https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type InfoPhotoData struct {
 	Stat           string `pagser:"rsp->attr(stat)"`
-	ID             string `pagser:"photo->attr(id)"`
+	Id             string `pagser:"photo->attr(id)"`
 	Secret         string `pagser:"photo->attr(secret)"`
 	OriginalSecret string `pagser:"photo->attr(originalsecret)"`
 	OriginalFormat string `pagser:"photo->attr(originalformat)"`
 	Title          string `pagser:"title"`
 	Description    string `pagser:"description"`
 	Tags           []struct {
-		ID   string `pagser:"->attr(id)"`
+		Id   string `pagser:"->attr(id)"`
 		Name string `pagser:"->text()"`
 	} `pagser:"tag"`
 }
 
-func InfoPhoto(id string) string {
+func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	r := &Request{
 		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
 		Method: "flickr.photos.getInfo",
 		Args: map[string]string{
-			"photo_id": id,
+			"photo_id": photo.Id,
 		},
 	}
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	log.Println(r.URL())
+	// log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-
-	return response
+			
+	var infoData InfoPhotoData
+	err = parser.Parse(&infoData, response)
+	if err != nil {
+		return nil, err
+	}
+	if infoData.Stat != "ok" {
+		message:= fmt.Sprintf("InfoPhoto is not ok\n%v\n", toJson(infoData))
+		return nil, errors.New(message)
+	}
+	if photo.Id != infoData.Id {
+		message:= fmt.Sprintf("IDs do not match! search id: %s, info id: %s\n", photo.Id, infoData.Id)
+		return nil, errors.New(message)
+	}
+	if photo.Secret != infoData.Secret {
+		message:= fmt.Sprintf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.Id, photo.Secret, infoData.Secret)
+		return nil, errors.New(message)
+	}
+	return &infoData, nil
 }
