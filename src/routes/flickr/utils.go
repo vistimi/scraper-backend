@@ -3,7 +3,9 @@ package flickr
 import (
 	"bytes"
 	"crypto/md5"
+
 	// "encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	"errors"
 )
 
 // https://github.com/mncaudill/go-flickr/blob/master/flickr.go

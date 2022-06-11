@@ -18,13 +18,13 @@ import (
 )
 
 func InsertImage(collection *mongo.Collection, document types.Image) (primitive.ObjectID, error) {
-	res, err:= collection.InsertOne(context.TODO(), document)
-	if err != nil { 
-		return primitive.NilObjectID, err 
+	res, err := collection.InsertOne(context.TODO(), document)
+	if err != nil {
+		return primitive.NilObjectID, err
 	}
 	insertedId, ok := res.InsertedID.(primitive.ObjectID)
-	if (!ok) {
-		message:= fmt.Sprintf("Safecast of ObjectID did not work")
+	if !ok {
+		message := fmt.Sprintf("Safecast of ObjectID did not work")
 		return primitive.NilObjectID, errors.New(message)
 	}
 	return insertedId, nil
@@ -33,7 +33,7 @@ func InsertImage(collection *mongo.Collection, document types.Image) (primitive.
 func FindImageId(collection *mongo.Collection, flickrId string) (*types.Image, error) {
 
 	var image types.Image
-	query:= bson.M{"flickr_id": flickrId}
+	query := bson.M{"flickr_id": flickrId}
 
 	options := options.FindOne().
 		SetProjection(bson.M{

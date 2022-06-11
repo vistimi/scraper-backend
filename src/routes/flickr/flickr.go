@@ -25,8 +25,8 @@ import (
 
 	"sort"
 
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // To transform the structured extracted data from html into json.
@@ -53,28 +53,30 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 	collectionUnwantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	res, err := mongodb.FindTagsUnwanted(collectionUnwantedTags)
 	if err != nil {
-		message:= fmt.Sprintf("FindTagsUnwanted has failed: \n%v", err)
+		message := fmt.Sprintf("FindTagsUnwanted has failed: \n%v", err)
 		return nil, errors.New(message)
 	}
 	var unwantedTags []string
-    for _, tag := range res {
-        unwantedTags = append(unwantedTags, tag.Name)
-    }
+	for _, tag := range res {
+		unwantedTags = append(unwantedTags, tag.Name)
+	}
 	sort.Strings(unwantedTags)
+
+	// TODO: wanted tags
 
 	page := 1
 	pageData, err := SearchPhotoPerPage(parser, licenseId, tags, strconv.FormatUint(uint64(page), 10))
 	if err != nil {
-		message:= fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
+		message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
 		return nil, errors.New(message)
 	}
 
 	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
-	
+
 	for page := page; page <= int(pageData.Pages); page++ {
 		pageData, err := SearchPhotoPerPage(parser, licenseId, tags, strconv.FormatUint(uint64(page), 10))
 		if err != nil {
-			message:= fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
+			message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
 			return nil, errors.New(message)
 		}
 		for _, photo := range pageData.Photos {
@@ -90,19 +92,21 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 			// extract the photo informations
 			infoData, err := InfoPhoto(parser, photo)
 			if err != nil {
-				message:= fmt.Sprintf("InfoPhoto has failed: \n%v", err)
+				message := fmt.Sprintf("InfoPhoto has failed: \n%v", err)
 				return nil, errors.New(message)
 			}
 
 			// only keep images with wanted tags
-			for _, tag := range(infoData.Tags){
-				if( sort.SearchStrings(unwantedTags, tag.Name) != 0 ){continue}
+			for _, tag := range infoData.Tags {
+				if sort.SearchStrings(unwantedTags, tag.Name) != 0 {
+					continue
+				}
 			}
-	
+
 			// extract the photo download link
 			downloadData, err := DownloadPhoto(parser, photo.Id)
 			if err != nil {
-				message:= fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
+				message := fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
 				return nil, errors.New(message)
 			}
 
@@ -111,10 +115,10 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 			idx := slices.IndexFunc(downloadData.Photos, func(c DownloadPhotoSingleData) bool { return c.Label == label })
 			if idx == -1 {
 				// TODO: download higher resolution or Medium_...
-				message:= fmt.Sprintf("Cannot find label in SearchPhoto! id %s\n", photo.Id)
+				message := fmt.Sprintf("Cannot find label in SearchPhoto! id %s\n", photo.Id)
 				return nil, errors.New(message)
 			}
-	
+
 			// download photo into folder and rename it <id>.<format>
 			fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
 			path := fmt.Sprintf(filepath.Join(folderDir, fileName))
@@ -122,7 +126,7 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 			if err != nil {
 				return nil, err
 			}
-	
+
 			var tags []types.Tag
 			copier.Copy(&tags, &infoData.Tags)
 			document := types.Image{
@@ -135,7 +139,7 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 				License:     licenseId,
 				Tags:        tags,
 			}
-	
+
 			insertedId, err := mongodb.InsertImage(collectionFlickr, document)
 			if err != nil {
 				return nil, err
@@ -148,12 +152,12 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type SearchPhotPerPageData struct {
-	Stat    string `pagser:"rsp->attr(stat)"`
-	Page    uint   `pagser:"photos->attr(page)"`
-	Pages   uint   `pagser:"photos->attr(pages)"`
-	PerPage uint   `pagser:"photos->attr(perpage)"`
-	Total   uint   `pagser:"photos->attr(total)"`
-	Photos  []Photo  `pagser:"photo"`
+	Stat    string  `pagser:"rsp->attr(stat)"`
+	Page    uint    `pagser:"photos->attr(page)"`
+	Pages   uint    `pagser:"photos->attr(pages)"`
+	PerPage uint    `pagser:"photos->attr(perpage)"`
+	Total   uint    `pagser:"photos->attr(total)"`
+	Photos  []Photo `pagser:"photo"`
 }
 type Photo struct {
 	Id     string `pagser:"->attr(id)"`
@@ -178,7 +182,7 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 
 	// log.Println(r.URL())
 
-	response, err:= r.Execute()
+	response, err := r.Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -189,11 +193,11 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 		return nil, err
 	}
 	if pageData.Stat != "ok" {
-		message:= fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", toJson(pageData))
+		message := fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", toJson(pageData))
 		return nil, errors.New(message)
 	}
 	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
-		message:= fmt.Sprintf("Some informations are missing from SearchPhotoPerPage!")
+		message := fmt.Sprintf("Some informations are missing from SearchPhotoPerPage!")
 		return nil, errors.New(message)
 	}
 	return &pageData, nil
@@ -237,7 +241,7 @@ func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 		log.Fatal(err)
 	}
 	if downloadData.Stat != "ok" {
-		message:= fmt.Sprintf("DownloadPhoto is not ok\n%v\n", toJson(downloadData))
+		message := fmt.Sprintf("DownloadPhoto is not ok\n%v\n", toJson(downloadData))
 		return nil, errors.New(message)
 	}
 
@@ -276,22 +280,22 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	if err != nil {
 		return nil, err
 	}
-			
+
 	var infoData InfoPhotoData
 	err = parser.Parse(&infoData, response)
 	if err != nil {
 		return nil, err
 	}
 	if infoData.Stat != "ok" {
-		message:= fmt.Sprintf("InfoPhoto is not ok\n%v\n", toJson(infoData))
+		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", toJson(infoData))
 		return nil, errors.New(message)
 	}
 	if photo.Id != infoData.Id {
-		message:= fmt.Sprintf("IDs do not match! search id: %s, info id: %s\n", photo.Id, infoData.Id)
+		message := fmt.Sprintf("IDs do not match! search id: %s, info id: %s\n", photo.Id, infoData.Id)
 		return nil, errors.New(message)
 	}
 	if photo.Secret != infoData.Secret {
-		message:= fmt.Sprintf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.Id, photo.Secret, infoData.Secret)
+		message := fmt.Sprintf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.Id, photo.Secret, infoData.Secret)
 		return nil, errors.New(message)
 	}
 	return &infoData, nil

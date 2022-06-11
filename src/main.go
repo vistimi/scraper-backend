@@ -13,11 +13,8 @@ import (
 func main() {
 
 	mongoClient := mongodb.Connect()
-	
-	// client := flickr.HttpClient()
+
 	flickr.SearchPhoto("4", "model", "Medium", "/home/olivier/dressme/images/flickr", mongoClient)
-	// response := flickr.SendRequest(client, http.MethodPost)
-	// fmt.Println(response)
 
 	router := gin.Default()
 
@@ -28,9 +25,14 @@ func main() {
 		path := c.Query("path")
 
 		ids, err := flickr.SearchPhoto(license, tag, quality, path, mongoClient)
-		if (err != nil) {c.JSON(http.StatusInternalServerError, err)}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, err)
+		}
 		c.JSON(http.StatusOK, ids)
 	})
+
+	// TODO: unwated tags POST
+	// TODO: wanted tags POST
 
 	router.Run("localhost:8080")
 }
