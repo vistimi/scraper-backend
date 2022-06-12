@@ -1,13 +1,13 @@
 package types
 
 import (
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"time"
 )
 
 type Image struct {
-	Id           bson.ObjectId `bson:"_id,omitempty" json:"_id,omitempty"`
+	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	FlickrId     string        `bson:"flickId" json:"flickId"`
 	Path         string        `bson:"path" json:"path"`
 	Width        uint          `bson:"width" json:"width"`
