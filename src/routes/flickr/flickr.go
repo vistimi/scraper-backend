@@ -1,7 +1,6 @@
 package flickr
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -28,13 +27,6 @@ import (
 
 	"regexp"
 )
-
-// To transform the structured extracted data from html into json.
-// log.Println(toJson(data))
-func toJson(v interface{}) string {
-	data, _ := json.MarshalIndent(v, "", "\t")
-	return string(data)
-}
 
 // Find all the photos with specific quality and folder directory.
 func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
@@ -110,9 +102,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 
 					// look for existing image
 					_, err := mongodb.FindImageId(collectionFlickr, photo.Id)
-					switch err {
-					case mongo.ErrNoDocuments:
-					default:
+					if err != nil {
 						return nil, err
 					}
 
@@ -151,7 +141,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 						})
 					}
 					if idx == -1 {
-						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, toJson(downloadData))
+						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, utils.ToJson(downloadData))
 						return nil, errors.New(message)
 					}
 
@@ -239,7 +229,7 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 		return nil, err
 	}
 	if pageData.Stat != "ok" {
-		message := fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", toJson(pageData))
+		message := fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", utils.ToJson(pageData))
 		return nil, errors.New(message)
 	}
 	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
@@ -287,7 +277,7 @@ func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 		log.Fatal(err)
 	}
 	if downloadData.Stat != "ok" {
-		message := fmt.Sprintf("DownloadPhoto is not ok\n%v\n", toJson(downloadData))
+		message := fmt.Sprintf("DownloadPhoto is not ok\n%v\n", utils.ToJson(downloadData))
 		return nil, errors.New(message)
 	}
 
@@ -304,7 +294,6 @@ type InfoPhotoData struct {
 	Title          string `pagser:"title"`
 	Description    string `pagser:"description"`
 	Tags           []struct {
-		Id   string `pagser:"->attr(id)"`
 		Name string `pagser:"->text()"`
 	} `pagser:"tag"`
 }
@@ -333,7 +322,7 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 		return nil, err
 	}
 	if infoData.Stat != "ok" {
-		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", toJson(infoData))
+		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", utils.ToJson(infoData))
 		return nil, errors.New(message)
 	}
 	if photo.Id != infoData.Id {

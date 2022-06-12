@@ -1,8 +1,8 @@
 package mongodb
 
 import (
-	"scrapper/src/types"
 	"errors"
+	"scrapper/src/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -31,18 +31,19 @@ func InsertImage(collection *mongo.Collection, document types.Image) (primitive.
 }
 
 func FindImageId(collection *mongo.Collection, flickrId string) (*types.Image, error) {
-
 	var image types.Image
-	query := bson.M{"flickr_id": flickrId}
-
+	query := bson.M{"flickrId": flickrId}
 	options := options.FindOne().
 		SetProjection(bson.M{
 			"_id": 1,
 		})
-
 	err := collection.FindOne(context.TODO(), query, options).Decode(&image)
-	if err != nil {
+	switch err {
+	case nil:
+		return &image, nil
+	case mongo.ErrNoDocuments:
+		return nil, nil
+	default:
 		return nil, err
 	}
-	return &image, nil
 }
