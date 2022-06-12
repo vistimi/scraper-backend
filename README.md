@@ -1,47 +1,30 @@
-# dressme-scrapper
+# scrapper
 
-## installation
-
-    go mod init dressme-scrapper
-    export GOPATH=~/home/olivier/dressme
-    go get .
-then move code inside `dressme-scrapper/src`
-
-## relative export/import
-Start with a capital letter
-
-export:
-
-    package <folder_name>
-
-    func Func() {}
-    var Variable = ""
-
-import:
-
-    import (
-        "dressme-scrapper/src/../<folder_name>"
-    )
-
-    <folder_name>.Func
-    <folder_name>.Variable
 ## run
 
-    go run .
+    go run src/main.go
 
 ## build
 
     go build .
 
-# License
+## License
 
 must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
-# .env
+## .env
 
 MONGODB_URI=mongodb://localhost:27017
 SCRAPPER_DB=scrapper
 UNWANTED_TAGS_COLLECTION=unwantedTags
+WANTED_TAGS_COLLECTION=wantedTags
 FLICKR_COLLECTION=flickr
+FLICKR_PATH=***
 PRIVATE_KEY=***
 PUBLIC_KEY=***
+
+## installation
+
+    go mod init scrapper
+    go get .
+then move code inside `scrapper/src`

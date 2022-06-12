@@ -1,7 +1,7 @@
 package mongodb
 
 import (
-	"dressme-scrapper/src/types"
+	"scrapper/src/types"
 	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"

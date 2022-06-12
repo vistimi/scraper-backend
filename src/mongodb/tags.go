@@ -1,7 +1,7 @@
 package mongodb
 
 import (
-	"dressme-scrapper/src/types"
+	"scrapper/src/types"
 
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -18,7 +18,19 @@ func InsertTag(collection *mongo.Collection, document types.Tag) (interface{}, e
 	return res.InsertedID, nil
 }
 
-func FindTagsUnwanted(collection *mongo.Collection) ([]types.Tag, error) {
+func InsertTags(collection *mongo.Collection, documents []types.Tag) ([]interface{}, error) {
+	documentsInterfaces := make([]interface{}, len(documents))
+	for i := range documents {
+		documentsInterfaces[i] = documents[i]
+	}
+	res, err := collection.InsertMany(context.TODO(), documentsInterfaces)
+	if err != nil {
+		return nil, err
+	}
+	return res.InsertedIDs, nil
+}
+
+func FindTags(collection *mongo.Collection) ([]types.Tag, error) {
 	cursor, err := collection.Find(context.TODO(), bson.D{})
 	if err != nil {
 		return nil, err

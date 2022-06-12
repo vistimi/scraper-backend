@@ -20,7 +20,6 @@ type Image struct {
 }
 
 type Tag struct {
-	Id           string    `bson:"tagId" json:"tagId"`
 	Name         string    `bson:"tagName" json:"tagName"`
 	Origin       string    `bson:"origin" json:"origin"`
 	CreationDate time.Time `bson:"creationDate" json:"creationDate"`

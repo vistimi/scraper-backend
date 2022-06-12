@@ -1,7 +1,7 @@
 package mongodb
 
 import (
-	"dressme-scrapper/src/utils"
+	"scrapper/src/utils"
 
 	"go.mongodb.org/mongo-driver/mongo"
 

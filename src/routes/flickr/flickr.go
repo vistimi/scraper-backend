@@ -1,6 +1,3 @@
-// https://www.flickr.com/services/api/
-// machinetags
-
 package flickr
 
 import (
@@ -10,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/foolin/pagser"
 
@@ -17,9 +15,9 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"dressme-scrapper/src/mongodb"
-	"dressme-scrapper/src/types"
-	"dressme-scrapper/src/utils"
+	"scrapper/src/mongodb"
+	"scrapper/src/types"
+	"scrapper/src/utils"
 
 	"github.com/jinzhu/copier"
 
@@ -27,6 +25,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"regexp"
 )
 
 // To transform the structured extracted data from html into json.
@@ -36,24 +36,27 @@ func toJson(v interface{}) string {
 	return string(data)
 }
 
-// licenseId: "4, 5, 7, 9, 10".
-// Find all the photos with specific tags and licenses.
-func SearchPhoto(licenseId string, tags string, quality string, folderDir string, mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
+// Find all the photos with specific quality and folder directory.
+func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
 
-	var ids []primitive.ObjectID
+	var insertedIds []primitive.ObjectID
+
+	parser := pagser.New()
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
+	folderDir := utils.DotEnvVariable("FLICKR_PATH")
 	err := os.MkdirAll(folderDir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 
-	parser := pagser.New()
+	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
 
+	// unwanted tags
 	collectionUnwantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
-	res, err := mongodb.FindTagsUnwanted(collectionUnwantedTags)
+	res, err := mongodb.FindTags(collectionUnwantedTags)
 	if err != nil {
-		message := fmt.Sprintf("FindTagsUnwanted has failed: \n%v", err)
+		message := fmt.Sprintf("FindTags Unwated has failed: \n%v", err)
 		return nil, errors.New(message)
 	}
 	var unwantedTags []string
@@ -62,92 +65,135 @@ func SearchPhoto(licenseId string, tags string, quality string, folderDir string
 	}
 	sort.Strings(unwantedTags)
 
-	// TODO: wanted tags
-
-	page := 1
-	pageData, err := SearchPhotoPerPage(parser, licenseId, tags, strconv.FormatUint(uint64(page), 10))
+	// wanted tags
+	collectionWantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
+	res, err = mongodb.FindTags(collectionWantedTags)
 	if err != nil {
-		message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
+		message := fmt.Sprintf("FindTags Wanted has failed: \n%v", err)
 		return nil, errors.New(message)
 	}
+	var wantedTags []string
+	for _, tag := range res {
+		wantedTags = append(wantedTags, tag.Name)
+	}
+	sort.Strings(wantedTags)
 
-	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
+	for _, wantedTag := range wantedTags {
 
-	for page := page; page <= int(pageData.Pages); page++ {
-		pageData, err := SearchPhotoPerPage(parser, licenseId, tags, strconv.FormatUint(uint64(page), 10))
-		if err != nil {
-			message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
-			return nil, errors.New(message)
+		// all the commercial use licenses
+		// https://www.flickr.com/services/api/flickr.photos.licenses.getInfo.html
+		var licenseIdsNames = map[string]string{
+			"4":  "Attribution License",
+			"5":  "Attribution-ShareAlike License",
+			"7":  "No known copyright restrictions",
+			"9":  "Public Domain Dedication (CC0)",
+			"10": "Public Domain Mark",
 		}
-		for _, photo := range pageData.Photos {
+		licenseIds := [5]string{"4", "5", "7", "9", "10"}
+		for _, licenseId := range licenseIds {
 
-			// look for existing image
-			_, err := mongodb.FindImageId(collectionFlickr, photo.Id)
-			switch err {
-			case mongo.ErrNoDocuments:
-			default:
-				return nil, err
-			}
-
-			// extract the photo informations
-			infoData, err := InfoPhoto(parser, photo)
+			// start with the first page
+			page := 1
+			pageData, err := SearchPhotoPerPage(parser, licenseId, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
-				message := fmt.Sprintf("InfoPhoto has failed: \n%v", err)
+				message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
 				return nil, errors.New(message)
 			}
 
-			// only keep images with wanted tags
-			for _, tag := range infoData.Tags {
-				if sort.SearchStrings(unwantedTags, tag.Name) != 0 {
-					continue
+			for page := page; page <= int(pageData.Pages); page++ {
+				pageData, err := SearchPhotoPerPage(parser, licenseId, wantedTag, strconv.FormatUint(uint64(page), 10))
+				if err != nil {
+					message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
+					return nil, errors.New(message)
+				}
+				for _, photo := range pageData.Photos {
+
+					// look for existing image
+					_, err := mongodb.FindImageId(collectionFlickr, photo.Id)
+					switch err {
+					case mongo.ErrNoDocuments:
+					default:
+						return nil, err
+					}
+
+					// extract the photo informations
+					infoData, err := InfoPhoto(parser, photo)
+					if err != nil {
+						message := fmt.Sprintf("InfoPhoto has failed: \n%v", err)
+						return nil, errors.New(message)
+					}
+
+					// only keep images with wanted tags
+					for _, tag := range infoData.Tags {
+						if sort.SearchStrings(unwantedTags, tag.Name) != 0 {
+							continue
+						}
+					}
+
+					// extract the photo download link
+					downloadData, err := DownloadPhoto(parser, photo.Id)
+					if err != nil {
+						message := fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
+						return nil, errors.New(message)
+					}
+
+					// get the download link for the correct resolution
+					label := quality
+					regexpMatch := fmt.Sprintf(`%s[_\w\d]*`, label)
+					idx := slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool { return download.Label == label })
+					if idx == -1 {
+						idx = slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool {
+							matched, err := regexp.Match(regexpMatch, []byte(download.Label))
+							if err != nil {
+								return false
+							}
+							return matched
+						})
+					}
+					if idx == -1 {
+						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, toJson(downloadData))
+						return nil, errors.New(message)
+					}
+
+					// download photo into folder and rename it <id>.<format>
+					fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
+					path := fmt.Sprintf(filepath.Join(folderDir, fileName))
+					err = DownloadFile(downloadData.Photos[idx].Source, path)
+					if err != nil {
+						return nil, err
+					}
+
+					var tags []types.Tag
+					copier.Copy(&tags, &infoData.Tags)
+
+					for i := 0; i < len(tags); i++ {
+						tag := &tags[i]
+						tag.CreationDate = time.Now()
+						tag.Origin = "flickr"
+					}
+
+					document := types.Image{
+						FlickrId:     photo.Id,
+						Path:         path,
+						Width:        downloadData.Photos[idx].Width,
+						Height:       downloadData.Photos[idx].Height,
+						Title:        infoData.Title,
+						Description:  infoData.Description,
+						License:      licenseIdsNames[licenseId],
+						Tags:         tags,
+						CreationDate: time.Now(),
+					}
+
+					insertedId, err := mongodb.InsertImage(collectionFlickr, document)
+					if err != nil {
+						return nil, err
+					}
+					insertedIds = append(insertedIds, insertedId)
 				}
 			}
-
-			// extract the photo download link
-			downloadData, err := DownloadPhoto(parser, photo.Id)
-			if err != nil {
-				message := fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
-				return nil, errors.New(message)
-			}
-
-			// get the download link for the correct resolution
-			label := "Medium"
-			idx := slices.IndexFunc(downloadData.Photos, func(c DownloadPhotoSingleData) bool { return c.Label == label })
-			if idx == -1 {
-				// TODO: download higher resolution or Medium_...
-				message := fmt.Sprintf("Cannot find label in SearchPhoto! id %s\n", photo.Id)
-				return nil, errors.New(message)
-			}
-
-			// download photo into folder and rename it <id>.<format>
-			fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
-			path := fmt.Sprintf(filepath.Join(folderDir, fileName))
-			err = DownloadFile(downloadData.Photos[idx].Source, path)
-			if err != nil {
-				return nil, err
-			}
-
-			var tags []types.Tag
-			copier.Copy(&tags, &infoData.Tags)
-			document := types.Image{
-				FlickrId:    photo.Id,
-				Path:        path,
-				Width:       downloadData.Photos[idx].Width,
-				Height:      downloadData.Photos[idx].Height,
-				Title:       infoData.Title,
-				Description: infoData.Description,
-				License:     licenseId,
-				Tags:        tags,
-			}
-
-			insertedId, err := mongodb.InsertImage(collectionFlickr, document)
-			if err != nil {
-				return nil, err
-			}
-			ids = append(ids, insertedId)
 		}
 	}
-	return ids, nil
+	return insertedIds, nil
 }
 
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
@@ -180,7 +226,7 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	// log.Println(r.URL())
+	log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
@@ -274,7 +320,7 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	// log.Println(r.URL())
+	log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
