@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"regexp"
+	"strings"
 )
 
 // Find all the photos with specific quality and folder directory.
@@ -53,7 +54,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 	}
 	var unwantedTags []string
 	for _, tag := range res {
-		unwantedTags = append(unwantedTags, tag.Name)
+		unwantedTags = append(unwantedTags, strings.ToLower(tag.Name))
 	}
 	sort.Strings(unwantedTags)
 
@@ -66,7 +67,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 	}
 	var wantedTags []string
 	for _, tag := range res {
-		wantedTags = append(wantedTags, tag.Name)
+		wantedTags = append(wantedTags, strings.ToLower(tag.Name))
 	}
 	sort.Strings(wantedTags)
 
@@ -115,7 +116,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 
 					// only keep images with wanted tags
 					for _, tag := range infoData.Tags {
-						if sort.SearchStrings(unwantedTags, tag.Name) != 0 {
+						if sort.SearchStrings(unwantedTags, strings.ToLower(tag.Name)) != 0 {
 							continue
 						}
 					}
@@ -128,12 +129,12 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 					}
 
 					// get the download link for the correct resolution
-					label := quality
-					regexpMatch := fmt.Sprintf(`%s[_\w\d]*`, label)
-					idx := slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool { return download.Label == label })
+					label := strings.ToLower(quality)
+					regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, label)
+					idx := slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool { return strings.ToLower(download.Label) == label })
 					if idx == -1 {
 						idx = slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool {
-							matched, err := regexp.Match(regexpMatch, []byte(download.Label))
+							matched, err := regexp.Match(regexpMatch, []byte(strings.ToLower(download.Label)))
 							if err != nil {
 								return false
 							}
@@ -158,6 +159,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 
 					for i := 0; i < len(tags); i++ {
 						tag := &tags[i]
+						tag.Name = strings.ToLower(tag.Name)
 						tag.CreationDate = time.Now()
 						tag.Origin = "flickr"
 					}
@@ -216,7 +218,7 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	log.Println(r.URL())
+	// log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
@@ -264,7 +266,7 @@ func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	log.Println(r.URL())
+	// log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
@@ -309,7 +311,7 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
 
-	log.Println(r.URL())
+	// log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
