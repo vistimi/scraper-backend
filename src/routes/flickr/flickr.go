@@ -115,10 +115,24 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 					}
 
 					// only keep images with wanted tags
-					for _, tag := range infoData.Tags {
-						if sort.SearchStrings(unwantedTags, strings.ToLower(tag.Name)) != 0 {
-							continue
+					idx := slices.IndexFunc(infoData.Tags, func(photoTag Tag) bool {
+						imageTag := strings.ToLower(photoTag.Name)
+						regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, imageTag)
+						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool { 
+							matched, err := regexp.Match(regexpMatch, []byte(unwantedTag))
+							if err != nil {
+								return false
+							}
+							return matched
+						})
+						if idx == -1 {
+							return false
+						} else {
+							return true
 						}
+					})
+					if idx == -1 {
+						continue 
 					}
 
 					// extract the photo download link
@@ -131,7 +145,7 @@ func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectI
 					// get the download link for the correct resolution
 					label := strings.ToLower(quality)
 					regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, label)
-					idx := slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool { return strings.ToLower(download.Label) == label })
+					idx = slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool { return strings.ToLower(download.Label) == label })
 					if idx == -1 {
 						idx = slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool {
 							matched, err := regexp.Match(regexpMatch, []byte(strings.ToLower(download.Label)))
@@ -295,9 +309,11 @@ type InfoPhotoData struct {
 	OriginalFormat string `pagser:"photo->attr(originalformat)"`
 	Title          string `pagser:"title"`
 	Description    string `pagser:"description"`
-	Tags           []struct {
-		Name string `pagser:"->text()"`
-	} `pagser:"tag"`
+	Tags           []Tag `pagser:"tag"`
+}
+
+type Tag struct {
+	Name string `pagser:"->text()"`
 }
 
 func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
