@@ -30,3 +30,7 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
     go get .
 
 Then move code inside `scrapper/src`
+
+## linter
+
+https://golangci-lint.run/
