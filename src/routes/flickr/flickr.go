@@ -29,9 +29,14 @@ import (
 	"strings"
 )
 
-// Find all the photos with specific quality and folder directory.
-func SearchPhoto(quality string, mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
+type ParamsFlickr struct {
+	Quality string `uri:"quality" binding:"required"`
+}
 
+// Find all the photos with specific quality and folder directory.
+func SearchPhoto(mongoClient *mongo.Client, params ParamsFlickr) ([]primitive.ObjectID, error) {
+
+	quality := params.Quality
 	var insertedIds []primitive.ObjectID
 
 	parser := pagser.New()
