@@ -8,20 +8,20 @@ import (
 
 type Image struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	FlickrId     string             `bson:"flickId" json:"flickId"`
-	Path         string             `bson:"path" json:"path"`
-	Width        uint               `bson:"width" json:"width"`
-	Height       uint               `bson:"height" json:"height"`
-	Title        string             `bson:"title" json:"title"`
-	Description  string             `bson:"description" json:"description"`
-	License      string             `bson:"license" json:"license"`
-	Tags         []Tag
-	CreationDate time.Time `bson:"creationDate" json:"creationDate"`
+	FlickrId     string             `bson:"flickId,omitempty" json:"flickId,omitempty"`
+	Path         string             `bson:"path,omitempty" json:"path,omitempty"`
+	Width        uint               `bson:"width,omitempty" json:"width,omitempty"`
+	Height       uint               `bson:"height,omitempty" json:"height,omitempty"`
+	Title        string             `bson:"title,omitempty" json:"title,omitempty"`
+	Description  string             `bson:"description,omitempty" json:"description,omitempty"`
+	License      string             `bson:"license,omitempty" json:"license,omitempty"`
+	Tags         []Tag              `bson:"tags,omitempty" json:"tags,omitempty"`
+	CreationDate *time.Time          `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
 }
 
 type Tag struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name         string             `bson:"tagName" json:"tagName"`
 	Origin       string             `bson:"origin" json:"origin"`
-	CreationDate time.Time          `bson:"creationDate" json:"creationDate"`
+	CreationDate *time.Time          `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
 }

@@ -12,13 +12,13 @@ import (
 
 	"path/filepath"
 
-	"golang.org/x/exp/slices"
-
 	"scrapper/src/mongodb"
 	"scrapper/src/types"
 	"scrapper/src/utils"
 
 	"github.com/jinzhu/copier"
+
+	"golang.org/x/exp/slices"
 
 	"sort"
 
@@ -29,12 +29,12 @@ import (
 	"strings"
 )
 
-type ParamsFlickr struct {
+type ParamsSearchPhoto struct {
 	Quality string `uri:"quality" binding:"required"`
 }
 
 // Find all the photos with specific quality and folder directory.
-func SearchPhoto(mongoClient *mongo.Client, params ParamsFlickr) ([]primitive.ObjectID, error) {
+func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primitive.ObjectID, error) {
 
 	quality := params.Quality
 	var insertedIds []primitive.ObjectID
@@ -123,7 +123,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsFlickr) ([]primitive.Ob
 					idx := slices.IndexFunc(infoData.Tags, func(photoTag Tag) bool {
 						imageTag := strings.ToLower(photoTag.Name)
 						regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, imageTag)
-						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool { 
+						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool {
 							matched, err := regexp.Match(regexpMatch, []byte(unwantedTag))
 							if err != nil {
 								return false
@@ -137,7 +137,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsFlickr) ([]primitive.Ob
 						}
 					})
 					if idx == -1 {
-						continue 
+						continue
 					}
 
 					// extract the photo download link
@@ -179,10 +179,12 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsFlickr) ([]primitive.Ob
 					for i := 0; i < len(tags); i++ {
 						tag := &tags[i]
 						tag.Name = strings.ToLower(tag.Name)
-						tag.CreationDate = time.Now()
+						now := time.Now()
+						tag.CreationDate = &now
 						tag.Origin = "flickr"
 					}
 
+					now := time.Now()
 					document := types.Image{
 						FlickrId:     photo.Id,
 						Path:         path,
@@ -192,7 +194,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsFlickr) ([]primitive.Ob
 						Description:  infoData.Description,
 						License:      licenseIdsNames[licenseId],
 						Tags:         tags,
-						CreationDate: time.Now(),
+						CreationDate: &now,
 					}
 
 					insertedId, err := mongodb.InsertImage(collectionFlickr, document)
@@ -314,7 +316,7 @@ type InfoPhotoData struct {
 	OriginalFormat string `pagser:"photo->attr(originalformat)"`
 	Title          string `pagser:"title"`
 	Description    string `pagser:"description"`
-	Tags           []Tag `pagser:"tag"`
+	Tags           []Tag  `pagser:"tag"`
 }
 
 type Tag struct {

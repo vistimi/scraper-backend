@@ -22,7 +22,8 @@ func InsertTag(collection *mongo.Collection, document types.Tag) (interface{}, e
 		return nil, errors.New(fmt.Sprintf("the tag `%s` already exists: %v", document.Name, tag))
 	}
 
-	document.CreationDate = time.Now()
+	now := time.Now()
+	document.CreationDate = &now
 	res, err := collection.InsertOne(context.TODO(), document)
 	if err != nil {
 		return nil, err
@@ -43,17 +44,18 @@ func InsertTag(collection *mongo.Collection, document types.Tag) (interface{}, e
 // }
 
 func FindTags(collection *mongo.Collection) ([]types.Tag, error) {
-	cursor, err := collection.Find(context.TODO(), bson.D{})
+	query := bson.D{}
+	cursor, err := collection.Find(context.TODO(), query)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(context.TODO())
 
-	var results []types.Tag
-	if err = cursor.All(context.TODO(), &results); err != nil {
+	var tags []types.Tag
+	if err = cursor.All(context.TODO(), &tags); err != nil {
 		return nil, err
 	}
-	return results, nil
+	return tags, nil
 }
 
 func FindTagName(collection *mongo.Collection, tagName string) (*types.Tag, error) {

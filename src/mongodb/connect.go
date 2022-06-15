@@ -16,7 +16,7 @@ func Connect() *mongo.Client {
 
 	uri := utils.DotEnvVariable("MONGODB_URI")
 
-	// ctx, cancel := context.WithTimeout(context.TODO(), 20*time.Second)
+	// context, cancel := context.WithTimeout(context.TODO(), 20*time.Second)
 	// defer cancel()
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
