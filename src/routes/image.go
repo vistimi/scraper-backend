@@ -15,24 +15,42 @@ type ParamsFindImagesIds struct {
 }
 
 func FindImagesIds(mongoClient *mongo.Client, params ParamsFindImagesIds) ([]types.Image, error) {
-	var collection *mongo.Collection
-	switch params.Collection {
-	case "flickr":
-		collection = mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
-	default:
-		return nil, errors.New("Params not valid, you must give a correct collection!")
+	collection, err := utils.ImageCollectionSelection(mongoClient, params.Collection)
+	if err != nil {
+		return nil, err
 	}
 	return mongodb.FindImagesIds(collection)
 }
 
+type BodyFindImage struct {
+	Collection string
+	Id primitive.ObjectID
+}
+
+func FindImage(mongoClient *mongo.Client, body BodyFindImage) (*types.Image, error) {
+	collection, err := utils.ImageCollectionSelection(mongoClient, body.Collection)
+	if err != nil {
+		return nil, err
+	}
+	return mongodb.FindImage(collection, body.Id)
+}
+
+type BodyRemoveImage struct {
+	Collection string
+	Id primitive.ObjectID
+}
+func RemoveImage(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error) {
+	collection, err := utils.ImageCollectionSelection(mongoClient, body.Collection)
+	if err != nil {
+		return nil, err
+	}
+	return mongodb.RemoveImage(collection, body.Id)
+}
 
 func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.Image, error) {
-	var collection *mongo.Collection
-	switch body.Collection {
-	case "flickr":
-		collection = mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
-	default:
-		return nil, errors.New("Body not valid, you must give a correct collection!")
+	collection, err := utils.ImageCollectionSelection(mongoClient, body.Collection)
+	if err != nil {
+		return nil, err
 	}
 	if body.Id == primitive.NilObjectID {
 		return nil, errors.New("Body not valid, Id empty")

@@ -70,6 +70,41 @@ func FindImagesIds(collection *mongo.Collection) ([]types.Image, error) {
 	return images, nil
 }
 
+func FindImage(collection *mongo.Collection, id primitive.ObjectID) (*types.Image, error) {
+	query := bson.M{"_id": id}
+	var image types.Image
+	err := collection.FindOne(context.TODO(), query).Decode(&image)
+	switch err {
+	case nil:
+		return &image, nil
+	case mongo.ErrNoDocuments:
+		return nil, nil
+	default:
+		return nil, err
+	}
+}
+
+func RemoveImage(collection *mongo.Collection, id primitive.ObjectID) (*int64, error) {
+	query := bson.M{"_id": id}
+	res, err := collection.DeleteOne(context.TODO(), query)
+	if err != nil {
+		return nil, err
+	}
+	return &res.DeletedCount, nil
+}
+
+// Unused
+func RemoveImages(collection *mongo.Collection, ids []primitive.ObjectID) (*int64, error) {
+	query := bson.M{"_id": bson.M{
+		"$in": ids,
+	}}
+	res, err := collection.DeleteMany(context.TODO(), query)
+	if err != nil {
+		return nil, err
+	}
+	return &res.DeletedCount, nil
+}
+
 func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*types.Image, error) {
 	query := bson.M{"_id": body.Id}
 	if body.Tags != nil {
@@ -89,14 +124,5 @@ func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*typ
 			return nil, err
 		}
 	}
-	var image types.Image
-	err := collection.FindOne(context.TODO(), query).Decode(&image)
-	switch err {
-	case nil:
-		return &image, nil
-	case mongo.ErrNoDocuments:
-		return nil, nil
-	default:
-		return nil, err
-	}
+	return FindImage(collection, body.Id)
 }

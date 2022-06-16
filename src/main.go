@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"scrapper/src/mongodb"
-	"scrapper/src/utils"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -21,18 +20,22 @@ func main() {
 	router := gin.Default()
 
 	router.GET("/image/ids/:collection", wrapperHandlerUri(mongoClient, routes.FindImagesIds))
+	router.GET("/image", wrapperHandlerBody(mongoClient, routes.FindImage))
 	router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
+	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
 
 	router.POST("/search/flickr/:quality", wrapperHandlerUri(mongoClient, flickr.SearchPhoto))
 
-	router.POST("/tag/wanted", wrapperHandlerBodyColl(mongoClient, "WANTED_TAGS_COLLECTION", mongodb.InsertTag))
-	router.POST("/tag/unwanted", wrapperHandlerBodyColl(mongoClient, "UNWANTED_TAGS_COLLECTION", mongodb.InsertTag))
+	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertWantedTag))
+	router.GET("/tag/wanted", wrapperHandler(mongoClient, mongodb.WantedTags))
+	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertUnwantedTag))
+	router.GET("/tag/unwanted", wrapperHandler(mongoClient, mongodb.UnwantedTags))
 
 	router.Run("localhost:8080")
 }
 
 type mongoSchema interface {
-	*mongo.Client | *mongo.Collection
+	*mongo.Client
 }
 
 // wrapper for the response with argument
@@ -53,19 +56,6 @@ func wrapperResponse[M mongoSchema, R any](c *gin.Context, f func(mongo M) (R, e
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "OK", "res": res})
-}
-
-// wrapper for the ginHandler with body with collectionName
-func wrapperHandlerBodyColl[B any, R any](mongoClient *mongo.Client, collectionName string, f func(mongo *mongo.Collection, body B) (R, error)) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var body B
-		if err := c.BindJSON(&body); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
-			return
-		}
-		collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable(collectionName))
-		wrapperResponseArg(c, f, collection, body)
-	}
 }
 
 // wrapper for the ginHandler with body with collectionName
