@@ -33,7 +33,7 @@ func InsertImage(collection *mongo.Collection, document types.Image) (primitive.
 	return insertedId, nil
 }
 
-func FindImageId(collection *mongo.Collection, flickrId string) (*types.Image, error) {
+func FindImageByFLickrId(collection *mongo.Collection, flickrId string) (*types.Image, error) {
 	var image types.Image
 	query := bson.M{"flickrId": flickrId}
 	options := options.FindOne().

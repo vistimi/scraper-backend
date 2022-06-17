@@ -107,7 +107,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 				for _, photo := range pageData.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageId(collectionFlickr, photo.Id)
+					_, err := mongodb.FindImageByFLickrId(collectionFlickr, photo.Id)
 					if err != nil {
 						return nil, err
 					}
@@ -187,7 +187,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					now := time.Now()
 					document := types.Image{
 						FlickrId:     photo.Id,
-						Path:         path,
+						Path:         fileName,
 						Width:        downloadData.Photos[idx].Width,
 						Height:       downloadData.Photos[idx].Height,
 						Title:        infoData.Title,

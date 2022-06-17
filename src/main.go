@@ -3,33 +3,43 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	"scrapper/src/routes/flickr"
 	"scrapper/src/routes"
+	"scrapper/src/routes/flickr"
 
 	"net/http"
 
 	"scrapper/src/mongodb"
 
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/gin-contrib/cors"
 )
+
+type Person struct {
+	ID   string `uri:"id" binding:"required"`
+	Name string `uri:"name" binding:"required"`
+}
 
 func main() {
 
 	mongoClient := mongodb.Connect()
 
 	router := gin.Default()
+	router.Use(cors.Default())
 
-	router.GET("/image/ids/:collection", wrapperHandlerUri(mongoClient, routes.FindImagesIds))
-	router.GET("/image", wrapperHandlerBody(mongoClient, routes.FindImage))
+	router.GET("/images/id/:collection", wrapperHandlerUri(mongoClient, routes.FindImagesIds))
+
+	router.Static("/image/file", "/home/olivier/dressme/images")
+	router.GET("/image/:collection/:id", wrapperHandlerUri(mongoClient, routes.FindImage))
 	router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
 
 	router.POST("/search/flickr/:quality", wrapperHandlerUri(mongoClient, flickr.SearchPhoto))
 
-	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertWantedTag))
-	router.GET("/tag/wanted", wrapperHandler(mongoClient, mongodb.WantedTags))
-	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertUnwantedTag))
-	router.GET("/tag/unwanted", wrapperHandler(mongoClient, mongodb.UnwantedTags))
+	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagWanted))
+	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))
+	router.GET("/tags/wanted", wrapperHandler(mongoClient, mongodb.TagsWanted))
+	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
 
 	router.Run("localhost:8080")
 }
@@ -45,7 +55,7 @@ func wrapperResponseArg[M mongoSchema, A any, R any](c *gin.Context, f func(mong
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "OK", "res": res})
+	c.JSON(http.StatusOK, res)
 }
 
 // wrapper for the response
@@ -55,7 +65,7 @@ func wrapperResponse[M mongoSchema, R any](c *gin.Context, f func(mongo M) (R, e
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "OK", "res": res})
+	c.JSON(http.StatusOK, res)
 }
 
 // wrapper for the ginHandler with body with collectionName

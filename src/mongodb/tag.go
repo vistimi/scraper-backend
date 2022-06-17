@@ -32,19 +32,19 @@ func InsertTag(collection *mongo.Collection, document types.Tag) (interface{}, e
 	return res.InsertedID, nil
 }
 
-type ReturnInsertUnwantedTag struct {
+type ReturnInsertTagUnwanted struct {
 	InsertedTagId interface{}
 	DeletedImageCount int64
 }
-func InsertUnwantedTag(mongoClient *mongo.Client, document types.Tag) (interface{}, error) {
-	collectionUnwatedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
-	insertedId, err := InsertTag(collectionUnwatedTags, document)
+func InsertTagUnwanted(mongoClient *mongo.Client, document types.Tag) (interface{}, error) {
+	collectionTagsUnwated := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	insertedId, err := InsertTag(collectionTagsUnwated, document)
 	if err != nil {
 		return nil, err
 	}
 
 	query:= bson.M{
-		"tags.tagName": document.Name,
+		"tags.name": document.Name,
 	}
 	collections := utils.ImageCollections(mongoClient)
 	var deletedCount int64 = 0
@@ -56,14 +56,14 @@ func InsertUnwantedTag(mongoClient *mongo.Client, document types.Tag) (interface
 		deletedCount += res.DeletedCount
     }
 	
-	ids := ReturnInsertUnwantedTag{
+	ids := ReturnInsertTagUnwanted{
 		InsertedTagId: insertedId,
 		DeletedImageCount: deletedCount,
 	}
 	return ids, nil
 }
 
-func InsertWantedTag(mongoClient *mongo.Client, document types.Tag) (interface{}, error) {
+func InsertTagWanted(mongoClient *mongo.Client, document types.Tag) (interface{}, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
 	return InsertTag(collection, document)
 }
@@ -80,12 +80,12 @@ func InsertWantedTag(mongoClient *mongo.Client, document types.Tag) (interface{}
 // 	return res.InsertedIDs, nil
 // }
 
-func WantedTags (mongoClient *mongo.Client) ([]types.Tag, error) {
+func TagsWanted (mongoClient *mongo.Client) ([]types.Tag, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
 	return FindTags(collection)
 }
 
-func UnwantedTags (mongoClient *mongo.Client) ([]types.Tag, error) {
+func TagsUnwanted (mongoClient *mongo.Client) ([]types.Tag, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	return FindTags(collection)
 }
@@ -107,7 +107,7 @@ func FindTags(collection *mongo.Collection) ([]types.Tag, error) {
 
 func FindTagName(collection *mongo.Collection, tagName string) (*types.Tag, error) {
 	var tag types.Tag
-	query := bson.M{"tagName": tagName}
+	query := bson.M{"name": tagName}
 	err := collection.FindOne(context.TODO(), query).Decode(&tag)
 	switch err {
 	case nil:
