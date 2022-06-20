@@ -38,6 +38,8 @@ func main() {
 
 	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagWanted))
 	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))
+	router.DELETE("/tag/wanted/:id", wrapperHandlerUri(mongoClient, routes.RemoveTagWanted))
+	router.DELETE("/tag/unwanted/:id", wrapperHandlerUri(mongoClient, routes.RemoveTagUnwanted))
 	router.GET("/tags/wanted", wrapperHandler(mongoClient, mongodb.TagsWanted))
 	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
 

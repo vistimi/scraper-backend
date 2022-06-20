@@ -43,7 +43,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	err := os.MkdirAll(folderDir, os.ModePerm)
+	err := os.MkdirAll(filepath.Join(folderDir, "flickr"), os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +119,12 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 						return nil, errors.New(message)
 					}
 
-					// only keep images with wanted tags
+					// skip image if one of its tag is unwanted
 					idx := slices.IndexFunc(infoData.Tags, func(photoTag Tag) bool {
 						imageTag := strings.ToLower(photoTag.Name)
 						regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, imageTag)
+
+						// pass through all tags of the image and its derived tags to match an unwated tag
 						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool {
 							matched, err := regexp.Match(regexpMatch, []byte(unwantedTag))
 							if err != nil {
@@ -130,14 +132,16 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 							}
 							return matched
 						})
+
+						// if unwanted tag is present return true
 						if idx == -1 {
 							return false
 						} else {
 							return true
 						}
 					})
-					if idx == -1 {
-						continue
+					if idx != -1 {
+						continue	// skip image with unwated tag
 					}
 
 					// extract the photo download link
