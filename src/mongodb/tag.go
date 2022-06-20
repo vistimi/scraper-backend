@@ -33,31 +33,42 @@ func InsertTag(collection *mongo.Collection, document types.Tag) (interface{}, e
 }
 
 type ReturnInsertTagUnwanted struct {
-	InsertedTagId interface{}
+	InsertedTagId     interface{}
 	DeletedImageCount int64
 }
+
 func InsertTagUnwanted(mongoClient *mongo.Client, document types.Tag) (interface{}, error) {
+	if document.Name == "" || document.Origin == "" {
+		return nil, errors.New("Some fields are empty!")
+	}
+
 	collectionTagsUnwated := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	insertedId, err := InsertTag(collectionTagsUnwated, document)
 	if err != nil {
 		return nil, err
 	}
 
-	query:= bson.M{
+	query := bson.M{
 		"tags.name": document.Name,
 	}
 	collections := utils.ImageCollections(mongoClient)
 	var deletedCount int64 = 0
-	for _, collection := range collections {
-		res, err := collection.DeleteMany(context.TODO(), query)
+	for collectionName, collection := range collections {
+		images, err := FindImagesIds(collection, query)
 		if err != nil {
 			return nil, err
 		}
-		deletedCount += res.DeletedCount
-    }
-	
+		for _, image := range images{
+			deletedOne, err := RemoveImageAndFile(collection, collectionName, image.Id)
+			if err != nil {
+				return nil, err
+			}
+			deletedCount += *deletedOne
+		}
+	}
+
 	ids := ReturnInsertTagUnwanted{
-		InsertedTagId: insertedId,
+		InsertedTagId:     insertedId,
 		DeletedImageCount: deletedCount,
 	}
 	return ids, nil
@@ -80,12 +91,12 @@ func InsertTagWanted(mongoClient *mongo.Client, document types.Tag) (interface{}
 // 	return res.InsertedIDs, nil
 // }
 
-func TagsWanted (mongoClient *mongo.Client) ([]types.Tag, error) {
+func TagsWanted(mongoClient *mongo.Client) ([]types.Tag, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
 	return FindTags(collection)
 }
 
-func TagsUnwanted (mongoClient *mongo.Client) ([]types.Tag, error) {
+func TagsUnwanted(mongoClient *mongo.Client) ([]types.Tag, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	return FindTags(collection)
 }

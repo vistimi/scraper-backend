@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type ParamsFindImagesIds struct {
@@ -19,11 +20,11 @@ func FindImagesIds(mongoClient *mongo.Client, params ParamsFindImagesIds) ([]typ
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.FindImagesIds(collection)
+	return mongodb.FindImagesIds(collection, bson.M{})
 }
 
 type ParamsFindImage struct {
-	Collection string  `uri:"collection" binding:"required"`
+	Collection string `uri:"collection" binding:"required"`
 	Id         string `uri:"id" binding:"required"`
 }
 
@@ -49,8 +50,7 @@ func RemoveImage(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveImage(collection, body.Id)
-	// TODO: delete file
+	return mongodb.RemoveImageAndFile(collection, body.Collection, body.Id)
 }
 
 func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.Image, error) {

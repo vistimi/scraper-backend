@@ -15,13 +15,13 @@ type Image struct {
 	Title        string             `bson:"title,omitempty" json:"title,omitempty"`
 	Description  string             `bson:"description,omitempty" json:"description,omitempty"`
 	License      string             `bson:"license,omitempty" json:"license,omitempty"`
-	Tags         []Tag              `bson:"tags,omitempty" json:"tags,omitempty"`
 	CreationDate *time.Time         `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
+	Tags         []Tag              `bson:"tags,omitempty" json:"tags,omitempty"`
 }
 
 type Tag struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Name         string             `bson:"name" json:"name"`
-	Origin       string             `bson:"origin" json:"origin"`
+	Name         string             `bson:"name,omitempty" json:"name,omitempty"`
+	Origin       string             `bson:"origin,omitempty" json:"origin,omitempty"`
 	CreationDate *time.Time         `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
 }

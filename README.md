@@ -20,7 +20,7 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
     UNWANTED_TAGS_COLLECTION=unwantedTags
     WANTED_TAGS_COLLECTION=wantedTags
     FLICKR_COLLECTION=flickr
-    FLICKR_PATH=***
+    IMAGE_PATH=***
     PRIVATE_KEY=***
     PUBLIC_KEY=***
 

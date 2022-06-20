@@ -5,6 +5,8 @@ import (
 
 	"scrapper/src/types"
 
+	"scrapper/src/utils"
+
 	"go.mongodb.org/mongo-driver/bson"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,6 +20,10 @@ import (
 	"fmt"
 
 	"time"
+
+	"path/filepath"
+
+	"os"
 )
 
 func InsertImage(collection *mongo.Collection, document types.Image) (primitive.ObjectID, error) {
@@ -51,8 +57,7 @@ func FindImageByFLickrId(collection *mongo.Collection, flickrId string) (*types.
 	}
 }
 
-func FindImagesIds(collection *mongo.Collection) ([]types.Image, error) {
-	query := bson.D{}
+func FindImagesIds(collection *mongo.Collection, query bson.M) ([]types.Image, error) {
 	options := options.Find().
 		SetProjection(bson.M{
 			"_id": 1,
@@ -93,16 +98,22 @@ func RemoveImage(collection *mongo.Collection, id primitive.ObjectID) (*int64, e
 	return &res.DeletedCount, nil
 }
 
-// Unused
-func RemoveImages(collection *mongo.Collection, ids []primitive.ObjectID) (*int64, error) {
-	query := bson.M{"_id": bson.M{
-		"$in": ids,
-	}}
-	res, err := collection.DeleteMany(context.TODO(), query)
+func RemoveImageAndFile(collection *mongo.Collection, collectionDir string, id primitive.ObjectID) (*int64, error) {
+	image, err := FindImage(collection, id)
 	if err != nil {
 		return nil, err
 	}
-	return &res.DeletedCount, nil
+	deletedCount, err := RemoveImage(collection, id)
+	if err != nil {
+		return nil, err
+	}
+	folderDir := utils.DotEnvVariable("IMAGE_PATH")
+	path := fmt.Sprintf(filepath.Join(folderDir, collectionDir, image.Path))
+	err = os.Remove(path)
+	if err != nil {
+		return nil, err
+	}
+	return deletedCount, nil
 }
 
 func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*types.Image, error) {

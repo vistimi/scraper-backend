@@ -42,7 +42,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 	parser := pagser.New()
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
-	folderDir := utils.DotEnvVariable("FLICKR_PATH")
+	folderDir := utils.DotEnvVariable("IMAGE_PATH")
 	err := os.MkdirAll(folderDir, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 
 					// download photo into folder and rename it <id>.<format>
 					fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
-					path := fmt.Sprintf(filepath.Join(folderDir, fileName))
+					path := fmt.Sprintf(filepath.Join(folderDir, "flickr", fileName))
 					err = DownloadFile(downloadData.Photos[idx].Source, path)
 					if err != nil {
 						return nil, err
