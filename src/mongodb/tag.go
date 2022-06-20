@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"scrapper/src/types"
 	"scrapper/src/utils"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,19 +14,35 @@ import (
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"golang.org/x/exp/slices"
+
+	"regexp"
 )
 
 func InsertTag(collection *mongo.Collection, body types.Tag) (interface{}, error) {
-	tag, err := FindTagName(collection, body.Name)
+	// only add unique tag
+	tagsUnwanted, err := FindTags(collection)
 	if err != nil {
 		return nil, err
 	}
-	if tag != nil {
-		return nil, errors.New(fmt.Sprintf("the tag `%s` already exists: %v", body.Name, tag))
+	idx := slices.IndexFunc(tagsUnwanted, func(tagUnwanted types.Tag) bool {
+		tag := strings.ToLower(tagUnwanted.Name)
+		regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, tag)
+		matched, err := regexp.Match(regexpMatch, []byte(body.Name))
+		if err != nil {
+			return false
+		}
+		return matched
+	})
+	if idx != -1 {
+		return nil, errors.New(fmt.Sprintf("your tag `%s` and the db tag `%s` are too closely related", body.Name, tagsUnwanted[idx].Name))
 	}
 
+	// insert tag
 	now := time.Now()
 	body.CreationDate = &now
+	body.Name = strings.ToLower(body.Name)
 	res, err := collection.InsertOne(context.TODO(), body)
 	if err != nil {
 		return nil, err
@@ -42,6 +59,7 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	if body.Name == "" || body.Origin == "" {
 		return nil, errors.New("Some fields are empty!")
 	}
+	body.Name = strings.ToLower(body.Name)
 
 	collectionTagsUnwated := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	insertedId, err := InsertTag(collectionTagsUnwated, body)
@@ -52,9 +70,9 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	query := bson.M{
 		"tags.name": body.Name,
 	}
-	collections := utils.ImageCollections(mongoClient)
+	imageCollections := utils.ImageCollections(mongoClient)
 	var deletedCount int64 = 0
-	for collectionName, collection := range collections {
+	for collectionName, collection := range imageCollections {
 		images, err := FindImagesIds(collection, query)
 		if err != nil {
 			return nil, err
@@ -79,18 +97,6 @@ func InsertTagWanted(mongoClient *mongo.Client, document types.Tag) (interface{}
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
 	return InsertTag(collection, document)
 }
-
-// func InsertTags(collection *mongo.Collection, documents []types.Tag) ([]interface{}, error) {
-// 	documentsInterfaces := make([]interface{}, len(documents))
-// 	for i := range documents {
-// 		documentsInterfaces[i] = documents[i]
-// 	}
-// 	res, err := collection.InsertMany(context.TODO(), documentsInterfaces)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return res.InsertedIDs, nil
-// }
 
 func TagsWanted(mongoClient *mongo.Client) ([]types.Tag, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
@@ -124,18 +130,4 @@ func FindTags(collection *mongo.Collection) ([]types.Tag, error) {
 		return nil, err
 	}
 	return tags, nil
-}
-
-func FindTagName(collection *mongo.Collection, tagName string) (*types.Tag, error) {
-	var tag types.Tag
-	query := bson.M{"name": tagName}
-	err := collection.FindOne(context.TODO(), query).Decode(&tag)
-	switch err {
-	case nil:
-		return &tag, nil
-	case mongo.ErrNoDocuments:
-		return nil, nil
-	default:
-		return nil, err
-	}
 }
