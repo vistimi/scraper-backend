@@ -33,4 +33,6 @@ Then move code inside `scrapper/src`
 
 ## linter
 
-https://golangci-lint.run/
+https://github.com/mgechev/revive
+
+    revive -config revive.toml

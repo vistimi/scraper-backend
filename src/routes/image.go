@@ -58,7 +58,7 @@ func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.
 	if err != nil {
 		return nil, err
 	}
-	if body.Id == primitive.NilObjectID {
+	if body.ID == primitive.NilObjectID {
 		return nil, errors.New("Body not valid, Id empty")
 	}
 	return mongodb.UpdateImage(collection, body)

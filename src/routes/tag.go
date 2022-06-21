@@ -9,23 +9,23 @@ import (
 )
 
 type ParamsRemoveTag struct {
-	Id   string `uri:"id" binding:"required"`
+	ID   string `uri:"id" binding:"required"`
 }
 
 func RemoveTagWanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
-	tagId, err := primitive.ObjectIDFromHex(params.Id)
+	tagID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveTag(collection, tagId)
+	return mongodb.RemoveTag(collection, tagID)
 }
 
 func RemoveTagUnwanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
 	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
-	tagId, err := primitive.ObjectIDFromHex(params.Id)
+	tagID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveTag(collection, tagId)
+	return mongodb.RemoveTag(collection, tagID)
 }
