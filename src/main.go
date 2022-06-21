@@ -15,11 +15,6 @@ import (
 	"github.com/gin-contrib/cors"
 )
 
-type Person struct {
-	ID   string `uri:"id" binding:"required"`
-	Name string `uri:"name" binding:"required"`
-}
-
 func main() {
 
 	mongoClient := mongodb.Connect()

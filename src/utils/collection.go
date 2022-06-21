@@ -6,6 +6,7 @@ import (
 	"errors"
 )
 
+// Return the MongoDB collection matching the desired selection
 func ImageCollectionSelection (mongoClient *mongo.Client, selection string) (*mongo.Collection, error) {
 	switch selection {
 	case "flickr":
@@ -15,6 +16,7 @@ func ImageCollectionSelection (mongoClient *mongo.Client, selection string) (*mo
 	}
 }
 
+// Returns a map of all collections with images
 func ImageCollections (mongoClient *mongo.Client) map[string]*mongo.Collection {
 	collections := make(map[string]*mongo.Collection)
 	collections["flickr"] = mongoClient.Database(DotEnvVariable("SCRAPPER_DB")).Collection(DotEnvVariable("FLICKR_COLLECTION"))

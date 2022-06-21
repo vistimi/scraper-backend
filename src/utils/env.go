@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// use godot package to load/read the .env file and return the value of the key
+// DotEnvVariable use godot package to load/read the .env file and return the value of the key
 func DotEnvVariable(key string) string {
 
 	// load .env file

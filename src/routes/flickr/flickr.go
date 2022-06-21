@@ -107,7 +107,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 				for _, photo := range pageData.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageByFLickrId(collectionFlickr, photo.Id)
+					_, err := mongodb.FindImageByFLickrId(collectionFlickr, photo.ID)
 					if err != nil {
 						return nil, err
 					}
@@ -145,7 +145,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					}
 
 					// extract the photo download link
-					downloadData, err := DownloadPhoto(parser, photo.Id)
+					downloadData, err := DownloadPhoto(parser, photo.ID)
 					if err != nil {
 						message := fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
 						return nil, errors.New(message)
@@ -165,12 +165,12 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 						})
 					}
 					if idx == -1 {
-						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, downloadData)
+						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.ID, downloadData)
 						return nil, errors.New(message)
 					}
 
 					// download photo into folder and rename it <id>.<format>
-					fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
+					fileName := fmt.Sprintf("%s.%s", photo.ID, infoData.OriginalFormat)
 					path := fmt.Sprintf(filepath.Join(folderDir, "flickr", fileName))
 					err = DownloadFile(downloadData.Photos[idx].Source, path)
 					if err != nil {
@@ -190,7 +190,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 
 					now := time.Now()
 					document := types.Image{
-						FlickrId:     photo.Id,
+						FlickrID:     photo.ID,
 						Path:         fileName,
 						Width:        downloadData.Photos[idx].Width,
 						Height:       downloadData.Photos[idx].Height,
@@ -223,7 +223,7 @@ type SearchPhotPerPageData struct {
 	Photos  []Photo `pagser:"photo"`
 }
 type Photo struct {
-	Id     string `pagser:"->attr(id)"`
+	ID     string `pagser:"->attr(id)"`
 	Secret string `pagser:"->attr(secret)"`
 	Title  string `pagser:"->attr(title)"`
 }
@@ -332,7 +332,7 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
 		Method: "flickr.photos.getInfo",
 		Args: map[string]string{
-			"photo_id": photo.Id,
+			"photo_id": photo.ID,
 		},
 	}
 
@@ -354,12 +354,12 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", infoData)
 		return nil, errors.New(message)
 	}
-	if photo.Id != infoData.Id {
-		message := fmt.Sprintf("IDs do not match! search id: %s, info id: %s\n", photo.Id, infoData.Id)
+	if photo.ID != infoData.Id {
+		message := fmt.Sprintf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.Id)
 		return nil, errors.New(message)
 	}
 	if photo.Secret != infoData.Secret {
-		message := fmt.Sprintf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.Id, photo.Secret, infoData.Secret)
+		message := fmt.Sprintf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.ID, photo.Secret, infoData.Secret)
 		return nil, errors.New(message)
 	}
 	return &infoData, nil

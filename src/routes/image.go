@@ -40,8 +40,9 @@ func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image,
 	return mongodb.FindImage(collection, imageId)
 }
 
+// Body for the RemoveImage request
 type BodyRemoveImage struct {
-	Collection string
+	Collection string		// image collection
 	Id         primitive.ObjectID
 }
 
