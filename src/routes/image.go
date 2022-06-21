@@ -37,7 +37,7 @@ func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image,
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.FindImage(collection, imageId)
+	return mongodb.FindImageByID(collection, imageId)
 }
 
 // Body for the RemoveImage request

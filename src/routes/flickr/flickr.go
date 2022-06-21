@@ -3,7 +3,6 @@ package flickr
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -54,8 +53,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 	collectionUnwantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	res, err := mongodb.FindTags(collectionUnwantedTags)
 	if err != nil {
-		message := fmt.Sprintf("FindTags Unwated has failed: \n%v", err)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("FindTags Unwated has failed: \n%v", err)
 	}
 	var unwantedTags []string
 	for _, tag := range res {
@@ -67,8 +65,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 	collectionWantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
 	res, err = mongodb.FindTags(collectionWantedTags)
 	if err != nil {
-		message := fmt.Sprintf("FindTags Wanted has failed: \n%v", err)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("FindTags Wanted has failed: \n%v", err)
 	}
 	var wantedTags []string
 	for _, tag := range res {
@@ -94,20 +91,18 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 			page := 1
 			pageData, err := SearchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
-				message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
-				return nil, errors.New(message)
+				return nil, fmt.Errorf("SearchPhotoPerPage has failed: \n%v", err)
 			}
 
 			for page := page; page <= int(pageData.Pages); page++ {
 				pageData, err := SearchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 				if err != nil {
-					message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
-					return nil, errors.New(message)
+					return nil, fmt.Errorf("SearchPhotoPerPage has failed: \n%v", err)
 				}
 				for _, photo := range pageData.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageByFLickrId(collectionFlickr, photo.ID)
+					_, err := mongodb.FindImageIDByFLickrId(collectionFlickr, photo.ID)
 					if err != nil {
 						return nil, err
 					}
@@ -115,8 +110,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					// extract the photo informations
 					infoData, err := InfoPhoto(parser, photo)
 					if err != nil {
-						message := fmt.Sprintf("InfoPhoto has failed: \n%v", err)
-						return nil, errors.New(message)
+						return nil, fmt.Errorf("InfoPhoto has failed: \n%v", err)
 					}
 
 					// skip image if one of its tag is unwanted
@@ -147,8 +141,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					// extract the photo download link
 					downloadData, err := DownloadPhoto(parser, photo.ID)
 					if err != nil {
-						message := fmt.Sprintf("DownloadPhoto has failed: \n%v", err)
-						return nil, errors.New(message)
+						return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
 					}
 
 					// get the download link for the correct resolution
@@ -165,8 +158,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 						})
 					}
 					if idx == -1 {
-						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.ID, downloadData)
-						return nil, errors.New(message)
+						return nil, fmt.Errorf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.ID, downloadData)
 					}
 
 					// download photo into folder and rename it <id>.<format>
@@ -256,12 +248,10 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 		return nil, err
 	}
 	if pageData.Stat != "ok" {
-		message := fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", pageData)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("SearchPhotoPerPageRequest is not ok\n%v\n", pageData)
 	}
 	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
-		message := fmt.Sprintf("Some informations are missing from SearchPhotoPerPage!")
-		return nil, errors.New(message)
+		return nil, errors.New("Some informations are missing from SearchPhotoPerPage")
 	}
 	return &pageData, nil
 }
@@ -290,22 +280,20 @@ func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	}
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
-
 	// log.Println(r.URL())
 
 	response, err := r.Execute()
 	if err != nil {
-		log.Fatalf("DownloadPhoto has failed: \n%v", err)
+		return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
 	}
 
 	var downloadData DownloadPhotoData
 	err = parser.Parse(&downloadData, response)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	if downloadData.Stat != "ok" {
-		message := fmt.Sprintf("DownloadPhoto is not ok\n%v\n", downloadData)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("DownloadPhoto is not ok\n%v\n", downloadData)
 	}
 
 	return &downloadData, nil
@@ -337,7 +325,6 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	}
 
 	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
-
 	// log.Println(r.URL())
 
 	response, err := r.Execute()
@@ -351,16 +338,13 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 		return nil, err
 	}
 	if infoData.Stat != "ok" {
-		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", infoData)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("InfoPhoto is not ok\n%v\n", infoData)
 	}
 	if photo.ID != infoData.Id {
-		message := fmt.Sprintf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.Id)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.Id)
 	}
 	if photo.Secret != infoData.Secret {
-		message := fmt.Sprintf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.ID, photo.Secret, infoData.Secret)
-		return nil, errors.New(message)
+		return nil, fmt.Errorf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.ID, photo.Secret, infoData.Secret)
 	}
 	return &infoData, nil
 }
