@@ -7,7 +7,7 @@ import (
 )
 
 type Image struct {
-	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	FlickrId     string             `bson:"flickId,omitempty" json:"flickId,omitempty"`
 	Path         string             `bson:"path,omitempty" json:"path,omitempty"`
 	Width        uint               `bson:"width,omitempty" json:"width,omitempty"`
@@ -20,7 +20,7 @@ type Image struct {
 }
 
 type Tag struct {
-	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name         string             `bson:"name,omitempty" json:"name,omitempty"`
 	Origin       string             `bson:"origin,omitempty" json:"origin,omitempty"`
 	CreationDate *time.Time         `bson:"creationDate,omitempty" json:"creationDate,omitempty"`

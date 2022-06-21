@@ -27,19 +27,19 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	router.GET("/images/id/:collection", wrapperHandlerUri(mongoClient, routes.FindImagesIds))
+	router.GET("/images/id/:collection", wrapperHandlerURI(mongoClient, routes.FindImagesIds))
 
 	router.Static("/image/file", "/home/olivier/dressme/images")
-	router.GET("/image/:collection/:id", wrapperHandlerUri(mongoClient, routes.FindImage))
+	router.GET("/image/:collection/:id", wrapperHandlerURI(mongoClient, routes.FindImage))
 	router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
 
-	router.POST("/search/flickr/:quality", wrapperHandlerUri(mongoClient, flickr.SearchPhoto))
+	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, flickr.SearchPhoto))
 
 	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagWanted))
 	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))
-	router.DELETE("/tag/wanted/:id", wrapperHandlerUri(mongoClient, routes.RemoveTagWanted))
-	router.DELETE("/tag/unwanted/:id", wrapperHandlerUri(mongoClient, routes.RemoveTagUnwanted))
+	router.DELETE("/tag/wanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveTagWanted))
+	router.DELETE("/tag/unwanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveTagUnwanted))
 	router.GET("/tags/wanted", wrapperHandler(mongoClient, mongodb.TagsWanted))
 	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
 
@@ -83,7 +83,7 @@ func wrapperHandlerBody[B any, R any](mongoClient *mongo.Client, f func(mongo *m
 }
 
 // wrapper for the ginHandler with URI
-func wrapperHandlerUri[P any, R any](mongoClient *mongo.Client, f func(mongo *mongo.Client, params P) (R, error)) gin.HandlerFunc {
+func wrapperHandlerURI[P any, R any](mongoClient *mongo.Client, f func(mongo *mongo.Client, params P) (R, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var params P
 		if err := c.ShouldBindUri(&params); err != nil {

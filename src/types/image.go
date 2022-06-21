@@ -6,6 +6,6 @@ import (
 
 type BodyUpdateImage struct {
 	Collection string 				`bson:"collection" json:"collection"`
-	Id         primitive.ObjectID `bson:"id,omitempty" json:"id,omitempty"`
+	ID         primitive.ObjectID `bson:"id,omitempty" json:"id,omitempty"`
 	Tags       []Tag              `bson:"tags,omitempty" json:"tags,omitempty"`
 }

@@ -117,7 +117,7 @@ func RemoveImageAndFile(collection *mongo.Collection, collectionDir string, id p
 }
 
 func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*types.Image, error) {
-	query := bson.M{"_id": body.Id}
+	query := bson.M{"_id": body.ID}
 	if body.Tags != nil {
 		for i := 0; i < len(body.Tags); i++ {
 			tag := &body.Tags[i]
@@ -135,5 +135,5 @@ func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*typ
 			return nil, err
 		}
 	}
-	return FindImage(collection, body.Id)
+	return FindImage(collection, body.ID)
 }

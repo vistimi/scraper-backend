@@ -88,18 +88,18 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 			"10": "Public Domain Mark",
 		}
 		licenseIds := [5]string{"4", "5", "7", "9", "10"}
-		for _, licenseId := range licenseIds {
+		for _, licenseID := range licenseIds {
 
 			// start with the first page
 			page := 1
-			pageData, err := SearchPhotoPerPage(parser, licenseId, wantedTag, strconv.FormatUint(uint64(page), 10))
+			pageData, err := SearchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
 				message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
 				return nil, errors.New(message)
 			}
 
 			for page := page; page <= int(pageData.Pages); page++ {
-				pageData, err := SearchPhotoPerPage(parser, licenseId, wantedTag, strconv.FormatUint(uint64(page), 10))
+				pageData, err := SearchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 				if err != nil {
 					message := fmt.Sprintf("SearchPhotoPerPage has failed: \n%v", err)
 					return nil, errors.New(message)
@@ -165,7 +165,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 						})
 					}
 					if idx == -1 {
-						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, utils.ToJson(downloadData))
+						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, downloadData)
 						return nil, errors.New(message)
 					}
 
@@ -196,7 +196,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 						Height:       downloadData.Photos[idx].Height,
 						Title:        infoData.Title,
 						Description:  infoData.Description,
-						License:      licenseIdsNames[licenseId],
+						License:      licenseIdsNames[licenseID],
 						Tags:         tags,
 						CreationDate: &now,
 					}
@@ -256,7 +256,7 @@ func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 		return nil, err
 	}
 	if pageData.Stat != "ok" {
-		message := fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", utils.ToJson(pageData))
+		message := fmt.Sprintf("SearchPhotoPerPageRequest is not ok\n%v\n", pageData)
 		return nil, errors.New(message)
 	}
 	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
@@ -304,7 +304,7 @@ func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 		log.Fatal(err)
 	}
 	if downloadData.Stat != "ok" {
-		message := fmt.Sprintf("DownloadPhoto is not ok\n%v\n", utils.ToJson(downloadData))
+		message := fmt.Sprintf("DownloadPhoto is not ok\n%v\n", downloadData)
 		return nil, errors.New(message)
 	}
 
@@ -351,7 +351,7 @@ func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 		return nil, err
 	}
 	if infoData.Stat != "ok" {
-		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", utils.ToJson(infoData))
+		message := fmt.Sprintf("InfoPhoto is not ok\n%v\n", infoData)
 		return nil, errors.New(message)
 	}
 	if photo.Id != infoData.Id {

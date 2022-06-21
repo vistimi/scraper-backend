@@ -11,7 +11,7 @@ func ImageCollectionSelection (mongoClient *mongo.Client, selection string) (*mo
 	case "flickr":
 		return mongoClient.Database(DotEnvVariable("SCRAPPER_DB")).Collection(DotEnvVariable("FLICKR_COLLECTION")), nil
 	default:
-		return nil, errors.New("Collection does not exist!")
+		return nil, errors.New("Collection does not exist")
 	}
 }
 

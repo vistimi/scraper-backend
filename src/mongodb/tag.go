@@ -78,7 +78,7 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 			return nil, err
 		}
 		for _, image := range images {
-			deletedOne, err := RemoveImageAndFile(collection, collectionName, image.Id)
+			deletedOne, err := RemoveImageAndFile(collection, collectionName, image.ID)
 			if err != nil {
 				return nil, err
 			}
