@@ -15,39 +15,41 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"golang.org/x/exp/slices"
-
-	"regexp"
+	"sort"
 )
 
 func InsertTag(collection *mongo.Collection, body types.Tag) (interface{}, error) {
-	// only add unique tag
-	tagsUnwanted, err := FindTags(collection)
+	// sorted array of tags
+	foundTags, err := FindTags(collection)
 	if err != nil {
 		return nil, err
 	}
-	idx := slices.IndexFunc(tagsUnwanted, func(tagUnwanted types.Tag) bool {
-		tag := strings.ToLower(tagUnwanted.Name)
-		regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, tag)
-		matched, err := regexp.Match(regexpMatch, []byte(body.Name))
-		if err != nil {
-			return false
-		}
-		return matched
-	})
-	if idx != -1 {
-		return nil, errors.New(fmt.Sprintf("your tag `%s` and the db tag `%s` are too closely related", body.Name, tagsUnwanted[idx].Name))
+	var tags []string
+	for _, tag := range foundTags {
+		tags = append(tags, strings.ToLower(tag.Name))
+	}
+	sort.Strings(tags)
+	fmt.Print(tags)
+
+	// check in same collection if one tag regexp match the new tag
+	needles := []string{strings.ToLower(body.Name)}
+	i, j, err := utils.ContainsRegExp(tags, needles)
+	if err != nil {
+		return nil, err
+	}
+	if i != nil && j != nil {
+		return nil, errors.New(fmt.Sprintf("your tag `%s` and the db tag `%s` are too closely related", needles[*i], tags[*j]))
 	}
 
 	// insert tag
 	now := time.Now()
 	body.CreationDate = &now
 	body.Name = strings.ToLower(body.Name)
-	res, err := collection.InsertOne(context.TODO(), body)
+	inserted, err := collection.InsertOne(context.TODO(), body)
 	if err != nil {
 		return nil, err
 	}
-	return res.InsertedID, nil
+	return inserted.InsertedID, nil
 }
 
 type ReturnInsertTagUnwanted struct {

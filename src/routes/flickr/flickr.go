@@ -18,14 +18,9 @@ import (
 
 	"github.com/jinzhu/copier"
 
-	"golang.org/x/exp/slices"
-
-	"sort"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"regexp"
 	"strings"
 )
 
@@ -61,7 +56,6 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 	for _, tag := range res {
 		unwantedTags = append(unwantedTags, strings.ToLower(tag.Name))
 	}
-	sort.Strings(unwantedTags)
 
 	// wanted tags
 	collectionWantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
@@ -74,10 +68,8 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 	for _, tag := range res {
 		wantedTags = append(wantedTags, strings.ToLower(tag.Name))
 	}
-	sort.Strings(wantedTags)
 
 	for _, wantedTag := range wantedTags {
-
 		// all the commercial use licenses
 		// https://www.flickr.com/services/api/flickr.photos.licenses.getInfo.html
 		var licenseIdsNames = map[string]string{
@@ -89,7 +81,6 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 		}
 		licenseIds := [5]string{"4", "5", "7", "9", "10"}
 		for _, licenseId := range licenseIds {
-
 			// start with the first page
 			page := 1
 			pageData, err := SearchPhotoPerPage(parser, licenseId, wantedTag, strconv.FormatUint(uint64(page), 10))
@@ -120,27 +111,16 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					}
 
 					// skip image if one of its tag is unwanted
-					idx := slices.IndexFunc(infoData.Tags, func(photoTag Tag) bool {
-						imageTag := strings.ToLower(photoTag.Name)
-						regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, imageTag)
-
-						// pass through all tags of the image and its derived tags to match an unwated tag
-						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool {
-							matched, err := regexp.Match(regexpMatch, []byte(unwantedTag))
-							if err != nil {
-								return false
-							}
-							return matched
-						})
-
-						// if unwanted tag is present return true
-						if idx == -1 {
-							return false
-						} else {
-							return true
-						}
-					})
-					if idx != -1 {
+					var infoTags []string
+					for _, photo := range infoData.Tags {
+						infoTags = append(infoTags, strings.ToLower(photo.Name))
+					}
+					i, j, err := utils.ContainsRegExp(unwantedTags, infoTags)
+					if err != nil {
+						return nil, err
+					}
+					if i != nil && j != nil {
+						fmt.Printf("skip %s with %s\n", infoTags[*j], unwantedTags[*i])
 						continue	// skip image with unwated tag
 					}
 
@@ -152,34 +132,31 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					}
 
 					// get the download link for the correct resolution
-					label := strings.ToLower(quality)
-					regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, label)
-					idx = slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool { return strings.ToLower(download.Label) == label })
-					if idx == -1 {
-						idx = slices.IndexFunc(downloadData.Photos, func(download DownloadPhotoSingleData) bool {
-							matched, err := regexp.Match(regexpMatch, []byte(strings.ToLower(download.Label)))
-							if err != nil {
-								return false
-							}
-							return matched
-						})
+					var downloadLabels []string
+					for _, download := range downloadData.Photos {
+						downloadLabels = append(downloadLabels, strings.ToLower(download.Label))
 					}
-					if idx == -1 {
-						message := fmt.Sprintf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.Id, utils.ToJson(downloadData))
+					needles := []string{strings.ToLower(quality)}
+					idx, j, err := utils.ContainsRegExp(downloadLabels, needles)
+					if err != nil {
+						return nil, err
+					}
+					if i == nil && j == nil {
+						message := fmt.Sprintf("Cannot find label %s in SearchPhoto! id %s has available the following:\n%v\n", quality, photo.Id, utils.ToJson(downloadData))
 						return nil, errors.New(message)
 					}
 
 					// download photo into folder and rename it <id>.<format>
 					fileName := fmt.Sprintf("%s.%s", photo.Id, infoData.OriginalFormat)
 					path := fmt.Sprintf(filepath.Join(folderDir, "flickr", fileName))
-					err = DownloadFile(downloadData.Photos[idx].Source, path)
+					err = DownloadFile(downloadData.Photos[*idx].Source, path)
 					if err != nil {
 						return nil, err
 					}
 
+					// format tags
 					var tags []types.Tag
 					copier.Copy(&tags, &infoData.Tags)
-
 					for i := 0; i < len(tags); i++ {
 						tag := &tags[i]
 						tag.Name = strings.ToLower(tag.Name)
@@ -188,17 +165,18 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 						tag.Origin = "flickr"
 					}
 
+					// format image
 					now := time.Now()
 					document := types.Image{
 						FlickrId:     photo.Id,
 						Path:         fileName,
-						Width:        downloadData.Photos[idx].Width,
-						Height:       downloadData.Photos[idx].Height,
+						Width:        downloadData.Photos[*idx].Width,
+						Height:       downloadData.Photos[*idx].Height,
 						Title:        infoData.Title,
 						Description:  infoData.Description,
 						License:      licenseIdsNames[licenseId],
-						Tags:         tags,
 						CreationDate: &now,
+						Tags:         tags,
 					}
 
 					insertedId, err := mongodb.InsertImage(collectionFlickr, document)
