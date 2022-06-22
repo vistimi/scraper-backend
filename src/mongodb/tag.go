@@ -20,31 +20,47 @@ import (
 	"regexp"
 )
 
-// InsertTag inserts unique tag, not matching clsoe ones, in its collection
-func InsertTag(collection *mongo.Collection, body types.Tag) (interface{}, error) {
-	// only add unique tag
-	tagsUnwanted, err := FindTags(collection)
+// InsertTag inserts unique tag, not matching clsoe ones from its collection and the other one
+func InsertTag(thisCollection *mongo.Collection, otherCollection *mongo.Collection, body types.Tag) (interface{}, error) {
+	// only add unique tag from this collection
+	thisTags, err := FindTags(thisCollection)
 	if err != nil {
 		return nil, err
 	}
-	idx := slices.IndexFunc(tagsUnwanted, func(tagUnwanted types.Tag) bool {
-		tag := strings.ToLower(tagUnwanted.Name)
-		regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, tag)
-		matched, err := regexp.Match(regexpMatch, []byte(body.Name))
+	idx := slices.IndexFunc(thisTags, func(thisTag types.Tag) bool {
+		regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, strings.ToLower(thisTag.Name))
+		matched, err := regexp.Match(regexpMatch, []byte(body.Name))	// e.g. match if thisTag has `model` and bodyTag `models`
 		if err != nil {
 			return false
 		}
 		return matched
 	})
 	if idx != -1 {
-		return nil, fmt.Errorf("your tag `%s` and the db tag `%s` are too closely related", body.Name, tagsUnwanted[idx].Name)
+		return nil, fmt.Errorf("your tag `%s` and the db tag `%s` are too closely related", body.Name, thisTags[idx].Name)
+	}
+
+	// only unique tag from the other collection
+	otherTags, err := FindTags(otherCollection)
+	if err != nil {
+		return nil, err
+	}
+	idx = slices.IndexFunc(otherTags, func(otherTag types.Tag) bool {
+		regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, strings.ToLower(otherTag.Name))
+		matched, err := regexp.Match(regexpMatch, []byte(body.Name))	// e.g. match if otherTag has `model` and bodyTag `models`
+		if err != nil {
+			return false
+		}
+		return matched
+	})
+	if idx != -1 {
+		return nil, fmt.Errorf("your tag `%s` and the db tag `%s` are too closely related", body.Name, thisTags[idx].Name)
 	}
 
 	// insert tag
 	now := time.Now()
 	body.CreationDate = &now
 	body.Name = strings.ToLower(body.Name)
-	res, err := collection.InsertOne(context.TODO(), body)
+	res, err := thisCollection.InsertOne(context.TODO(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +81,9 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	body.Name = strings.ToLower(body.Name)
 
 	// insert the unwanted tag
-	collectionTagsUnwated := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
-	insertedId, err := InsertTag(collectionTagsUnwated, body)
+	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
+	insertedId, err := InsertTag(collectionTagsUnwanted, collectionTagsWanted, body)
 	if err != nil {
 		return nil, err
 	}
@@ -100,20 +117,21 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 
 // InsertTagWanted insert a new tag 
 func InsertTagWanted(mongoClient *mongo.Client, document types.Tag) (interface{}, error) {
-	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
-	return InsertTag(collection, document)
+	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	return InsertTag(collectionTagsWanted, collectionTagsUnwanted, document)
 }
 
 // TagsWanted find all the wanted tags
 func TagsWanted(mongoClient *mongo.Client) ([]types.Tag, error) {
-	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
-	return FindTags(collection)
+	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
+	return FindTags(collectionTagsWanted)
 }
 
 // TagsUnwanted find all the wanted tags
 func TagsUnwanted(mongoClient *mongo.Client) ([]types.Tag, error) {
-	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
-	return FindTags(collection)
+	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	return FindTags(collectionTagsUnwanted)
 }
 
 // RemoveTag remove a tag from its collection

@@ -115,23 +115,19 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 
 					// skip image if one of its tag is unwanted
 					idx := slices.IndexFunc(infoData.Tags, func(photoTag Tag) bool {
-						imageTag := strings.ToLower(photoTag.Name)
-						regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, imageTag)
-
 						// pass through all tags of the image and its derived tags to match an unwated tag
 						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool {
-							matched, err := regexp.Match(regexpMatch, []byte(unwantedTag))
+							regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, unwantedTag)
+							matched, err := regexp.Match(regexpMatch, []byte(strings.ToLower(photoTag.Name)))	// e.g. match if unwantedTag has `art` and photoTag has `artmodel`
 							if err != nil {
 								return false
 							}
 							return matched
 						})
-
-						// if unwanted tag is present return true
 						if idx == -1 {
 							return false
 						} else {
-							return true
+							return true // if unwanted tag is present return true
 						}
 					})
 					if idx != -1 {
