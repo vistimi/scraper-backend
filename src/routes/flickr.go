@@ -1,4 +1,4 @@
-package flickr
+package routes
 
 import (
 	"errors"
@@ -15,6 +15,7 @@ import (
 	"scrapper/src/types"
 	"scrapper/src/utils"
 
+
 	"github.com/jinzhu/copier"
 
 	"golang.org/x/exp/slices"
@@ -28,17 +29,17 @@ import (
 	"strings"
 )
 
-type ParamsSearchPhoto struct {
+type ParamsSearchPhotoFlickr struct {
 	Quality string `uri:"quality" binding:"required"`
 }
 
 // Find all the photos with specific quality and folder directory.
-func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primitive.ObjectID, error) {
+func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error) {
 
 	quality := params.Quality
 	var insertedIds []primitive.ObjectID
 
-	parser := pagser.New()
+	parser := pagser.New()	// parsing html in string responses
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
@@ -89,13 +90,13 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 
 			// start with the first page
 			page := 1
-			pageData, err := SearchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			pageData, err := searchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
 				return nil, fmt.Errorf("SearchPhotoPerPage has failed: \n%v", err)
 			}
 
 			for page := page; page <= int(pageData.Pages); page++ {
-				pageData, err := SearchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+				pageData, err := searchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 				if err != nil {
 					return nil, fmt.Errorf("SearchPhotoPerPage has failed: \n%v", err)
 				}
@@ -108,9 +109,9 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					}
 
 					// extract the photo informations
-					infoData, err := InfoPhoto(parser, photo)
+					infoData, err := infoPhoto(parser, photo)
 					if err != nil {
-						return nil, fmt.Errorf("InfoPhoto has failed: \n%v", err)
+						return nil, fmt.Errorf("InfoPhoto has failed: %v", err)
 					}
 
 					// skip image if one of its tag is unwanted
@@ -135,7 +136,7 @@ func SearchPhoto(mongoClient *mongo.Client, params ParamsSearchPhoto) ([]primiti
 					}
 
 					// extract the photo download link
-					downloadData, err := DownloadPhoto(parser, photo.ID)
+					downloadData, err := downloadPhoto(parser, photo.ID)
 					if err != nil {
 						return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
 					}
@@ -217,32 +218,31 @@ type Photo struct {
 }
 
 // Search images for one page of max 500 images
-func SearchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page string) (*SearchPhotPerPageData, error) {
+func searchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page string) (*SearchPhotPerPageData, error) {
 	r := &Request{
-		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
-		Method: "flickr.photos.search",
+		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
+			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"method": "flickr.photos.search",
 			"tags":    tags,
 			"license": ids,
 			"media":   "photos",
 			"page":    page,
 		},
 	}
+	fmt.Println(r.URL())
 
-	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
-
-	// log.Println(r.URL())
-
-	response, err := r.Execute()
+	body, err := r.Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	var pageData SearchPhotPerPageData
-	err = parser.Parse(&pageData, response)
+	err = parser.Parse(&pageData, string(body))
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(utils.ToJSON(pageData))
 	if pageData.Stat != "ok" {
 		return nil, fmt.Errorf("SearchPhotoPerPageRequest is not ok\n%v\n", pageData)
 	}
@@ -266,28 +266,29 @@ type DownloadPhotoData struct {
 	Photos []DownloadPhotoSingleData `pagser:"size"`
 }
 
-func DownloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error) {
+func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error) {
 	r := &Request{
-		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
-		Method: "flickr.photos.getSizes",
+		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
+			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"method": "flickr.photos.getSizes",
 			"photo_id": id,
 		},
 	}
+	fmt.Println(r.URL())
 
-	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
-	// log.Println(r.URL())
-
-	response, err := r.Execute()
+	body, err := r.Execute()
 	if err != nil {
 		return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
 	}
 
 	var downloadData DownloadPhotoData
-	err = parser.Parse(&downloadData, response)
+	err = parser.Parse(&downloadData, string(body))
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(utils.ToJSON(downloadData))
+
 	if downloadData.Stat != "ok" {
 		return nil, fmt.Errorf("DownloadPhoto is not ok\n%v\n", downloadData)
 	}
@@ -311,28 +312,29 @@ type Tag struct {
 	Name string `pagser:"->text()"`
 }
 
-func InfoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
+func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	r := &Request{
-		ApiKey: utils.DotEnvVariable("PRIVATE_KEY"),
-		Method: "flickr.photos.getInfo",
+		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
+			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"method": "flickr.photos.getInfo",
 			"photo_id": photo.ID,
 		},
 	}
+	fmt.Println(r.URL())
 
-	r.Sign(utils.DotEnvVariable("PUBLIC_KEY"))
-	// log.Println(r.URL())
-
-	response, err := r.Execute()
+	body, err := r.Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	var infoData InfoPhotoData
-	err = parser.Parse(&infoData, response)
+	err = parser.Parse(&infoData, string(body))
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(utils.ToJSON(infoData))
+
 	if infoData.Stat != "ok" {
 		return nil, fmt.Errorf("InfoPhoto is not ok\n%v\n", infoData)
 	}
