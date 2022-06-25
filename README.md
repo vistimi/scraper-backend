@@ -19,10 +19,13 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
     SCRAPPER_DB=scrapper
     UNWANTED_TAGS_COLLECTION=unwantedTags
     WANTED_TAGS_COLLECTION=wantedTags
-    FLICKR_COLLECTION=flickr
     IMAGE_PATH=***
-    PRIVATE_KEY=***
-    PUBLIC_KEY=***
+    FLICKR_COLLECTION=flickr
+    FLICKR_PRIVATE_KEY=***
+    FLICKR_PUBLIC_KEY=***
+    UNSPLASH_COLLECTION=unsplash
+    UNSPLASH_PRIVATE_KEY=***
+    UNSPLASH_PUBLIC_KEY=***
 
 ## installation
 

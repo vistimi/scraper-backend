@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"scrapper/src/routes"
-	"scrapper/src/routes/flickr"
 
 	"net/http"
 
@@ -29,14 +28,15 @@ func main() {
 	router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
 
-	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, flickr.SearchPhoto))
-
 	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagWanted))
 	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))
 	router.DELETE("/tag/wanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveTagWanted))
 	router.DELETE("/tag/unwanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveTagUnwanted))
 	router.GET("/tags/wanted", wrapperHandler(mongoClient, mongodb.TagsWanted))
 	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
+
+	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosFlickr))
+	router.POST("/search/unsplash", wrapperHandler(mongoClient, routes.SearchPhotosUnsplash))
 
 	router.Run("localhost:8080")
 }
