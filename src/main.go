@@ -36,7 +36,7 @@ func main() {
 	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
 
 	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosFlickr))
-	router.POST("/search/unsplash/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosUnsplash))
+	router.POST("/search/unsplash", wrapperHandler(mongoClient, routes.SearchPhotosUnsplash))
 
 	router.Run("localhost:8080")
 }

@@ -159,3 +159,31 @@ func FindTags(collection *mongo.Collection) ([]types.Tag, error) {
 	}
 	return tags, nil
 }
+
+// TagsWanted find all the names of wanted tags
+func TagsWantedNames(mongoClient *mongo.Client) ([]string, error) {
+	collectionWantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
+	res, err := FindTags(collectionWantedTags)
+	if err != nil {
+		return nil, fmt.Errorf("FindTags Wanted has failed: \n%v", err)
+	}
+	var wantedTags []string
+	for _, tag := range res {
+		wantedTags = append(wantedTags, strings.ToLower(tag.Name))
+	}
+	return wantedTags, nil
+}
+
+// TagsUnwantednames find all the names of wanted tags
+func TagsUnwantedNames(mongoClient *mongo.Client) ([]string, error) {
+	collectionUnwantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	res, err := FindTags(collectionUnwantedTags)
+	if err != nil {
+		return nil, fmt.Errorf("FindTags Unwated has failed: \n%v", err)
+	}
+	var unwantedTags []string
+	for _, tag := range res {
+		unwantedTags = append(unwantedTags, strings.ToLower(tag.Name))
+	}
+	return unwantedTags, nil
+}

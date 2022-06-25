@@ -15,7 +15,6 @@ import (
 	"scrapper/src/types"
 	"scrapper/src/utils"
 
-
 	"github.com/jinzhu/copier"
 
 	"golang.org/x/exp/slices"
@@ -39,38 +38,27 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 	quality := params.Quality
 	var insertedIds []primitive.ObjectID
 
-	parser := pagser.New()	// parsing html in string responses
+	parser := pagser.New() // parsing html in string responses
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	err := os.MkdirAll(filepath.Join(folderDir, "flickr"), os.ModePerm)
+	origin := "flickr"
+	err := os.MkdirAll(filepath.Join(folderDir, origin), os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 
 	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
 
-	// unwanted tags
-	collectionUnwantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
-	res, err := mongodb.FindTags(collectionUnwantedTags)
+	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
 	if err != nil {
-		return nil, fmt.Errorf("FindTags Unwated has failed: \n%v", err)
-	}
-	var unwantedTags []string
-	for _, tag := range res {
-		unwantedTags = append(unwantedTags, strings.ToLower(tag.Name))
+		return nil, err
 	}
 	sort.Strings(unwantedTags)
 
-	// wanted tags
-	collectionWantedTags := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
-	res, err = mongodb.FindTags(collectionWantedTags)
+	wantedTags, err := mongodb.TagsWantedNames(mongoClient)
 	if err != nil {
-		return nil, fmt.Errorf("FindTags Wanted has failed: \n%v", err)
-	}
-	var wantedTags []string
-	for _, tag := range res {
-		wantedTags = append(wantedTags, strings.ToLower(tag.Name))
+		return nil, err
 	}
 	sort.Strings(wantedTags)
 
@@ -90,15 +78,15 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 
 			// start with the first page
 			page := 1
-			pageData, err := searchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			pageData, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
-				return nil, fmt.Errorf("SearchPhotoPerPage has failed: \n%v", err)
+				return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
 			}
 
 			for page := page; page <= int(pageData.Pages); page++ {
-				pageData, err := searchPhotoPerPage(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+				pageData, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 				if err != nil {
-					return nil, fmt.Errorf("SearchPhotoPerPage has failed: \n%v", err)
+					return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
 				}
 				for _, photo := range pageData.Photos {
 
@@ -113,26 +101,15 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					if err != nil {
 						return nil, fmt.Errorf("InfoPhoto has failed: %v", err)
 					}
+					var photoTags []string
+					for _, tag := range infoData.Tags {
+						photoTags = append(photoTags, strings.ToLower(tag.Name))
+					}
 
 					// skip image if one of its tag is unwanted
-					idx := slices.IndexFunc(infoData.Tags, func(photoTag Tag) bool {
-						// pass through all tags of the image and its derived tags to match an unwated tag
-						idx := slices.IndexFunc(unwantedTags, func(unwantedTag string) bool {
-							regexpMatch := fmt.Sprintf(`[\-\_\w\d]*%s[\-\_\w\d]*`, unwantedTag)
-							matched, err := regexp.Match(regexpMatch, []byte(strings.ToLower(photoTag.Name)))	// e.g. match if unwantedTag has `art` and photoTag has `artmodel`
-							if err != nil {
-								return false
-							}
-							return matched
-						})
-						if idx == -1 {
-							return false
-						} else {
-							return true // if unwanted tag is present return true
-						}
-					})
+					idx := utils.FindIndexRegExp(unwantedTags, photoTags)
 					if idx != -1 {
-						continue	// skip image with unwated tag
+						continue // skip image with unwated tag
 					}
 
 					// extract the photo download link
@@ -160,34 +137,36 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 
 					// download photo into folder and rename it <id>.<format>
 					fileName := fmt.Sprintf("%s.%s", photo.ID, infoData.OriginalFormat)
-					path := fmt.Sprintf(filepath.Join(folderDir, "flickr", fileName))
+					path := fmt.Sprintf(filepath.Join(folderDir, origin, fileName))
 					err = DownloadFile(downloadData.Photos[idx].Source, path)
 					if err != nil {
 						return nil, err
 					}
 
+					// tags creation
 					var tags []types.Tag
 					copier.Copy(&tags, &infoData.Tags)
-
+					now := time.Now()
 					for i := 0; i < len(tags); i++ {
 						tag := &tags[i]
 						tag.Name = strings.ToLower(tag.Name)
-						now := time.Now()
 						tag.CreationDate = &now
-						tag.Origin = "flickr"
+						tag.Origin = origin
 					}
 
-					now := time.Now()
+					// image creation
 					document := types.Image{
-						FlickrID:     photo.ID,
+						Origin:       origin,
+						OriginID:     photo.ID,
+						Extension:    infoData.OriginalFormat,
 						Path:         fileName,
 						Width:        downloadData.Photos[idx].Width,
 						Height:       downloadData.Photos[idx].Height,
 						Title:        infoData.Title,
 						Description:  infoData.Description,
 						License:      licenseIdsNames[licenseID],
-						Tags:         tags,
 						CreationDate: &now,
+						Tags:         tags,
 					}
 
 					insertedId, err := mongodb.InsertImage(collectionFlickr, document)
@@ -218,19 +197,19 @@ type Photo struct {
 }
 
 // Search images for one page of max 500 images
-func searchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page string) (*SearchPhotPerPageData, error) {
+func searchPhotosPerPageFlickr(parser *pagser.Pagser, ids string, tags string, page string) (*SearchPhotPerPageData, error) {
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
 			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
-			"method": "flickr.photos.search",
+			"method":  "flickr.photos.search",
 			"tags":    tags,
 			"license": ids,
 			"media":   "photos",
 			"page":    page,
 		},
 	}
-	fmt.Println(r.URL())
+	// fmt.Println(r.URL())
 
 	body, err := r.Execute()
 	if err != nil {
@@ -255,8 +234,8 @@ func searchPhotoPerPage(parser *pagser.Pagser, ids string, tags string, page str
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type DownloadPhotoSingleData struct {
 	Label  string `pagser:"->attr(label)"`
-	Width  uint   `pagser:"->attr(width)"`
-	Height uint   `pagser:"->attr(height)"`
+	Width  int   `pagser:"->attr(width)"`
+	Height int   `pagser:"->attr(height)"`
 	Source string `pagser:"->attr(source)"`
 }
 
@@ -270,12 +249,12 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
-			"method": "flickr.photos.getSizes",
+			"api_key":  utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"method":   "flickr.photos.getSizes",
 			"photo_id": id,
 		},
 	}
-	fmt.Println(r.URL())
+	// fmt.Println(r.URL())
 
 	body, err := r.Execute()
 	if err != nil {
@@ -316,12 +295,12 @@ func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
-			"method": "flickr.photos.getInfo",
+			"api_key":  utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"method":   "flickr.photos.getInfo",
 			"photo_id": photo.ID,
 		},
 	}
-	fmt.Println(r.URL())
+	// fmt.Println(r.URL())
 
 	body, err := r.Execute()
 	if err != nil {
