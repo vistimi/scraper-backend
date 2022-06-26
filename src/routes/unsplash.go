@@ -157,7 +157,7 @@ func searchPhotosPerPageUnsplash(tag string, page int) (*unsplash.PhotoSearchRes
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, err
 	}

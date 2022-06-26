@@ -78,17 +78,17 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 
 			// start with the first page
 			page := 1
-			pageData, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
 				return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
 			}
 
-			for page := page; page <= int(pageData.Pages); page++ {
-				pageData, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			for page := page; page <= int(searchPerPage.Pages); page++ {
+				searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 				if err != nil {
 					return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
 				}
-				for _, photo := range pageData.Photos {
+				for _, photo := range searchPerPage.Photos {
 
 					// look for existing image
 					_, err := mongodb.FindImageIDByFLickrId(collectionFlickr, photo.ID)
@@ -188,9 +188,9 @@ type SearchPhotPerPageData struct {
 	Pages   uint    `pagser:"photos->attr(pages)"`
 	PerPage uint    `pagser:"photos->attr(perpage)"`
 	Total   uint    `pagser:"photos->attr(total)"`
-	Photos  []Photo `pagser:"photo"`
+	Photos  []PhotoFlickr `pagser:"photo"`
 }
-type Photo struct {
+type PhotoFlickr struct {
 	ID     string `pagser:"->attr(id)"`
 	Secret string `pagser:"->attr(secret)"`
 	Title  string `pagser:"->attr(title)"`
@@ -211,7 +211,7 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, ids string, tags string, p
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
 	}
@@ -291,7 +291,7 @@ type Tag struct {
 	Name string `pagser:"->text()"`
 }
 
-func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
+func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error) {
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
@@ -302,7 +302,7 @@ func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, err
 	}

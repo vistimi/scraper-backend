@@ -13,6 +13,7 @@ import (
 type Request struct {
 	Host string
 	Args   map[string]string
+	Header map[string][]string
 }
 
 type nopCloser struct {
@@ -30,13 +31,20 @@ func (request *Request) URL() string {
 }
 
 // Send http request and read the body of the response
-func (request *Request) Execute() (response []byte, ret error) {
-	s := request.URL()
+func (request *Request) ExecuteGET() (response []byte, ret error) {
 
-	res, err := http.Get(s)
+	url := request.URL()
+	client := http.Client{}
+	req , err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header = request.Header
+	res , err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer res.Body.Close()
 
 	body, _ := ioutil.ReadAll(res.Body)
