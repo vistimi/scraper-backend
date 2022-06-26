@@ -21,7 +21,7 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	router.GET("/images/id/:collection", wrapperHandlerURI(mongoClient, routes.FindImagesIds))
+	router.GET("/images/id/:collection", wrapperHandlerURI(mongoClient, routes.FindImagesIDs))
 
 	router.Static("/image/file", "/home/olivier/dressme/images")
 	router.GET("/image/:collection/:id", wrapperHandlerURI(mongoClient, routes.FindImage))
@@ -37,6 +37,7 @@ func main() {
 
 	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosFlickr))
 	router.POST("/search/unsplash", wrapperHandler(mongoClient, routes.SearchPhotosUnsplash))
+	router.POST("/search/pexels", wrapperHandler(mongoClient, routes.SearchPhotosPexels))
 
 	router.Run("localhost:8080")
 }

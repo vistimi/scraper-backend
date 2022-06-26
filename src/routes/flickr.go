@@ -36,7 +36,7 @@ type ParamsSearchPhotoFlickr struct {
 func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error) {
 
 	quality := params.Quality
-	var insertedIds []primitive.ObjectID
+	var insertedIDs []primitive.ObjectID
 
 	parser := pagser.New() // parsing html in string responses
 
@@ -66,32 +66,32 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 
 		// all the commercial use licenses
 		// https://www.flickr.com/services/api/flickr.photos.licenses.getInfo.html
-		var licenseIdsNames = map[string]string{
+		var licenseIDsNames = map[string]string{
 			"4":  "Attribution License",
 			"5":  "Attribution-ShareAlike License",
 			"7":  "No known copyright restrictions",
 			"9":  "Public Domain Dedication (CC0)",
 			"10": "Public Domain Mark",
 		}
-		licenseIds := [5]string{"4", "5", "7", "9", "10"}
-		for _, licenseID := range licenseIds {
+		licenseIDs := [5]string{"4", "5", "7", "9", "10"}
+		for _, licenseID := range licenseIDs {
 
 			// start with the first page
 			page := 1
-			pageData, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 			if err != nil {
 				return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
 			}
 
-			for page := page; page <= int(pageData.Pages); page++ {
-				pageData, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			for page := page; page <= int(searchPerPage.Pages); page++ {
+				searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
 				if err != nil {
 					return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
 				}
-				for _, photo := range pageData.Photos {
+				for _, photo := range searchPerPage.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageIDByFLickrId(collectionFlickr, photo.ID)
+					_, err := mongodb.FindImageIDByOriginID(collectionFlickr, photo.ID)
 					if err != nil {
 						return nil, err
 					}
@@ -164,21 +164,21 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						Height:       downloadData.Photos[idx].Height,
 						Title:        infoData.Title,
 						Description:  infoData.Description,
-						License:      licenseIdsNames[licenseID],
+						License:      licenseIDsNames[licenseID],
 						CreationDate: &now,
 						Tags:         tags,
 					}
 
-					insertedId, err := mongodb.InsertImage(collectionFlickr, document)
+					insertedID, err := mongodb.InsertImage(collectionFlickr, document)
 					if err != nil {
 						return nil, err
 					}
-					insertedIds = append(insertedIds, insertedId)
+					insertedIDs = append(insertedIDs, insertedID)
 				}
 			}
 		}
 	}
-	return insertedIds, nil
+	return insertedIDs, nil
 }
 
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
@@ -188,9 +188,9 @@ type SearchPhotPerPageData struct {
 	Pages   uint    `pagser:"photos->attr(pages)"`
 	PerPage uint    `pagser:"photos->attr(perpage)"`
 	Total   uint    `pagser:"photos->attr(total)"`
-	Photos  []Photo `pagser:"photo"`
+	Photos  []PhotoFlickr `pagser:"photo"`
 }
-type Photo struct {
+type PhotoFlickr struct {
 	ID     string `pagser:"->attr(id)"`
 	Secret string `pagser:"->attr(secret)"`
 	Title  string `pagser:"->attr(title)"`
@@ -211,7 +211,7 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, ids string, tags string, p
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
 	}
@@ -278,7 +278,7 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type InfoPhotoData struct {
 	Stat           string `pagser:"rsp->attr(stat)"`
-	Id             string `pagser:"photo->attr(id)"`
+	ID             string `pagser:"photo->attr(id)"`
 	Secret         string `pagser:"photo->attr(secret)"`
 	OriginalSecret string `pagser:"photo->attr(originalsecret)"`
 	OriginalFormat string `pagser:"photo->attr(originalformat)"`
@@ -291,7 +291,7 @@ type Tag struct {
 	Name string `pagser:"->text()"`
 }
 
-func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
+func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error) {
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
@@ -302,7 +302,7 @@ func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	}
 	// fmt.Println(r.URL())
 
-	body, err := r.Execute()
+	body, err := r.ExecuteGET()
 	if err != nil {
 		return nil, err
 	}
@@ -317,8 +317,8 @@ func infoPhoto(parser *pagser.Pagser, photo Photo) (*InfoPhotoData, error) {
 	if infoData.Stat != "ok" {
 		return nil, fmt.Errorf("InfoPhoto is not ok\n%v\n", infoData)
 	}
-	if photo.ID != infoData.Id {
-		return nil, fmt.Errorf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.Id)
+	if photo.ID != infoData.ID {
+		return nil, fmt.Errorf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.ID)
 	}
 	if photo.Secret != infoData.Secret {
 		return nil, fmt.Errorf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.ID, photo.Secret, infoData.Secret)

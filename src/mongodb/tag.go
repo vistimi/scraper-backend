@@ -69,7 +69,7 @@ func InsertTag(thisCollection *mongo.Collection, otherCollection *mongo.Collecti
 
 // ReturnInsertTagUnwanted indicates how many images with the new unwanted tag have been removed
 type ReturnInsertTagUnwanted struct {
-	InsertedTagId     interface{}
+	InsertedTagID     interface{}
 	DeletedImageCount int64
 }
 
@@ -83,7 +83,7 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	// insert the unwanted tag
 	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
-	insertedId, err := InsertTag(collectionTagsUnwanted, collectionTagsWanted, body)
+	insertedID, err := InsertTag(collectionTagsUnwanted, collectionTagsWanted, body)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	imageCollections := utils.ImageCollections(mongoClient)
 	var deletedCount int64
 	for collectionName, collection := range imageCollections {
-		images, err := FindImagesIds(collection, query)
+		images, err := FindImagesIDs(collection, query)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	}
 
 	ids := ReturnInsertTagUnwanted{
-		InsertedTagId:     insertedId,
+		InsertedTagID:     insertedID,
 		DeletedImageCount: deletedCount,
 	}
 	return ids, nil

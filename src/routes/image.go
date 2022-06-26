@@ -11,21 +11,21 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type ParamsFindImagesIds struct {
+type ParamsFindImagesIDs struct {
 	Collection string `uri:"collection" binding:"required"`
 }
 
-func FindImagesIds(mongoClient *mongo.Client, params ParamsFindImagesIds) ([]types.Image, error) {
+func FindImagesIDs(mongoClient *mongo.Client, params ParamsFindImagesIDs) ([]types.Image, error) {
 	collection, err := utils.ImageCollectionSelection(mongoClient, params.Collection)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.FindImagesIds(collection, bson.M{})
+	return mongodb.FindImagesIDs(collection, bson.M{})
 }
 
 type ParamsFindImage struct {
 	Collection string `uri:"collection" binding:"required"`
-	Id         string `uri:"id" binding:"required"`
+	ID         string `uri:"id" binding:"required"`
 }
 
 func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image, error) {
@@ -33,17 +33,17 @@ func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image,
 	if err != nil {
 		return nil, err
 	}
-	imageId, err := primitive.ObjectIDFromHex(params.Id)
+	imageID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.FindImageByID(collection, imageId)
+	return mongodb.FindImageByID(collection, imageID)
 }
 
 // Body for the RemoveImage request
 type BodyRemoveImage struct {
 	Collection string		// image collection
-	Id         primitive.ObjectID
+	ID         primitive.ObjectID
 }
 
 func RemoveImage(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error) {
@@ -51,7 +51,7 @@ func RemoveImage(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveImageAndFile(collection, body.Collection, body.Id)
+	return mongodb.RemoveImageAndFile(collection, body.Collection, body.ID)
 }
 
 func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.Image, error) {
@@ -60,7 +60,7 @@ func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.
 		return nil, err
 	}
 	if body.ID == primitive.NilObjectID {
-		return nil, errors.New("Body not valid, Id empty")
+		return nil, errors.New("Body not valid, ID empty")
 	}
 	return mongodb.UpdateImage(collection, body)
 }
