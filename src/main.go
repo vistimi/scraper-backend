@@ -21,7 +21,7 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	router.GET("/images/id/:collection", wrapperHandlerURI(mongoClient, routes.FindImagesIds))
+	router.GET("/images/id/:collection", wrapperHandlerURI(mongoClient, routes.FindImagesIDs))
 
 	router.Static("/image/file", "/home/olivier/dressme/images")
 	router.GET("/image/:collection/:id", wrapperHandlerURI(mongoClient, routes.FindImage))

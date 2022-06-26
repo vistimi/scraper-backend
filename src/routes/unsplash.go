@@ -24,7 +24,7 @@ import (
 )
 
 func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
-	var insertedIds []primitive.ObjectID
+	var insertedIDs []primitive.ObjectID
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
@@ -63,6 +63,16 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 			}
 
 			for _, photo := range *searchPerPage.Results {
+				// look for existing image
+				var originID string
+				if photo.ID != nil {
+					originID = *photo.ID
+				}
+				_, err := mongodb.FindImageIDByOriginID(collectionUnsplash, originID)
+				if err != nil {
+					return nil, err
+				}
+
 				// extract the photo informations
 				var photoTags []string
 				for _, tag := range *photo.Tags {
@@ -93,7 +103,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				for _, photoTag := range *photo.Tags {
 					tag := types.Tag{
 						Name:         strings.ToLower(*photoTag.Title),
-						Origin:       "unsplash",
+						Origin:       origin,
 						CreationDate: &now,
 					}
 					tags = append(tags, tag)
@@ -108,10 +118,6 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.Height != nil && photo.Width != nil {
 					height = *photo.Height * width / *photo.Width
 				}
-				var originId string
-				if photo.ID != nil {
-					originId = *photo.ID
-				}
 				var title string
 				if photo.Description != nil {
 					title = *photo.Description
@@ -122,28 +128,28 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				}
 				document := types.Image{
 					Origin:       origin,
-					OriginID:     originId,
+					OriginID:     originID,
 					Extension:    extension,
 					Path:         fileName,
 					Width:        width,
 					Height:       height,
 					Title:        title,
 					Description:  description,
-					License:      "Unsplash License, Commercial and non-commercial purposes",
+					License:      "Unsplash License",
 					CreationDate: &now,
 					Tags:         tags,
 				}
 
-				insertedId, err := mongodb.InsertImage(collectionUnsplash, document)
+				insertedID, err := mongodb.InsertImage(collectionUnsplash, document)
 				if err != nil {
 					return nil, err
 				}
-				insertedIds = append(insertedIds, insertedId)
+				insertedIDs = append(insertedIDs, insertedID)
 			}
 		}
 
 	}
-	return insertedIds, nil
+	return insertedIDs, nil
 }
 
 func searchPhotosPerPageUnsplash(tag string, page int) (*unsplash.PhotoSearchResult, error) {

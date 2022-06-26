@@ -66,7 +66,7 @@ func EncodeQuery(args map[string]string) string {
 }
 
 // Download a file from an URL body response
-func DownloadFile(URL, fileName string) error {
+func DownloadFile(URL string, fileName string) error {
 	//Get the response bytes from the url
 	response, err := http.Get(URL)
 	if err != nil {

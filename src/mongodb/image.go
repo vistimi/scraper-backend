@@ -32,17 +32,17 @@ func InsertImage(collection *mongo.Collection, document types.Image) (primitive.
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
-	insertedId, ok := res.InsertedID.(primitive.ObjectID)
+	insertedID, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
 		return primitive.NilObjectID, errors.New("Safecast of ObjectID did not work")
 	}
-	return insertedId, nil
+	return insertedID, nil
 }
 
-// FindImageIDByFLickrId an image mongodb id based on its flickrId
-func FindImageIDByFLickrId(collection *mongo.Collection, flickrId string) (*types.Image, error) {
+// FindImageIDByOriginID an image mongodb id based on its originID
+func FindImageIDByOriginID(collection *mongo.Collection, originID string) (*types.Image, error) {
 	var image types.Image
-	query := bson.M{"flickrId": flickrId}
+	query := bson.M{"originID": originID}
 	options := options.FindOne().
 		SetProjection(bson.M{
 			"_id": 1,
@@ -58,8 +58,8 @@ func FindImageIDByFLickrId(collection *mongo.Collection, flickrId string) (*type
 	}
 }
 
-// FindImagesIds find all images mongodb id
-func FindImagesIds(collection *mongo.Collection, query bson.M) ([]types.Image, error) {
+// FindImagesIDs find all images mongodb id
+func FindImagesIDs(collection *mongo.Collection, query bson.M) ([]types.Image, error) {
 	options := options.Find().
 		SetProjection(bson.M{
 			"_id": 1,

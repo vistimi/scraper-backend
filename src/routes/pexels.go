@@ -2,8 +2,12 @@ package routes
 
 import (
 	"fmt"
+	"regexp"
 	"scrapper/src/mongodb"
+	"scrapper/src/types"
 	"scrapper/src/utils"
+	"strconv"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,11 +16,12 @@ import (
 	"sort"
 
 	"encoding/json"
+	"net/url"
 	"path/filepath"
 )
 
 func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
-	var insertedIds []primitive.ObjectID
+	var insertedIDs []primitive.ObjectID
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
@@ -26,7 +31,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 		return nil, err
 	}
 
-	// collectionPexels := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("PEXELS_COLLECTION"))
+	collectionPexels := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("PEXELS_COLLECTION"))
 
 	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
 	if err != nil {
@@ -47,18 +52,80 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 			return nil, err
 		}
 
-		for page := page; page <= searchPerPage.TotalResults / searchPerPage.PerPage; page++ {
+		for page := page; page <= searchPerPage.TotalResults/searchPerPage.PerPage; page++ {
 			searchPerPage, err = searchPhotosPerPagePexels(wantedTag, page)
 			if err != nil {
 				return nil, err
 			}
 
 			for _, photo := range searchPerPage.Photos {
+				// look for existing image
+				_, err := mongodb.FindImageIDByOriginID(collectionPexels, fmt.Sprint(photo.ID))
+				if err != nil {
+					return nil, err
+				}
+
+				//find download link and extension
+				link := photo.Src.Large
+				regexpMatch := regexp.MustCompile(`\.\w+\?`) // matches a word  preceded by `.` and followed by `?`
+				extension := string(regexpMatch.Find([]byte(link)))
+				extension = extension[1 : len(extension)-1] // remove the `.` and `?` because retgexp hasn't got assertions
+
+				// download photo into folder and rename it <id>.<format>
+				fileName := fmt.Sprintf("%d.%s", photo.ID, extension)
+				path := fmt.Sprintf(filepath.Join(folderDir, origin, fileName))
+				err = DownloadFile(link, path)
+				if err != nil {
+					return nil, err
+				}
+
+				// tags creation
+				now := time.Now()
+				tags := []types.Tag{
+					{
+						Name:         wantedTag,
+						Origin:       origin,
+						CreationDate: &now,
+					},
+				}
+
+				// image creation
+				linkURL, err := url.Parse(link)
+				if err != nil {
+					return nil, err
+				}
+				width, err := strconv.Atoi(linkURL.Query().Get("w"))
+				if err != nil {
+					return nil, err
+				}
+				height, err := strconv.Atoi(linkURL.Query().Get("h"))
+				if err != nil {
+					return nil, err
+				}
+				document := types.Image{
+					Origin:       origin,
+					OriginID:     fmt.Sprint(photo.ID),
+					Extension:    extension,
+					Path:         fileName,
+					Width:        width,
+					Height:       height,
+					Title:        "",
+					Description:  photo.Alt,
+					License:      "Pexels License",
+					CreationDate: &now,
+					Tags:         tags,
+				}
+
+				insertedID, err := mongodb.InsertImage(collectionPexels, document)
+				if err != nil {
+					return nil, err
+				}
+				fmt.Sprintln(insertedID)
+				insertedIDs = append(insertedIDs, insertedID)
 			}
 		}
-		return searchPerPage, nil
 	}
-	return insertedIds, nil
+	return insertedIDs, nil
 }
 
 type PhotoPexels struct {
@@ -71,6 +138,7 @@ type PhotoPexels struct {
 	PhotographerID  int          `json:"photographer_id"`
 	AvgColor        string       `json:"avg_color"`
 	Liked           bool         `json:"liked"`
+	Alt             string       `json:"alt"`
 	Src             SourcePexels `json:"src"`
 }
 
@@ -99,7 +167,7 @@ func searchPhotosPerPagePexels(tag string, page int) (*SearchPhotoResponsePexels
 		Host: "https://api.pexels.com/v1/search?",
 		Args: map[string]string{
 			"query": tag,
-			"page": fmt.Sprint(page),
+			"page":  fmt.Sprint(page),
 		},
 		Header: map[string][]string{
 			"Authorization": {utils.DotEnvVariable("PEXELS_PUBLIC_KEY")},
