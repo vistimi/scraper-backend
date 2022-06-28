@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 
 	"os"
-	"sort"
 
 	"path/filepath"
 	"strings"
@@ -34,32 +33,25 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 		return nil, err
 	}
 
-	collectionImages:= mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
-	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
+	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(unwantedTags)
-
-	wantedTags, err := mongodb.TagsWantedNames(mongoClient)
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(wantedTags)
 
 	for _, wantedTag := range wantedTags {
 		page := 1
 
 		searchPerPage, err := searchPhotosPerPageUnsplash(wantedTag, page)
 		if err != nil {
-			return nil, err
+			return nil,  fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 		}
 
 		for page := page; page <= int(*searchPerPage.TotalPages); page++ {
 			searchPerPage, err = searchPhotosPerPageUnsplash(wantedTag, page)
 			if err != nil {
-				return nil, err
+				return nil,  fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 			}
 
 			for _, photo := range *searchPerPage.Results {
@@ -70,7 +62,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				}
 				_, err := mongodb.FindImageIDByOriginID(collectionImages, originID)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}
 
 				// extract the photo informations
@@ -94,7 +86,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				path := fmt.Sprintf(filepath.Join(folderDir, origin, fileName))
 				err = DownloadFile(link.String(), path)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("DownloadFile has failed: %v", err)
 				}
 
 				// tags creation
@@ -142,7 +134,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 
 				insertedID, err := mongodb.InsertImage(collectionImages, document)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("InsertImage has failed: %v", err)
 				}
 				insertedIDs = append(insertedIDs, insertedID)
 			}

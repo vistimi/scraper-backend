@@ -28,3 +28,7 @@ func ImageCollections (mongoClient *mongo.Client) map[string]*mongo.Collection {
 	collections["pexels"] = mongoClient.Database(DotEnvVariable("SCRAPPER_DB")).Collection(DotEnvVariable("PEXELS_COLLECTION"))
 	return collections
 }
+
+func ImageOrigins () []string {
+	return []string{"flickr", "unsplash", "pexels"}
+}

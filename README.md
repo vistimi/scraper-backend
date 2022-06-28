@@ -6,6 +6,10 @@ Online scrapper for building a dataset for ML.
 ## installation
 
 Install Golang and MongoDB
+
+    git clone git@github.com:KookaS/scrapper.git
+
+    
 ## run
 
     go run src/main.go

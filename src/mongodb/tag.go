@@ -18,6 +18,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"regexp"
+	"sort"
 )
 
 // InsertTag inserts unique tag, not matching clsoe ones from its collection and the other one
@@ -92,15 +93,16 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (interface{}, 
 	query := bson.M{
 		"tags.name": body.Name,
 	}
-	imageCollections := utils.ImageCollections(mongoClient)
+	collectionImage := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	imageOrigins := utils.ImageOrigins()
 	var deletedCount int64
-	for collectionName, collection := range imageCollections {
-		images, err := FindImagesIDs(collection, query)
+	for _, origin := range imageOrigins {
+		images, err := FindImagesIDs(collectionImage, query)
 		if err != nil {
 			return nil, err
 		}
 		for _, image := range images {
-			deletedOne, err := RemoveImageAndFile(collection, collectionName, image.ID)
+			deletedOne, err := RemoveImageAndFile(collectionImage, origin, image.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -186,4 +188,25 @@ func TagsUnwantedNames(mongoClient *mongo.Client) ([]string, error) {
 		unwantedTags = append(unwantedTags, strings.ToLower(tag.Name))
 	}
 	return unwantedTags, nil
+}
+
+func TagsNames(mongoClient *mongo.Client) ([]string, []string, error) {
+	unwantedTags, err := TagsUnwantedNames(mongoClient)
+	if err != nil {
+		return nil, nil, err
+	}
+	if (unwantedTags == nil) || (len(unwantedTags) == 0) {
+		return nil, nil, errors.New("unwantedTags are empty")
+	}
+	sort.Strings(unwantedTags)
+
+	wantedTags, err := TagsWantedNames(mongoClient)
+	if err != nil {
+		return nil, nil, err
+	}
+	if (wantedTags == nil) || (len(wantedTags) == 0) {
+		return nil, nil, errors.New("wantedTags are empty")
+	}
+	sort.Strings(wantedTags)
+	return unwantedTags, wantedTags, nil
 }
