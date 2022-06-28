@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"os"
-	"sort"
 
 	"encoding/json"
 	"net/url"
@@ -31,38 +30,31 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 		return nil, err
 	}
 
-	collectionPexels := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("PEXELS_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
-	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
+	_, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(unwantedTags)
-
-	wantedTags, err := mongodb.TagsWantedNames(mongoClient)
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(wantedTags)
 
 	for _, wantedTag := range wantedTags {
 		page := 1
 		searchPerPage, err := searchPhotosPerPagePexels(wantedTag, page)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("searchPhotosPerPagePexels has failed: %v", err)
 		}
 
 		for page := page; page <= searchPerPage.TotalResults/searchPerPage.PerPage; page++ {
 			searchPerPage, err = searchPhotosPerPagePexels(wantedTag, page)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("searchPhotosPerPagePexels has failed: %v", err)
 			}
 
 			for _, photo := range searchPerPage.Photos {
 				// look for existing image
-				_, err := mongodb.FindImageIDByOriginID(collectionPexels, fmt.Sprint(photo.ID))
+				_, err := mongodb.FindImageIDByOriginID(collectionImages, fmt.Sprint(photo.ID))
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}
 
 				//find download link and extension
@@ -76,7 +68,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 				path := fmt.Sprintf(filepath.Join(folderDir, origin, fileName))
 				err = DownloadFile(link, path)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("DownloadFile has failed: %v", err)
 				}
 
 				// tags creation
@@ -116,11 +108,10 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					Tags:         tags,
 				}
 
-				insertedID, err := mongodb.InsertImage(collectionPexels, document)
+				insertedID, err := mongodb.InsertImage(collectionImages, document)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("InsertImage has failed: %v", err)
 				}
-				fmt.Sprintln(insertedID)
 				insertedIDs = append(insertedIDs, insertedID)
 			}
 		}
@@ -173,7 +164,7 @@ func searchPhotosPerPagePexels(tag string, page int) (*SearchPhotoResponsePexels
 			"Authorization": {utils.DotEnvVariable("PEXELS_PUBLIC_KEY")},
 		},
 	}
-	fmt.Println(r.URL())
+	// fmt.Println(r.URL())
 
 	body, err := r.ExecuteGET()
 	if err != nil {

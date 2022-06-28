@@ -1,6 +1,15 @@
 # scrapper
 
 Online scrapper for building a dataset for ML.
+
+
+## installation
+
+Install Golang and MongoDB
+
+    git clone git@github.com:KookaS/scrapper.git
+
+    
 ## run
 
     go run src/main.go
@@ -19,22 +28,13 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
     SCRAPPER_DB=scrapper
     UNWANTED_TAGS_COLLECTION=unwantedTags
     WANTED_TAGS_COLLECTION=wantedTags
-    IMAGE_PATH=***
-    FLICKR_COLLECTION=flickr
+    IMAGES_COLLECTION=images
+    IMAGE_PATH=<absolutePath>
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
-    UNSPLASH_COLLECTION=unsplash
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
-    PEXELS_COLLECTION=pexels
     PEXELS_PUBLIC_KEY=***
-
-## installation
-
-    go mod init scrapper
-    go get .
-
-Then move code inside `scrapper/src`
 
 ## linter
 

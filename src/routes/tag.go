@@ -13,19 +13,19 @@ type ParamsRemoveTag struct {
 }
 
 func RemoveTagWanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
-	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("WANTED_TAGS_COLLECTION"))
 	tagID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveTag(collection, tagID)
+	return mongodb.RemoveTag(collectionTagsWanted, tagID)
 }
 
 func RemoveTagUnwanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
-	collection := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNWANTED_TAGS_COLLECTION"))
 	tagID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveTag(collection, tagID)
+	return mongodb.RemoveTag(collectionTagsUnwanted, tagID)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/foolin/pagser"
@@ -18,8 +17,6 @@ import (
 	"github.com/jinzhu/copier"
 
 	"golang.org/x/exp/slices"
-
-	"sort"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -48,19 +45,12 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 		return nil, err
 	}
 
-	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
+	collectionImages:= mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
-	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
+	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(unwantedTags)
-
-	wantedTags, err := mongodb.TagsWantedNames(mongoClient)
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(wantedTags)
 
 	for _, wantedTag := range wantedTags {
 
@@ -78,22 +68,22 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 
 			// start with the first page
 			page := 1
-			searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+			searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, fmt.Sprint(page))
 			if err != nil {
-				return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
+				return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: %v", err)
 			}
 
 			for page := page; page <= int(searchPerPage.Pages); page++ {
-				searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, strconv.FormatUint(uint64(page), 10))
+				searchPerPage, err := searchPhotosPerPageFlickr(parser, licenseID, wantedTag, fmt.Sprint(page))
 				if err != nil {
-					return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: \n%v", err)
+					return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: %v", err)
 				}
 				for _, photo := range searchPerPage.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageIDByOriginID(collectionFlickr, photo.ID)
+					_, err := mongodb.FindImageIDByOriginID(collectionImages, photo.ID)
 					if err != nil {
-						return nil, err
+						return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 					}
 
 					// extract the photo informations
@@ -115,7 +105,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					// extract the photo download link
 					downloadData, err := downloadPhoto(parser, photo.ID)
 					if err != nil {
-						return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
+						return nil, fmt.Errorf("DownloadPhoto has failed: %v", err)
 					}
 
 					// get the download link for the correct resolution
@@ -132,7 +122,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						})
 					}
 					if idx == -1 {
-						return nil, fmt.Errorf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:\n%v\n", label, regexpMatch, photo.ID, downloadData)
+						return nil, fmt.Errorf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:%v", label, regexpMatch, photo.ID, downloadData)
 					}
 
 					// download photo into folder and rename it <id>.<format>
@@ -140,7 +130,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					path := fmt.Sprintf(filepath.Join(folderDir, origin, fileName))
 					err = DownloadFile(downloadData.Photos[idx].Source, path)
 					if err != nil {
-						return nil, err
+						return nil, fmt.Errorf("DownloadFile has failed: %v", err)
 					}
 
 					// tags creation
@@ -169,9 +159,9 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						Tags:         tags,
 					}
 
-					insertedID, err := mongodb.InsertImage(collectionFlickr, document)
+					insertedID, err := mongodb.InsertImage(collectionImages, document)
 					if err != nil {
-						return nil, err
+						return nil, fmt.Errorf("InsertImage has failed: %v", err)
 					}
 					insertedIDs = append(insertedIDs, insertedID)
 				}
@@ -197,14 +187,14 @@ type PhotoFlickr struct {
 }
 
 // Search images for one page of max 500 images
-func searchPhotosPerPageFlickr(parser *pagser.Pagser, ids string, tags string, page string) (*SearchPhotPerPageData, error) {
+func searchPhotosPerPageFlickr(parser *pagser.Pagser, licenseID string, tags string, page string) (*SearchPhotPerPageData, error) {
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key": utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"api_key": utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
 			"method":  "flickr.photos.search",
 			"tags":    tags,
-			"license": ids,
+			"license": licenseID,
 			"media":   "photos",
 			"page":    page,
 		},
@@ -221,9 +211,8 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, ids string, tags string, p
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(utils.ToJSON(pageData))
 	if pageData.Stat != "ok" {
-		return nil, fmt.Errorf("SearchPhotoPerPageRequest is not ok\n%v\n", pageData)
+		return nil, fmt.Errorf("SearchPhotoPerPageRequest is not ok%v", pageData)
 	}
 	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
 		return nil, errors.New("Some informations are missing from SearchPhotoPerPage")
@@ -249,7 +238,7 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key":  utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
 			"method":   "flickr.photos.getSizes",
 			"photo_id": id,
 		},
@@ -258,7 +247,7 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 
 	body, err := r.ExecuteGET()
 	if err != nil {
-		return nil, fmt.Errorf("DownloadPhoto has failed: \n%v", err)
+		return nil, fmt.Errorf("DownloadPhoto has failed: %v", err)
 	}
 
 	var downloadData DownloadPhotoData
@@ -266,10 +255,9 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(utils.ToJSON(downloadData))
 
 	if downloadData.Stat != "ok" {
-		return nil, fmt.Errorf("DownloadPhoto is not ok\n%v\n", downloadData)
+		return nil, fmt.Errorf("DownloadPhoto is not ok%v", downloadData)
 	}
 
 	return &downloadData, nil
@@ -295,7 +283,7 @@ func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error)
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key":  utils.DotEnvVariable("FLICKR_PRIVATE_KEY"),
+			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
 			"method":   "flickr.photos.getInfo",
 			"photo_id": photo.ID,
 		},
@@ -312,16 +300,15 @@ func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(utils.ToJSON(infoData))
 
 	if infoData.Stat != "ok" {
-		return nil, fmt.Errorf("InfoPhoto is not ok\n%v\n", infoData)
+		return nil, fmt.Errorf("InfoPhoto is not ok%v", infoData)
 	}
 	if photo.ID != infoData.ID {
-		return nil, fmt.Errorf("IDs do not match! search id: %s, info id: %s\n", photo.ID, infoData.ID)
+		return nil, fmt.Errorf("IDs do not match! search id: %s, info id: %s", photo.ID, infoData.ID)
 	}
 	if photo.Secret != infoData.Secret {
-		return nil, fmt.Errorf("Secrets do not match for id: %s! search secret: %s, info secret: %s\n", photo.ID, photo.Secret, infoData.Secret)
+		return nil, fmt.Errorf("Secrets do not match for id: %s! search secret: %s, info secret: %s", photo.ID, photo.Secret, infoData.Secret)
 	}
 	return &infoData, nil
 }
