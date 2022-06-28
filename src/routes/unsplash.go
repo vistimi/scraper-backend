@@ -45,13 +45,13 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 
 		searchPerPage, err := searchPhotosPerPageUnsplash(wantedTag, page)
 		if err != nil {
-			return nil,  fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
+			return nil, fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 		}
 
 		for page := page; page <= int(*searchPerPage.TotalPages); page++ {
 			searchPerPage, err = searchPhotosPerPageUnsplash(wantedTag, page)
 			if err != nil {
-				return nil,  fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
+				return nil, fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 			}
 
 			for _, photo := range *searchPerPage.Results {
@@ -93,15 +93,18 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				var tags []types.Tag
 				now := time.Now()
 				for _, photoTag := range *photo.Tags {
+					var tagTitle string
+					if photoTag.Title != nil {
+						tagTitle = *photoTag.Title
+					}
 					tag := types.Tag{
-						Name:         strings.ToLower(*photoTag.Title),
+						Name:         strings.ToLower(tagTitle),
 						Origin:       origin,
 						CreationDate: &now,
 					}
 					tags = append(tags, tag)
 				}
 
-				// image creation
 				width, err := strconv.Atoi(link.Query().Get("w"))
 				if err != nil {
 					return nil, err
@@ -118,9 +121,28 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.AltDescription != nil {
 					description = *photo.AltDescription
 				}
+				var userName string
+				if photo.Photographer.Username != nil {
+					userName = *photo.Photographer.Username
+				}
+				var UserID string
+				if photo.Photographer.ID != nil {
+					UserID = *photo.Photographer.ID
+				}
+
+				// user creation
+				user := types.User{
+					Origin:       origin,
+					Name:         userName,
+					OriginID:     UserID,
+					CreationDate: &now,
+				}
+
+				// image creation
 				document := types.Image{
 					Origin:       origin,
 					OriginID:     originID,
+					User:         user,
 					Extension:    extension,
 					Path:         fileName,
 					Width:        width,

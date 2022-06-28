@@ -26,9 +26,10 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
     MONGODB_URI=mongodb://localhost:27017
     SCRAPPER_DB=scrapper
-    UNWANTED_TAGS_COLLECTION=unwantedTags
-    WANTED_TAGS_COLLECTION=wantedTags
+    TAGS_WANTED_COLLECTION=tagsUnwanted
+    TAGS_WANTED_COLLECTION=tagsWanted
     IMAGES_COLLECTION=images
+    USERS_UNWANTED_COLLECion=usersUnwanted
     IMAGE_PATH=<absolutePath>
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***

@@ -45,7 +45,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 		return nil, err
 	}
 
-	collectionImages:= mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -91,6 +91,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					if err != nil {
 						return nil, fmt.Errorf("InfoPhoto has failed: %v", err)
 					}
+
 					var photoTags []string
 					for _, tag := range infoData.Tags {
 						photoTags = append(photoTags, strings.ToLower(tag.Name))
@@ -144,10 +145,19 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						tag.Origin = origin
 					}
 
+					// user creation
+					user := types.User{
+						Origin:       origin,
+						Name:         infoData.UserName,
+						OriginID:     infoData.UserID,
+						CreationDate: &now,
+					}
+
 					// image creation
 					document := types.Image{
 						Origin:       origin,
 						OriginID:     photo.ID,
+						User:         user,
 						Extension:    infoData.OriginalFormat,
 						Path:         fileName,
 						Width:        downloadData.Photos[idx].Width,
@@ -173,11 +183,11 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type SearchPhotPerPageData struct {
-	Stat    string  `pagser:"rsp->attr(stat)"`
-	Page    uint    `pagser:"photos->attr(page)"`
-	Pages   uint    `pagser:"photos->attr(pages)"`
-	PerPage uint    `pagser:"photos->attr(perpage)"`
-	Total   uint    `pagser:"photos->attr(total)"`
+	Stat    string        `pagser:"rsp->attr(stat)"`
+	Page    uint          `pagser:"photos->attr(page)"`
+	Pages   uint          `pagser:"photos->attr(pages)"`
+	PerPage uint          `pagser:"photos->attr(perpage)"`
+	Total   uint          `pagser:"photos->attr(total)"`
 	Photos  []PhotoFlickr `pagser:"photo"`
 }
 type PhotoFlickr struct {
@@ -223,8 +233,8 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, licenseID string, tags str
 // https://golangexample.com/pagser-a-simple-and-deserialize-html-page-to-struct-based-on-goquery-and-struct-tags-for-golang-crawler/
 type DownloadPhotoSingleData struct {
 	Label  string `pagser:"->attr(label)"`
-	Width  int   `pagser:"->attr(width)"`
-	Height int   `pagser:"->attr(height)"`
+	Width  int    `pagser:"->attr(width)"`
+	Height int    `pagser:"->attr(height)"`
 	Source string `pagser:"->attr(source)"`
 }
 
@@ -272,6 +282,8 @@ type InfoPhotoData struct {
 	OriginalFormat string `pagser:"photo->attr(originalformat)"`
 	Title          string `pagser:"title"`
 	Description    string `pagser:"description"`
+	UserID         string `pagser:"owner->attr(nsid)"`
+	UserName       string `pagser:"owner->attr(username)"`
 	Tags           []Tag  `pagser:"tag"`
 }
 

@@ -81,6 +81,14 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					},
 				}
 
+				// user creation
+				user := types.User{
+					Origin:       origin,
+					Name:         photo.Photographer,
+					OriginID:     fmt.Sprint(photo.PhotographerID),
+					CreationDate: &now,
+				}
+
 				// image creation
 				linkURL, err := url.Parse(link)
 				if err != nil {
@@ -97,6 +105,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 				document := types.Image{
 					Origin:       origin,
 					OriginID:     fmt.Sprint(photo.ID),
+					User:         user,
 					Extension:    extension,
 					Path:         fileName,
 					Width:        width,
