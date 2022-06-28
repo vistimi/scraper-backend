@@ -31,7 +31,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 		return nil, err
 	}
 
-	collectionPexels := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("PEXELS_COLLECTION"))
+	collectionImages:= mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
 	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
 	if err != nil {
@@ -60,7 +60,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 
 			for _, photo := range searchPerPage.Photos {
 				// look for existing image
-				_, err := mongodb.FindImageIDByOriginID(collectionPexels, fmt.Sprint(photo.ID))
+				_, err := mongodb.FindImageIDByOriginID(collectionImages, fmt.Sprint(photo.ID))
 				if err != nil {
 					return nil, err
 				}
@@ -116,7 +116,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					Tags:         tags,
 				}
 
-				insertedID, err := mongodb.InsertImage(collectionPexels, document)
+				insertedID, err := mongodb.InsertImage(collectionImages, document)
 				if err != nil {
 					return nil, err
 				}

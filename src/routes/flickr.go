@@ -48,7 +48,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 		return nil, err
 	}
 
-	collectionFlickr := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("FLICKR_COLLECTION"))
+	collectionImages:= mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
 	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
 	if err != nil {
@@ -91,7 +91,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 				for _, photo := range searchPerPage.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageIDByOriginID(collectionFlickr, photo.ID)
+					_, err := mongodb.FindImageIDByOriginID(collectionImages, photo.ID)
 					if err != nil {
 						return nil, err
 					}
@@ -169,7 +169,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						Tags:         tags,
 					}
 
-					insertedID, err := mongodb.InsertImage(collectionFlickr, document)
+					insertedID, err := mongodb.InsertImage(collectionImages, document)
 					if err != nil {
 						return nil, err
 					}

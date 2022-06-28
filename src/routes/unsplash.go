@@ -34,7 +34,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 		return nil, err
 	}
 
-	collectionUnsplash := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("UNSPLASH_COLLECTION"))
+	collectionImages:= mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 
 	unwantedTags, err := mongodb.TagsUnwantedNames(mongoClient)
 	if err != nil {
@@ -68,7 +68,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.ID != nil {
 					originID = *photo.ID
 				}
-				_, err := mongodb.FindImageIDByOriginID(collectionUnsplash, originID)
+				_, err := mongodb.FindImageIDByOriginID(collectionImages, originID)
 				if err != nil {
 					return nil, err
 				}
@@ -140,7 +140,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 					Tags:         tags,
 				}
 
-				insertedID, err := mongodb.InsertImage(collectionUnsplash, document)
+				insertedID, err := mongodb.InsertImage(collectionImages, document)
 				if err != nil {
 					return nil, err
 				}
