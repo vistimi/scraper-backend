@@ -34,6 +34,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -55,12 +56,30 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 			}
 
 			for _, photo := range *searchPerPage.Results {
+
+				// look for unwanted Users
+				var userName string
+				if photo.Photographer.Username != nil {
+					userName = *photo.Photographer.Username
+				}
+				var UserID string
+				if photo.Photographer.ID != nil {
+					UserID = *photo.Photographer.ID
+				}
+				userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, UserID, userName)
+				if err != nil {
+					return nil, fmt.Errorf("FindUser has failed: %v", err)
+				}
+				if userFound != nil {
+					continue	// skip the image with unwanted user
+				}
+
 				// look for existing image
 				var originID string
 				if photo.ID != nil {
 					originID = *photo.ID
 				}
-				_, err := mongodb.FindImageIDByOriginID(collectionImages, originID)
+				_, err = mongodb.FindImageIDByOriginID(collectionImages, originID)
 				if err != nil {
 					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}
@@ -105,6 +124,14 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 					tags = append(tags, tag)
 				}
 
+				// user creation
+				user := types.User{
+					Origin:       origin,
+					Name:         userName,
+					OriginID:     UserID,
+					CreationDate: &now,
+				}
+
 				width, err := strconv.Atoi(link.Query().Get("w"))
 				if err != nil {
 					return nil, err
@@ -120,22 +147,6 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				var description string
 				if photo.AltDescription != nil {
 					description = *photo.AltDescription
-				}
-				var userName string
-				if photo.Photographer.Username != nil {
-					userName = *photo.Photographer.Username
-				}
-				var UserID string
-				if photo.Photographer.ID != nil {
-					UserID = *photo.Photographer.ID
-				}
-
-				// user creation
-				user := types.User{
-					Origin:       origin,
-					Name:         userName,
-					OriginID:     UserID,
-					CreationDate: &now,
 				}
 
 				// image creation

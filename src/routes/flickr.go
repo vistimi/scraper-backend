@@ -46,6 +46,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -92,6 +93,15 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						return nil, fmt.Errorf("InfoPhoto has failed: %v", err)
 					}
 
+					// look for unwanted Users
+					userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, infoData.UserID, infoData.UserName)
+					if err != nil {
+						return nil, fmt.Errorf("FindUser has failed: %v", err)
+					}
+					if userFound != nil {
+						continue	// skip the image with unwanted user
+					}
+
 					var photoTags []string
 					for _, tag := range infoData.Tags {
 						photoTags = append(photoTags, strings.ToLower(tag.Name))
@@ -100,7 +110,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					// skip image if one of its tag is unwanted
 					idx := utils.FindIndexRegExp(unwantedTags, photoTags)
 					if idx != -1 {
-						continue // skip image with unwated tag
+						continue 	// skip image with unwanted tag
 					}
 
 					// extract the photo download link

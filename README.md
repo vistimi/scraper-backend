@@ -29,6 +29,7 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
     TAGS_WANTED_COLLECTION=tagsUnwanted
     TAGS_WANTED_COLLECTION=tagsWanted
     IMAGES_COLLECTION=images
+    IMAGES_UNWANTED_COLLECTION=imagesUnwanted
     USERS_UNWANTED_COLLECion=usersUnwanted
     IMAGE_PATH=<absolutePath>
     FLICKR_PRIVATE_KEY=***

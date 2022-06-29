@@ -15,7 +15,7 @@ import (
 )
 
 // FindUser find a user based on either its originID or userName
-func findUser(collection *mongo.Collection, origin string, originID string, name string) (*types.User, error) {
+func FindUser(collection *mongo.Collection, origin string, originID string, name string) (*types.User, error) {
 	var user types.User
 	query := bson.M{
 		"origin": origin,
@@ -38,7 +38,7 @@ func findUser(collection *mongo.Collection, origin string, originID string, name
 // InsertUser inserts a unique user
 func insertUser(userCollection *mongo.Collection, body types.User) (interface{}, error) {
 	// only add unique user from this collection
-	userFound, err := findUser(userCollection, body.Origin, body.OriginID, body.Name)
+	userFound, err := FindUser(userCollection, body.Origin, body.OriginID, body.Name)
 	if err != nil {
 		return nil, err
 	}
