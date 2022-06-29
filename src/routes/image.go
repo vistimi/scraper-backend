@@ -6,9 +6,10 @@ import (
 	"scrapper/src/types"
 	"scrapper/src/utils"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ParamsFindImagesIDs struct {
@@ -17,7 +18,9 @@ type ParamsFindImagesIDs struct {
 
 func FindImagesIDs(mongoClient *mongo.Client, params ParamsFindImagesIDs) ([]types.Image, error) {
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	return mongodb.FindImagesIDs(collectionImages, bson.M{"origin": params.Origin})
+	query := bson.M{"origin": params.Origin}
+	options := options.Find().SetProjection(bson.M{"_id": 1})
+	return mongodb.FindMany[types.Image](collectionImages, query, options)
 }
 
 type ParamsFindImage struct {
@@ -30,7 +33,7 @@ func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image,
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.FindImageByID(collectionImages, imageID)
+	return mongodb.FindOne[types.Image](collectionImages, bson.M{"_id": imageID})
 }
 
 // Body for the RemoveImage request

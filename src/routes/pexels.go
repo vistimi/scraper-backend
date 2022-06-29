@@ -9,8 +9,10 @@ import (
 	"strconv"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"os"
 
@@ -58,11 +60,13 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					return nil, fmt.Errorf("FindUser has failed: %v", err)
 				}
 				if userFound != nil {
-					continue	// skip the image with unwanted user
+					continue // skip the image with unwanted user
 				}
 
 				// look for existing image
-				_, err = mongodb.FindImageIDByOriginID(collectionImages, fmt.Sprint(photo.ID))
+				query := bson.M{"originID": fmt.Sprint(photo.ID)}
+				options := options.FindOne().SetProjection(bson.M{"_id": 1})
+				_, err = mongodb.FindOne[types.Image](collectionImages, query, options)
 				if err != nil {
 					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}

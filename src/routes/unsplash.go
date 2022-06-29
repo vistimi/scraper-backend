@@ -7,8 +7,10 @@ import (
 	"scrapper/src/utils"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/hbagdi/go-unsplash/unsplash"
 
@@ -71,7 +73,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 					return nil, fmt.Errorf("FindUser has failed: %v", err)
 				}
 				if userFound != nil {
-					continue	// skip the image with unwanted user
+					continue // skip the image with unwanted user
 				}
 
 				// look for existing image
@@ -79,7 +81,9 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.ID != nil {
 					originID = *photo.ID
 				}
-				_, err = mongodb.FindImageIDByOriginID(collectionImages, originID)
+				query := bson.M{"originID": originID}
+				options := options.FindOne().SetProjection(bson.M{"_id": 1})
+				_, err = mongodb.FindOne[types.Image](collectionImages, query, options)
 				if err != nil {
 					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}

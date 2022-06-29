@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // FindUser find a user based on either its originID or userName
@@ -46,7 +47,7 @@ func insertUser(userCollection *mongo.Collection, body types.User) (interface{},
 		return nil, errors.New(`The user exist already in the collection`)
 	}
 
-	// insert tag
+	// insert user
 	now := time.Now()
 	body.CreationDate = &now
 	body.Origin = strings.ToLower(body.Origin)
@@ -84,26 +85,15 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 			bson.M{"user.name": body.Name},
 		},
 	}
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	imageOrigins := utils.ImageOrigins()
-	var deletedCount int64
-	for _, origin := range imageOrigins {
-		images, err := FindImagesIDs(collectionImages, query)
-		if err != nil {
-			return nil, fmt.Errorf("FindImagesIDs has failed: %v", err)
-		}
-		for _, image := range images {
-			deletedOne, err := RemoveImageAndFile(collectionImages, origin, image.ID)
-			if err != nil {
-				return nil, fmt.Errorf("RemoveImageAndFile has failed: %v", err)
-			}
-			deletedCount += *deletedOne
-		}
+	options := options.Find().SetProjection(bson.M{"_id": 1})
+	deletedCount, err := RemoveImagesAndFilesOneOrigin(mongoClient, body.Origin, query, options)	// check in all origins
+	if err != nil {
+		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}
 
 	ids := ReturnInsertUserUnwanted{
 		InsertedTagID:     insertedID,
-		DeletedImageCount: deletedCount,
+		DeletedImageCount: *deletedCount,
 	}
 	return &ids, nil
 }
@@ -118,24 +108,8 @@ func RemoveUser(collection *mongo.Collection, id primitive.ObjectID) (*int64, er
 	return &res.DeletedCount, nil
 }
 
-// FindTags find all the tags in its collection
-func findUsers(collection *mongo.Collection) ([]types.User, error) {
-	query := bson.D{}
-	cursor, err := collection.Find(context.TODO(), query)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.TODO())
-
-	var users []types.User
-	if err = cursor.All(context.TODO(), &users); err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-
 // TagsUnwanted find all the wanted tags
 func UsersUnwanted(mongoClient *mongo.Client) ([]types.User, error) {
 	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
-	return findUsers(collectionUsersUnwanted)
+	return FindMany[types.User](collectionUsersUnwanted, bson.M{})
 }
