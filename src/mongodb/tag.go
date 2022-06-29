@@ -10,6 +10,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"context"
 
@@ -24,7 +25,7 @@ import (
 // InsertTag inserts unique tag, not matching clsoe ones from its collection and the other one
 func InsertTag(thisCollection *mongo.Collection, otherCollection *mongo.Collection, body types.Tag) (interface{}, error) {
 	// only add unique tag from this collection
-	thisTags, err := FindTags(thisCollection)
+	thisTags, err := FindMany[types.Tag](thisCollection, bson.M{})
 	if err != nil {
 		return nil, fmt.Errorf("FindTags has failed: %v", err)
 	}
@@ -41,7 +42,7 @@ func InsertTag(thisCollection *mongo.Collection, otherCollection *mongo.Collecti
 	}
 
 	// only unique tag from the other collection
-	otherTags, err := FindTags(otherCollection)
+	otherTags, err := FindMany[types.Tag](otherCollection, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -92,29 +93,16 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (*ReturnInsert
 	}
 
 	// remove the images with that unwanted tag
-	query := bson.M{
-		"tags.name": body.Name,
-	}
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	imageOrigins := utils.ImageOrigins()
-	var deletedCount int64
-	for _, origin := range imageOrigins {
-		images, err := FindImagesIDs(collectionImages, query)
-		if err != nil {
-			return nil, fmt.Errorf("FindImagesIDs has failed: %v", err)
-		}
-		for _, image := range images {
-			deletedOne, err := RemoveImageAndFile(collectionImages, origin, image.ID)
-			if err != nil {
-				return nil, fmt.Errorf("RemoveImageAndFile has failed: %v", err)
-			}
-			deletedCount += *deletedOne
-		}
+	query := bson.M{"tags.name": body.Name}
+	options := options.Find().SetProjection(bson.M{"_id": 1})
+	deletedCount, err := RemoveImagesAndFilesAllOrigins(mongoClient, query, options)
+	if err != nil {
+		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}
 
 	ids := ReturnInsertTagUnwanted{
 		InsertedTagID:     insertedID,
-		DeletedImageCount: deletedCount,
+		DeletedImageCount: *deletedCount,
 	}
 	return &ids, nil
 }
@@ -129,13 +117,13 @@ func InsertTagWanted(mongoClient *mongo.Client, document types.Tag) (interface{}
 // TagsWanted find all the wanted tags
 func TagsWanted(mongoClient *mongo.Client) ([]types.Tag, error) {
 	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("TAGS_WANTED_COLLECTION"))
-	return FindTags(collectionTagsWanted)
+	return FindMany[types.Tag](collectionTagsWanted, bson.M{})
 }
 
 // TagsUnwanted find all the wanted tags
 func TagsUnwanted(mongoClient *mongo.Client) ([]types.Tag, error) {
 	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("TAGS_UNWANTED_COLLECTION"))
-	return FindTags(collectionTagsUnwanted)
+	return FindMany[types.Tag](collectionTagsUnwanted, bson.M{})
 }
 
 // RemoveTag remove a tag from its collection
@@ -148,26 +136,10 @@ func RemoveTag(collection *mongo.Collection, id primitive.ObjectID) (*int64, err
 	return &res.DeletedCount, nil
 }
 
-// FindTags find all the tags in its collection
-func FindTags(collection *mongo.Collection) ([]types.Tag, error) {
-	query := bson.D{}
-	cursor, err := collection.Find(context.TODO(), query)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.TODO())
-
-	var tags []types.Tag
-	if err = cursor.All(context.TODO(), &tags); err != nil {
-		return nil, err
-	}
-	return tags, nil
-}
-
 // TagsWanted find all the names of wanted tags
 func TagsWantedNames(mongoClient *mongo.Client) ([]string, error) {
 	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("TAGS_WANTED_COLLECTION"))
-	res, err := FindTags(collectionTagsWanted)
+	res, err := FindMany[types.Tag](collectionTagsWanted, bson.M{})
 	if err != nil {
 		return nil, fmt.Errorf("FindTags Wanted has failed: \n%v", err)
 	}
@@ -181,7 +153,7 @@ func TagsWantedNames(mongoClient *mongo.Client) ([]string, error) {
 // TagsUnwantednames find all the names of wanted tags
 func TagsUnwantedNames(mongoClient *mongo.Client) ([]string, error) {
 	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("TAGS_UNWANTED_COLLECTION"))
-	res, err := FindTags(collectionTagsUnwanted)
+	res, err := FindMany[types.Tag](collectionTagsUnwanted, bson.M{})
 	if err != nil {
 		return nil, fmt.Errorf("FindTags Unwated has failed: \n%v", err)
 	}

@@ -18,8 +18,10 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"regexp"
 	"strings"
@@ -82,7 +84,9 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 				for _, photo := range searchPerPage.Photos {
 
 					// look for existing image
-					_, err := mongodb.FindImageIDByOriginID(collectionImages, photo.ID)
+					query := bson.M{"originID": photo.ID}
+					options := options.FindOne().SetProjection(bson.M{"_id": 1})
+					_, err := mongodb.FindOne[types.Image](collectionImages, query, options)
 					if err != nil {
 						return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 					}
@@ -99,7 +103,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						return nil, fmt.Errorf("FindUser has failed: %v", err)
 					}
 					if userFound != nil {
-						continue	// skip the image with unwanted user
+						continue // skip the image with unwanted user
 					}
 
 					var photoTags []string
@@ -110,7 +114,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					// skip image if one of its tag is unwanted
 					idx := utils.FindIndexRegExp(unwantedTags, photoTags)
 					if idx != -1 {
-						continue 	// skip image with unwanted tag
+						continue // skip image with unwanted tag
 					}
 
 					// extract the photo download link
