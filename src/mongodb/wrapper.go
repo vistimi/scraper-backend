@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"scrapper/src/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -9,12 +10,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type findSchema interface {
+type wrapperSchema interface {
 	types.User | types.Tag | types.Image
 }
 
 // FindUser find a user based on either its originID or userName
-func FindOne[T findSchema](collection *mongo.Collection, query bson.M, options ...*options.FindOneOptions) (*T, error) {
+func FindOne[T wrapperSchema](collection *mongo.Collection, query bson.M, options ...*options.FindOneOptions) (*T, error) {
 	var found T
 	var err error
 	if len(options) != 0 {
@@ -33,7 +34,7 @@ func FindOne[T findSchema](collection *mongo.Collection, query bson.M, options .
 }
 
 // FindTags find all the tags in its collection
-func FindMany[T findSchema](collection *mongo.Collection, query bson.M, options ...*options.FindOptions) ([]T, error) {
+func FindMany[T wrapperSchema](collection *mongo.Collection, query bson.M, options ...*options.FindOptions) ([]T, error) {
 	var cursor *mongo.Cursor
 	var err error
 	if len(options) != 0 {
@@ -51,4 +52,22 @@ func FindMany[T findSchema](collection *mongo.Collection, query bson.M, options 
 		return nil, err
 	}
 	return found, nil
+}
+
+func InsertOne[T wrapperSchema](collection *mongo.Collection, body T, query bson.M) (interface{}, error) {
+	// only add unique element in the collection
+	found, err := FindOne[T](collection, query)
+	if err != nil {
+		return nil, err
+	}
+	if found != nil {
+		return nil, fmt.Errorf(`The element %T exist already in the collection`, *new(T))
+	}
+
+	// insert element if unique
+	res, err := collection.InsertOne(context.TODO(), body)
+	if err != nil {
+		return nil, err
+	}
+	return res.InsertedID, nil
 }

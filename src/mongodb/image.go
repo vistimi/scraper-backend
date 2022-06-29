@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"errors"
+	"strings"
 
 	"scrapper/src/types"
 
@@ -27,8 +28,8 @@ import (
 )
 
 // InsertImage insert an image in its collection
-func InsertImage(collection *mongo.Collection, document types.Image) (primitive.ObjectID, error) {
-	res, err := collection.InsertOne(context.TODO(), document)
+func InsertImage(collection *mongo.Collection, image types.Image) (primitive.ObjectID, error) {
+	res, err := collection.InsertOne(context.TODO(), image)
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
@@ -50,7 +51,7 @@ func RemoveImage(collection *mongo.Collection, id primitive.ObjectID, origin str
 }
 
 // RemoveImageAndFile remove an image based on its mongodb id and remove its file
-func RemoveImageAndFile(collection *mongo.Collection, origin string, id primitive.ObjectID) (*int64, error) {
+func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID, origin string) (*int64, error) {
 	image, err := FindOne[types.Image](collection, bson.M{"_id": id, "origin": origin})
 	if err != nil {
 		return nil, fmt.Errorf("FindImageByID has failed: %v", err)
@@ -76,7 +77,7 @@ func RemoveImagesAndFilesOneOrigin(mongoClient *mongo.Client, origin string, que
 		return nil, fmt.Errorf("FindImagesIDs has failed: %v", err)
 	}
 	for _, image := range images {
-		deletedOne, err := RemoveImageAndFile(collectionImages, origin, image.ID)
+		deletedOne, err := RemoveImageAndFile(collectionImages, image.ID, origin)
 		if err != nil {
 			return nil, fmt.Errorf("RemoveImageAndFile has failed: %v", err)
 		}
@@ -121,4 +122,22 @@ func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*typ
 		}
 	}
 	return FindOne[types.Image](collection, bson.M{"_id": body.ID})
+}
+
+func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface{}, error) {
+	if body.Origin == "" || body.OriginID == "" {
+		return nil, errors.New("Some fields are empty!")
+	}
+	now := time.Now()
+	body.CreationDate = &now
+	body.Origin = strings.ToLower(body.Origin)
+
+	// insert the unwanted image
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	query := bson.M{"origin": body.Origin, "originID": body.OriginID}
+	insertedID, err := InsertOne(collectionImagesUnwanted, body, query)
+	if err != nil {
+		return nil, fmt.Errorf("insertUser has failed: %v", err)
+	}
+	return insertedID, nil
 }

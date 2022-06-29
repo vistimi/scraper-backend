@@ -68,7 +68,13 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.Photographer.ID != nil {
 					UserID = *photo.Photographer.ID
 				}
-				userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, UserID, userName)
+				query := bson.M{"origin": origin,
+					"$or": bson.A{
+						bson.M{"originID": UserID},
+						bson.M{"name": userName},
+					},
+				}
+				userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 				if err != nil {
 					return nil, fmt.Errorf("FindUser has failed: %v", err)
 				}
@@ -81,7 +87,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.ID != nil {
 					originID = *photo.ID
 				}
-				query := bson.M{"originID": originID}
+				query = bson.M{"originID": originID}
 				options := options.FindOne().SetProjection(bson.M{"_id": 1})
 				_, err = mongodb.FindOne[types.Image](collectionImages, query, options)
 				if err != nil {

@@ -55,7 +55,13 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 
 			for _, photo := range searchPerPage.Photos {
 				// look for unwanted Users
-				userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, fmt.Sprint(photo.PhotographerID), photo.Photographer)
+				query := bson.M{"origin": origin,
+					"$or": bson.A{
+						bson.M{"originID": fmt.Sprint(photo.PhotographerID)},
+						bson.M{"name": photo.Photographer},
+					},
+				}
+				userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 				if err != nil {
 					return nil, fmt.Errorf("FindUser has failed: %v", err)
 				}
@@ -64,7 +70,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 				}
 
 				// look for existing image
-				query := bson.M{"originID": fmt.Sprint(photo.ID)}
+				query = bson.M{"originID": fmt.Sprint(photo.ID)}
 				options := options.FindOne().SetProjection(bson.M{"_id": 1})
 				_, err = mongodb.FindOne[types.Image](collectionImages, query, options)
 				if err != nil {
