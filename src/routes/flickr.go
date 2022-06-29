@@ -98,7 +98,13 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					}
 
 					// look for unwanted Users
-					userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, infoData.UserID, infoData.UserName)
+					query = bson.M{"origin": origin,
+						"$or": bson.A{
+							bson.M{"originID": infoData.UserID},
+							bson.M{"name": infoData.UserName},
+						},
+					}
+					userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 					if err != nil {
 						return nil, fmt.Errorf("FindUser has failed: %v", err)
 					}

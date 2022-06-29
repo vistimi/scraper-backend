@@ -15,49 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// FindUser find a user based on either its originID or userName
-func FindUser(collection *mongo.Collection, origin string, originID string, name string) (*types.User, error) {
-	var user types.User
-	query := bson.M{
-		"origin": origin,
-		"$or": bson.A{
-			bson.M{"originID": originID},
-			bson.M{"name": name},
-		},
-	}
-	err := collection.FindOne(context.TODO(), query).Decode(&user)
-	switch err {
-	case nil:
-		return &user, nil
-	case mongo.ErrNoDocuments:
-		return nil, nil
-	default:
-		return nil, err
-	}
-}
-
-// InsertUser inserts a unique user
-func insertUser(userCollection *mongo.Collection, body types.User) (interface{}, error) {
-	// only add unique user from this collection
-	userFound, err := FindUser(userCollection, body.Origin, body.OriginID, body.Name)
-	if err != nil {
-		return nil, err
-	}
-	if userFound != nil {
-		return nil, errors.New(`The user exist already in the collection`)
-	}
-
-	// insert user
-	now := time.Now()
-	body.CreationDate = &now
-	body.Origin = strings.ToLower(body.Origin)
-	res, err := userCollection.InsertOne(context.TODO(), body)
-	if err != nil {
-		return nil, err
-	}
-	return res.InsertedID, nil
-}
-
 type ReturnInsertUserUnwanted struct {
 	InsertedTagID     interface{}
 	DeletedImageCount int64
@@ -68,17 +25,25 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 	if body.Name == "" || body.Origin == "" || body.OriginID == "" {
 		return nil, errors.New("Some fields are empty!")
 	}
+	now := time.Now()
+	body.CreationDate = &now
 	body.Origin = strings.ToLower(body.Origin)
 
 	// insert the unwanted user
 	collectionUserUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
-	insertedID, err := insertUser(collectionUserUnwanted, body)
+	query := bson.M{"origin": body.Origin,
+		"$or": bson.A{
+			bson.M{"originID": body.OriginID},
+			bson.M{"name": body.Name},
+		},
+	}
+	insertedID, err := InsertOne(collectionUserUnwanted, body, query)
 	if err != nil {
 		return nil, fmt.Errorf("insertUser has failed: %v", err)
 	}
 
 	// remove the images with that unwanted user
-	query := bson.M{
+	query = bson.M{
 		"user.origin": body.Origin,
 		"$or": bson.A{
 			bson.M{"user.originID": body.OriginID},
@@ -86,7 +51,7 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 		},
 	}
 	options := options.Find().SetProjection(bson.M{"_id": 1})
-	deletedCount, err := RemoveImagesAndFilesOneOrigin(mongoClient, body.Origin, query, options)	// check in all origins
+	deletedCount, err := RemoveImagesAndFilesOneOrigin(mongoClient, body.Origin, query, options) // check in all origins
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}

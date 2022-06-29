@@ -21,12 +21,18 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	router.GET("/images/id/:origin", wrapperHandlerURI(mongoClient, routes.FindImagesIDs))
-
 	router.Static("/image/file", "/home/olivier/dressme/images")
 	router.GET("/image/:id", wrapperHandlerURI(mongoClient, routes.FindImage))
-	router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
+	// router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
+
+	router.GET("/images/id/:origin", wrapperHandlerURI(mongoClient, routes.FindImagesIDs))
+
+	// router.GET("/image/unwanted", wrapperHandlerBody(mongoClient, routes.FindImageUnwanted))
+	router.POST("/image/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertImageUnwanted))
+	router.DELETE("/image/unwanted", wrapperHandlerBody(mongoClient, routes.RemoveImageUnwanted))
+
+	router.GET("/images/unwanted", wrapperHandler(mongoClient, routes.FindImagesUnwanted))
 
 	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagWanted))
 	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))

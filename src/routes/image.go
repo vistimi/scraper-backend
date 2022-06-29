@@ -24,7 +24,7 @@ func FindImagesIDs(mongoClient *mongo.Client, params ParamsFindImagesIDs) ([]typ
 }
 
 type ParamsFindImage struct {
-	ID         string `uri:"id" binding:"required"`
+	ID string `uri:"id" binding:"required"`
 }
 
 func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image, error) {
@@ -36,15 +36,35 @@ func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image,
 	return mongodb.FindOne[types.Image](collectionImages, bson.M{"_id": imageID})
 }
 
+type BodyFindImageUnwanted struct {
+	Origin   string `bson:"origin" json:"origin"`
+	OriginID string `bson:"originID" json:"originID"`
+}
+
+func FindImageUnwanted(mongoClient *mongo.Client, body BodyFindImageUnwanted) (*types.Image, error) {
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	return mongodb.FindOne[types.Image](collectionImagesUnwanted, bson.M{"origin": body.Origin, "originID": body.OriginID})
+}
+
+func FindImagesUnwanted(mongoClient *mongo.Client) ([]types.Image, error) {
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	return mongodb.FindMany[types.Image](collectionImagesUnwanted, bson.M{})
+}
+
 // Body for the RemoveImage request
 type BodyRemoveImage struct {
-	Origin string		// image origin
-	ID         primitive.ObjectID
+	Origin string // image origin
+	ID     primitive.ObjectID
 }
 
 func RemoveImage(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error) {
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	return mongodb.RemoveImageAndFile(collectionImages, body.Origin, body.ID)
+	return mongodb.RemoveImageAndFile(collectionImages, body.ID, body.Origin)
+}
+
+func RemoveImageUnwanted(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error) {
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	return mongodb.RemoveImage(collectionImagesUnwanted, body.ID, body.Origin)
 }
 
 func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.Image, error) {
