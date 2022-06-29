@@ -31,6 +31,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	_, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -51,8 +52,17 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 			}
 
 			for _, photo := range searchPerPage.Photos {
+				// look for unwanted Users
+				userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, fmt.Sprint(photo.PhotographerID), photo.Photographer)
+				if err != nil {
+					return nil, fmt.Errorf("FindUser has failed: %v", err)
+				}
+				if userFound != nil {
+					continue	// skip the image with unwanted user
+				}
+
 				// look for existing image
-				_, err := mongodb.FindImageIDByOriginID(collectionImages, fmt.Sprint(photo.ID))
+				_, err = mongodb.FindImageIDByOriginID(collectionImages, fmt.Sprint(photo.ID))
 				if err != nil {
 					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}
@@ -81,6 +91,14 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					},
 				}
 
+				// user creation
+				user := types.User{
+					Origin:       origin,
+					Name:         photo.Photographer,
+					OriginID:     fmt.Sprint(photo.PhotographerID),
+					CreationDate: &now,
+				}
+
 				// image creation
 				linkURL, err := url.Parse(link)
 				if err != nil {
@@ -97,6 +115,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 				document := types.Image{
 					Origin:       origin,
 					OriginID:     fmt.Sprint(photo.ID),
+					User:         user,
 					Extension:    extension,
 					Path:         fileName,
 					Width:        width,

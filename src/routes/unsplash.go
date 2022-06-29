@@ -34,6 +34,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -45,22 +46,40 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 
 		searchPerPage, err := searchPhotosPerPageUnsplash(wantedTag, page)
 		if err != nil {
-			return nil,  fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
+			return nil, fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 		}
 
 		for page := page; page <= int(*searchPerPage.TotalPages); page++ {
 			searchPerPage, err = searchPhotosPerPageUnsplash(wantedTag, page)
 			if err != nil {
-				return nil,  fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
+				return nil, fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 			}
 
 			for _, photo := range *searchPerPage.Results {
+
+				// look for unwanted Users
+				var userName string
+				if photo.Photographer.Username != nil {
+					userName = *photo.Photographer.Username
+				}
+				var UserID string
+				if photo.Photographer.ID != nil {
+					UserID = *photo.Photographer.ID
+				}
+				userFound, err := mongodb.FindUser(collectionUsersUnwanted, origin, UserID, userName)
+				if err != nil {
+					return nil, fmt.Errorf("FindUser has failed: %v", err)
+				}
+				if userFound != nil {
+					continue	// skip the image with unwanted user
+				}
+
 				// look for existing image
 				var originID string
 				if photo.ID != nil {
 					originID = *photo.ID
 				}
-				_, err := mongodb.FindImageIDByOriginID(collectionImages, originID)
+				_, err = mongodb.FindImageIDByOriginID(collectionImages, originID)
 				if err != nil {
 					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}
@@ -93,15 +112,26 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				var tags []types.Tag
 				now := time.Now()
 				for _, photoTag := range *photo.Tags {
+					var tagTitle string
+					if photoTag.Title != nil {
+						tagTitle = *photoTag.Title
+					}
 					tag := types.Tag{
-						Name:         strings.ToLower(*photoTag.Title),
+						Name:         strings.ToLower(tagTitle),
 						Origin:       origin,
 						CreationDate: &now,
 					}
 					tags = append(tags, tag)
 				}
 
-				// image creation
+				// user creation
+				user := types.User{
+					Origin:       origin,
+					Name:         userName,
+					OriginID:     UserID,
+					CreationDate: &now,
+				}
+
 				width, err := strconv.Atoi(link.Query().Get("w"))
 				if err != nil {
 					return nil, err
@@ -118,9 +148,12 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.AltDescription != nil {
 					description = *photo.AltDescription
 				}
+
+				// image creation
 				document := types.Image{
 					Origin:       origin,
 					OriginID:     originID,
+					User:         user,
 					Extension:    extension,
 					Path:         fileName,
 					Width:        width,

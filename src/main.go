@@ -32,8 +32,14 @@ func main() {
 	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))
 	router.DELETE("/tag/wanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveTagWanted))
 	router.DELETE("/tag/unwanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveTagUnwanted))
+
 	router.GET("/tags/wanted", wrapperHandler(mongoClient, mongodb.TagsWanted))
 	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
+
+	router.POST("/user/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertUserUnwanted))
+	router.DELETE("/user/unwanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveUserUnwanted))
+
+	router.GET("/users/unwanted", wrapperHandler(mongoClient, mongodb.UsersUnwanted))
 
 	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosFlickr))
 	router.POST("/search/unsplash", wrapperHandler(mongoClient, routes.SearchPhotosUnsplash))

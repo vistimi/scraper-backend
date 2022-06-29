@@ -106,17 +106,17 @@ func RemoveImage(collection *mongo.Collection, id primitive.ObjectID) (*int64, e
 func RemoveImageAndFile(collection *mongo.Collection, collectionDir string, id primitive.ObjectID) (*int64, error) {
 	image, err := FindImageByID(collection, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FindImageByID has failed: %v", err)
 	}
 	deletedCount, err := RemoveImage(collection, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("RemoveImage has failed: %v", err)
 	}
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
 	path := fmt.Sprintf(filepath.Join(folderDir, collectionDir, image.Path))
 	err = os.Remove(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("os.Remove has failed: %v", err)
 	}
 	return deletedCount, nil
 }
