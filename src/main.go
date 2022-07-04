@@ -24,7 +24,7 @@ func main() {
 
 	router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
 	router.GET("/image/:id", wrapperHandlerURI(mongoClient, routes.FindImage))
-	router.PUT("/image/tags", wrapperHandlerBody(mongoClient, routes.UpdateImageTags))
+	// router.PUT("/image/tags", wrapperHandlerBody(mongoClient, routes.UpdateImageTags))
 	router.PUT("/image/file", wrapperHandlerBody(mongoClient, routes.UpdateImageFile))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
 
