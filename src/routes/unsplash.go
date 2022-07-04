@@ -165,7 +165,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 					OriginID:     originID,
 					User:         user,
 					Extension:    extension,
-					Path:         fileName,
+					Name:         fileName,
 					Width:        width,
 					Height:       height,
 					Title:        title,

@@ -127,7 +127,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					OriginID:     fmt.Sprint(photo.ID),
 					User:         user,
 					Extension:    extension,
-					Path:         fileName,
+					Name:         fileName,
 					Width:        width,
 					Height:       height,
 					Title:        "",

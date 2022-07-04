@@ -67,10 +67,15 @@ func RemoveImageUnwanted(mongoClient *mongo.Client, body BodyRemoveImage) (*int6
 	return mongodb.RemoveImage(collectionImagesUnwanted, body.ID, body.Origin)
 }
 
-func UpdateImage(mongoClient *mongo.Client, body types.BodyUpdateImage) (*types.Image, error) {
+func UpdateImageTags(mongoClient *mongo.Client, body types.BodyUpdateImageTags) (*types.Image, error) {
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 	if body.ID == primitive.NilObjectID {
 		return nil, errors.New("Body not valid, ID empty")
 	}
-	return mongodb.UpdateImage(collectionImages, body)
+	return mongodb.UpdateImageTags(collectionImages, body)
+}
+
+func UpdateImageFile(mongoClient *mongo.Client, body types.BodyUpdateImageFile) (*types.Image, error) {
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	return mongodb.UpdateImageFile(collectionImages, body)
 }

@@ -24,7 +24,10 @@ import (
 
 	"path/filepath"
 
+	"image"
 	"os"
+	_ "image/jpeg"
+    _ "image/png"
 )
 
 // InsertImage insert an image in its collection
@@ -61,7 +64,7 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID, ori
 		return nil, fmt.Errorf("RemoveImage has failed: %v", err)
 	}
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	path := fmt.Sprintf(filepath.Join(folderDir, origin, image.Path))
+	path := fmt.Sprintf(filepath.Join(folderDir, origin, image.Name))
 	err = os.Remove(path)
 	if err != nil {
 		return nil, fmt.Errorf("os.Remove has failed: %v", err)
@@ -101,8 +104,8 @@ func RemoveImagesAndFilesAllOrigins(mongoClient *mongo.Client, query bson.M, opt
 	return &deletedCount, nil
 }
 
-// UpdateImage add tags to an image based on its mongodb id
-func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*types.Image, error) {
+// UpdateImageTags add tags to an image based on its mongodb id
+func UpdateImageTags(collection *mongo.Collection, body types.BodyUpdateImageTags) (*types.Image, error) {
 	query := bson.M{"_id": body.ID}
 	if body.Tags != nil {
 		for i := 0; i < len(body.Tags); i++ {
@@ -118,10 +121,45 @@ func UpdateImage(collection *mongo.Collection, body types.BodyUpdateImage) (*typ
 		}
 		_, err := collection.UpdateOne(context.TODO(), query, update)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 		}
 	}
-	return FindOne[types.Image](collection, bson.M{"_id": body.ID})
+	return FindOne[types.Image](collection, query)
+}
+
+func UpdateImageFile(collection *mongo.Collection, body types.BodyUpdateImageFile) (*types.Image, error) {
+	// replace the file
+	folderDir := utils.DotEnvVariable("IMAGE_PATH")
+	path := fmt.Sprintf(filepath.Join(folderDir, body.Origin, body.Name))
+	err := os.WriteFile(path, body.File, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("os.WriteFile has failed: %v", err)
+	}
+
+	// get the new dimensions
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("os.Open has failed: %v", err)
+	}
+	fmt.Println(path, utils.ToJSON(*file))
+	image, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return nil, fmt.Errorf("image.DecodeConfig has failed. Only jpeg/jpg and png supported: %v", err)
+	}
+
+	// update in db the new dimensions
+	query := bson.M{"origin": body.Origin, "name": body.Name}
+	update := bson.M{
+		"$set": bson.M{
+			"width":  image.Width,
+			"height": image.Height,
+		},
+	}
+	_, err = collection.UpdateOne(context.TODO(), query, update)
+	if err != nil {
+		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
+	}
+	return FindOne[types.Image](collection, query)
 }
 
 func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface{}, error) {

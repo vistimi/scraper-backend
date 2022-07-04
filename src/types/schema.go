@@ -13,7 +13,7 @@ type Image struct {
 	OriginID     string             `bson:"originID,omitempty" json:"originID,omitempty"` // id from original website
 	User         User               `bson:"user,omitempty" json:"user,omitempty"`
 	Extension    string             `bson:"extension,omitempty" json:"extension,omitempty"` // type of file
-	Path         string             `bson:"path,omitempty" json:"path,omitempty"`           // relative path name <originID>.<extension>
+	Name         string             `bson:"name,omitempty" json:"name,omitempty"`           // name <originID>.<extension>
 	Width        int                `bson:"width,omitempty" json:"width,omitempty"`         // width of image
 	Height       int                `bson:"height,omitempty" json:"height,omitempty"`       // height of image
 	Title        string             `bson:"title,omitempty" json:"title,omitempty"`
