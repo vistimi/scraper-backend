@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"scraper/src/types"
-	"scraper/src/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -43,7 +42,6 @@ func FindMany[T wrapperSchema](collection *mongo.Collection, query bson.M, optio
 	} else {
 		cursor, err = collection.Find(context.TODO(), query)
 	}
-	fmt.Printf("errrr: %T\n %v", err, utils.ToJSON(err))
 	if err != nil{
 		return nil, err
 	}

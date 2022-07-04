@@ -179,7 +179,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						OriginID:     photo.ID,
 						User:         user,
 						Extension:    infoData.OriginalFormat,
-						Path:         fileName,
+						Name:         fileName,
 						Width:        downloadData.Photos[idx].Width,
 						Height:       downloadData.Photos[idx].Height,
 						Title:        infoData.Title,
