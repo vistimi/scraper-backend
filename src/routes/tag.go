@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"scrapper/src/mongodb"
-	"scrapper/src/utils"
+	"scraper/src/mongodb"
+	"scraper/src/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,7 +13,7 @@ type ParamsRemoveTag struct {
 }
 
 func RemoveTagWanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
-	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("TAGS_WANTED_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("TAGS_WANTED_COLLECTION"))
 	tagID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func RemoveTagWanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64,
 }
 
 func RemoveTagUnwanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
-	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("TAGS_UNWANTED_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("TAGS_UNWANTED_COLLECTION"))
 	tagID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err

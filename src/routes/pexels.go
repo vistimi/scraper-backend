@@ -3,9 +3,9 @@ package routes
 import (
 	"fmt"
 	"regexp"
-	"scrapper/src/mongodb"
-	"scrapper/src/types"
-	"scrapper/src/utils"
+	"scraper/src/mongodb"
+	"scraper/src/types"
+	"scraper/src/utils"
 	"strconv"
 	"time"
 
@@ -32,8 +32,8 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 		return nil, err
 	}
 
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	_, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {

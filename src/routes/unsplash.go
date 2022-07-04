@@ -2,9 +2,9 @@ package routes
 
 import (
 	"fmt"
-	"scrapper/src/mongodb"
-	"scrapper/src/types"
-	"scrapper/src/utils"
+	"scraper/src/mongodb"
+	"scraper/src/types"
+	"scraper/src/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,8 +35,8 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 		return nil, err
 	}
 
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {

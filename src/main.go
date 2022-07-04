@@ -3,11 +3,12 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	"scrapper/src/routes"
+	"scraper/src/routes"
+	"scraper/src/utils"
 
 	"net/http"
 
-	"scrapper/src/mongodb"
+	"scraper/src/mongodb"
 
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -21,7 +22,7 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	router.Static("/image/file", "/home/olivier/dressme/images")
+	router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
 	router.GET("/image/:id", wrapperHandlerURI(mongoClient, routes.FindImage))
 	// router.PUT("/image", wrapperHandlerBody(mongoClient, routes.UpdateImage))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))

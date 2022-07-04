@@ -3,7 +3,8 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"scrapper/src/types"
+	"scraper/src/types"
+	"scraper/src/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,7 +43,8 @@ func FindMany[T wrapperSchema](collection *mongo.Collection, query bson.M, optio
 	} else {
 		cursor, err = collection.Find(context.TODO(), query)
 	}
-	if err != nil {
+	fmt.Printf("errrr: %T\n %v", err, utils.ToJSON(err))
+	if err != nil{
 		return nil, err
 	}
 	defer cursor.Close(context.TODO())

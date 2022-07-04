@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"scrapper/src/types"
+	"scraper/src/types"
 
-	"scrapper/src/utils"
+	"scraper/src/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -70,7 +70,7 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID, ori
 }
 
 func RemoveImagesAndFilesOneOrigin(mongoClient *mongo.Client, origin string, query bson.M, options *options.FindOptions) (*int64, error) {
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 	var deletedCount int64
 	images, err := FindMany[types.Image](collectionImages, query, options)
 	if err != nil {
@@ -133,7 +133,7 @@ func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface
 	body.Origin = strings.ToLower(body.Origin)
 
 	// insert the unwanted image
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	query := bson.M{"origin": body.Origin, "originID": body.OriginID}
 	insertedID, err := InsertOne(collectionImagesUnwanted, body, query)
 	if err != nil {

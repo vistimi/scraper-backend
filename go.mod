@@ -1,4 +1,4 @@
-module scrapper
+module scraper
 
 go 1.18
 

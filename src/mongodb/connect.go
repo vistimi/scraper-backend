@@ -1,7 +1,7 @@
 package mongodb
 
 import (
-	"scrapper/src/utils"
+	"scraper/src/utils"
 
 	"go.mongodb.org/mongo-driver/mongo"
 
