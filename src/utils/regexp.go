@@ -24,5 +24,4 @@ func FindIndexRegExp (arrayRegExp []string, arrayNeedle []string) int {
 			return true // if needle is present return true
 		}
 	})
-	
 }

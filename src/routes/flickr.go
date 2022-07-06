@@ -35,8 +35,12 @@ type ParamsSearchPhotoFlickr struct {
 func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error) {
 
 	quality := params.Quality
+	qualitiesAvailable := []string{"Small", "Medium", "Large", "Original"}
+	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
+	if idx == -1 {
+		return nil, fmt.Errorf("quality needs to be `Original`(w=2400), `Large`(w=1024), `Medium`(w = 500) or `Small`(w = 240) and your is `%s`", quality)
+	}
 	var insertedIDs []primitive.ObjectID
-
 	parser := pagser.New() // parsing html in string responses
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
@@ -154,7 +158,8 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						return nil, fmt.Errorf("DownloadFile has failed: %v", err)
 					}
 
-					// tags creation
+					// iamge creation
+					imageSizeID := primitive.NewObjectID()
 					var tags []types.Tag
 					copier.Copy(&tags, &infoData.Tags)
 					now := time.Now()
@@ -162,33 +167,39 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						tag := &tags[i]
 						tag.Name = strings.ToLower(tag.Name)
 						tag.CreationDate = &now
-						tag.Origin = origin
+						tag.Origin.Name = origin
+						tag.Origin.ImageSizeID = imageSizeID
 					}
-
-					// user creation
 					user := types.User{
 						Origin:       origin,
 						Name:         infoData.UserName,
 						OriginID:     infoData.UserID,
 						CreationDate: &now,
 					}
-
-					// image creation
+					box := types.Box{
+						X:      0, // original x anchor
+						Y:      0, // original y anchor
+						Width:  downloadData.Photos[idx].Width,
+						Height: downloadData.Photos[idx].Height,
+					}
+					size := []types.ImageSize{{
+						ID:           imageSizeID,
+						CreationDate: &now,
+						Box:          box,
+					}}
 					document := types.Image{
 						Origin:       origin,
 						OriginID:     photo.ID,
 						User:         user,
 						Extension:    infoData.OriginalFormat,
 						Name:         fileName,
-						Width:        downloadData.Photos[idx].Width,
-						Height:       downloadData.Photos[idx].Height,
+						Size:         size,
 						Title:        infoData.Title,
 						Description:  infoData.Description,
 						License:      licenseIDsNames[licenseID],
 						CreationDate: &now,
 						Tags:         tags,
 					}
-
 					insertedID, err := mongodb.InsertImage(collectionImages, document)
 					if err != nil {
 						return nil, fmt.Errorf("InsertImage has failed: %v", err)
@@ -221,12 +232,13 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, licenseID string, tags str
 	r := &Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key": utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
-			"method":  "flickr.photos.search",
-			"tags":    tags,
-			"license": licenseID,
-			"media":   "photos",
-			"page":    page,
+			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
+			"method":   "flickr.photos.search",
+			"tags":     tags,
+			"license":  licenseID,
+			"media":    "photos",
+			"per_page": "500", // 100 default, max 500
+			"page":     page,
 		},
 	}
 	// fmt.Println(r.URL())

@@ -14,8 +14,7 @@ type Image struct {
 	User         User               `bson:"user,omitempty" json:"user,omitempty"`
 	Extension    string             `bson:"extension,omitempty" json:"extension,omitempty"` // type of file
 	Name         string             `bson:"name,omitempty" json:"name,omitempty"`           // name <originID>.<extension>
-	Width        int                `bson:"width,omitempty" json:"width,omitempty"`         // width of image
-	Height       int                `bson:"height,omitempty" json:"height,omitempty"`       // height of image
+	Size         []ImageSize        `bson:"size,omitempty" json:"size,omitempty"`           // size cropping history
 	Title        string             `bson:"title,omitempty" json:"title,omitempty"`
 	Description  string             `bson:"description,omitempty" json:"description,omitempty"` // decription of image
 	License      string             `bson:"license,omitempty" json:"license,omitempty"`         // type of public license
@@ -27,14 +26,35 @@ type Image struct {
 type Tag struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // mongodb default id
 	Name         string             `bson:"name,omitempty" json:"name,omitempty"`
-	Origin       string             `bson:"origin,omitempty" json:"origin,omitempty"` // original website
 	CreationDate *time.Time         `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
+	Origin       TagOrigin          `bson:"origin,omitempty" json:"origin,omitempty"` // origin informations
 }
 
 type User struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // mongodb default id
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`           // mongodb default id
 	Origin       string             `bson:"origin,omitempty" json:"origin,omitempty"`     // original website
-	Name         string             `bson:"name,omitempty" json:"name,omitempty"`		// userName
+	Name         string             `bson:"name,omitempty" json:"name,omitempty"`         // userName
 	OriginID     string             `bson:"originID,omitempty" json:"originID,omitempty"` // ID from the original website
 	CreationDate *time.Time         `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
+}
+
+type ImageSize struct {
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // mongodb default id
+	CreationDate *time.Time         `bson:"creationDate,omitempty" json:"creationDate,omitempty"`
+	Box          Box                `bson:"box,omitempty" json:"box,omitempty"` // absolut reference of the top left of new box based on the original sizes
+}
+
+type TagOrigin struct {
+	Name        string             `bson:"name,omitempty" json:"name,omitempty"`               // name of the origin `gui`, `username` or `detector`
+	Model       string             `bson:"model,omitempty" json:"model,omitempty"`             // name of the model used for the detector
+	Weights     string             `bson:"weights,omitempty" json:"weights,omitempty"`         // weights of the model used for the detector
+	ImageSizeID primitive.ObjectID `bson:"imageSizeID,omitempty" json:"imageSizeID,omitempty"` // reference to the anchor point
+	Box         Box                `bson:"box,omitempty" json:"box,omitempty"`                 // reference of the bounding box relative to the anchor
+}
+
+type Box struct {
+	X      int `bson:"x,omitempty" json:"x,omitempty"`           // top left x coordinate
+	Y      int `bson:"y,omitempty" json:"y,omitempty"`           // top left y coordinate
+	Width  int `bson:"width,omitempty" json:"width,omitempty"`   // width
+	Height int `bson:"height,omitempty" json:"height,omitempty"` // height
 }

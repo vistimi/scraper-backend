@@ -24,7 +24,7 @@ func main() {
 
 	router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
 	router.GET("/image/:id", wrapperHandlerURI(mongoClient, routes.FindImage))
-	// router.PUT("/image/tags", wrapperHandlerBody(mongoClient, routes.UpdateImageTags))
+	router.PUT("/image/tags", wrapperHandlerBody(mongoClient, routes.UpdateImageTags))
 	router.PUT("/image/file", wrapperHandlerBody(mongoClient, routes.UpdateImageFile))
 	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
 
@@ -50,8 +50,8 @@ func main() {
 	router.GET("/users/unwanted", wrapperHandler(mongoClient, mongodb.UsersUnwanted))
 
 	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosFlickr))
-	router.POST("/search/unsplash", wrapperHandler(mongoClient, routes.SearchPhotosUnsplash))
-	router.POST("/search/pexels", wrapperHandler(mongoClient, routes.SearchPhotosPexels))
+	router.POST("/search/unsplash/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosUnsplash))
+	router.POST("/search/pexels/:quality", wrapperHandlerURI(mongoClient, routes.SearchPhotosPexels))
 
 	router.Run("localhost:8080")
 }

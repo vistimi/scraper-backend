@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/exp/slices"
 
 	"github.com/hbagdi/go-unsplash/unsplash"
 
@@ -24,7 +25,17 @@ import (
 	"strconv"
 )
 
-func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, error) {
+type ParamsSearchPhotoUnsplash struct {
+	Quality string `uri:"quality" binding:"required"`
+}
+
+func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUnsplash) ([]primitive.ObjectID, error) {
+	quality := params.Quality
+	qualitiesAvailable := []string{"raw", "full", "regular", "small", "thumb"}
+	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
+	if idx == -1 {
+		return nil, fmt.Errorf("quality needs to be `raw`, `full`(hd), `regular`(w = 1080), `small`(w = 400) or `thumb`(w = 200) and your is `%s`", quality)
+	}
 	var insertedIDs []primitive.ObjectID
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
@@ -107,7 +118,19 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				}
 
 				//find download link and extension
-				link := photo.Urls.Small
+				var link *unsplash.URL
+				switch quality {
+				case "raw": 
+					link = photo.Urls.Raw
+				case "full": 
+					link = photo.Urls.Full
+				case "regular": 
+					link = photo.Urls.Regular
+				case "small": 
+					link = photo.Urls.Small
+				case "thumb":
+					link = photo.Urls.Thumb
+				}
 				extension := link.Query().Get("fm")
 
 				// download photo into folder and rename it <id>.<format>
@@ -121,6 +144,11 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				// tags creation
 				var tags []types.Tag
 				now := time.Now()
+				imageSizeID := primitive.NewObjectID()
+				tagOrigin := types.TagOrigin{
+					Name:        origin,
+					ImageSizeID: imageSizeID,
+				}
 				for _, photoTag := range *photo.Tags {
 					var tagTitle string
 					if photoTag.Title != nil {
@@ -128,20 +156,19 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 					}
 					tag := types.Tag{
 						Name:         strings.ToLower(tagTitle),
-						Origin:       origin,
+						Origin:       tagOrigin,
 						CreationDate: &now,
 					}
 					tags = append(tags, tag)
 				}
 
-				// user creation
+				// image creation
 				user := types.User{
 					Origin:       origin,
 					Name:         userName,
 					OriginID:     UserID,
 					CreationDate: &now,
 				}
-
 				width, err := strconv.Atoi(link.Query().Get("w"))
 				if err != nil {
 					return nil, err
@@ -150,6 +177,17 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.Height != nil && photo.Width != nil {
 					height = *photo.Height * width / *photo.Width
 				}
+				box := types.Box{
+					X:      0, // original x anchor
+					Y:      0, // original y anchor
+					Width:  width,
+					Height: height,
+				}
+				size := []types.ImageSize{{
+					ID:           imageSizeID,
+					CreationDate: &now,
+					Box:          box,
+				}}
 				var title string
 				if photo.Description != nil {
 					title = *photo.Description
@@ -158,16 +196,13 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client) ([]primitive.ObjectID, erro
 				if photo.AltDescription != nil {
 					description = *photo.AltDescription
 				}
-
-				// image creation
 				document := types.Image{
 					Origin:       origin,
 					OriginID:     originID,
 					User:         user,
 					Extension:    extension,
 					Name:         fileName,
-					Width:        width,
-					Height:       height,
+					Size:         size,
 					Title:        title,
 					Description:  description,
 					License:      "Unsplash License",
@@ -192,11 +227,12 @@ func searchPhotosPerPageUnsplash(tag string, page int) (*unsplash.PhotoSearchRes
 		Host: "https://api.unsplash.com/search/photos/?",
 		Args: map[string]string{
 			"client_id": utils.DotEnvVariable("UNSPLASH_PUBLIC_KEY"),
+			"per_page":  "80", // default 10
 			"page":      fmt.Sprint(page),
 			"query":     tag,
 		},
 	}
-	// fmt.Println(r.URL())
+	fmt.Println(r.URL())
 
 	body, err := r.ExecuteGET()
 	if err != nil {

@@ -13,15 +13,25 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"os"
+	"golang.org/x/exp/slices"
 
 	"encoding/json"
 	"net/url"
+	"os"
 	"path/filepath"
 )
 
-func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
+type ParamsSearchPhotoPexels struct {
+	Quality string `uri:"quality" binding:"required"`
+}
+
+func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexels) (interface{}, error) {
+	quality := params.Quality
+	qualitiesAvailable := []string{"large2x", "large", "medium", "small", "portrait", "landscape", "tiny"}
+	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
+	if idx == -1 {
+		return nil, fmt.Errorf("quality needs to be `large2x`(h=650), `large`(h=650), `medium`(h=350), `small`(h=130), `portrait`(h=1200), `landscape`(h=627)or `tiny`(h=200) and your is `%s`", quality)
+	}
 	var insertedIDs []primitive.ObjectID
 
 	// If path is already a directory, MkdirAll does nothing and returns nil
@@ -78,7 +88,23 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 				}
 
 				//find download link and extension
-				link := photo.Src.Large
+				var link string
+				switch quality {
+				case "large2x": 
+					link = photo.Src.Large2X
+				case "large": 
+					link = photo.Src.Large
+				case "medium": 
+					link = photo.Src.Medium
+				case "small": 
+					link = photo.Src.Small
+				case "portrait":
+					link = photo.Src.Portrait
+				case "landscape":
+					link = photo.Src.Landscape
+				case "tiny":
+					link = photo.Src.Tiny
+				}
 				regexpMatch := regexp.MustCompile(`\.\w+\?`) // matches a word  preceded by `.` and followed by `?`
 				extension := string(regexpMatch.Find([]byte(link)))
 				extension = extension[1 : len(extension)-1] // remove the `.` and `?` because retgexp hasn't got assertions
@@ -91,25 +117,26 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 					return nil, fmt.Errorf("DownloadFile has failed: %v", err)
 				}
 
-				// tags creation
+				// image creation
 				now := time.Now()
+				imageSizeID := primitive.NewObjectID()
+				tagOrigin := types.TagOrigin{
+					Name:        origin,
+					ImageSizeID: imageSizeID,
+				}
 				tags := []types.Tag{
 					{
 						Name:         wantedTag,
-						Origin:       origin,
+						Origin:       tagOrigin,
 						CreationDate: &now,
 					},
 				}
-
-				// user creation
 				user := types.User{
 					Origin:       origin,
 					Name:         photo.Photographer,
 					OriginID:     fmt.Sprint(photo.PhotographerID),
 					CreationDate: &now,
 				}
-
-				// image creation
 				linkURL, err := url.Parse(link)
 				if err != nil {
 					return nil, err
@@ -122,21 +149,30 @@ func SearchPhotosPexels(mongoClient *mongo.Client) (interface{}, error) {
 				if err != nil {
 					return nil, err
 				}
+				box := types.Box{
+					X:      0, // original x anchor
+					Y:      0, // original y anchor
+					Width:  width,
+					Height: height,
+				}
+				size := []types.ImageSize{{
+					ID:           imageSizeID,
+					CreationDate: &now,
+					Box:          box,
+				}}
 				document := types.Image{
 					Origin:       origin,
 					OriginID:     fmt.Sprint(photo.ID),
 					User:         user,
 					Extension:    extension,
 					Name:         fileName,
-					Width:        width,
-					Height:       height,
+					Size:         size,
 					Title:        "",
 					Description:  photo.Alt,
 					License:      "Pexels License",
 					CreationDate: &now,
 					Tags:         tags,
 				}
-
 				insertedID, err := mongodb.InsertImage(collectionImages, document)
 				if err != nil {
 					return nil, fmt.Errorf("InsertImage has failed: %v", err)
@@ -186,8 +222,9 @@ func searchPhotosPerPagePexels(tag string, page int) (*SearchPhotoResponsePexels
 	r := &Request{
 		Host: "https://api.pexels.com/v1/search?",
 		Args: map[string]string{
-			"query": tag,
-			"page":  fmt.Sprint(page),
+			"query":    tag,
+			"per_page": "80", // default 15, max 80
+			"page":     fmt.Sprint(page),
 		},
 		Header: map[string][]string{
 			"Authorization": {utils.DotEnvVariable("PEXELS_PUBLIC_KEY")},

@@ -63,7 +63,7 @@ func InsertTag(thisCollection *mongo.Collection, otherCollection *mongo.Collecti
 	now := time.Now()
 	body.CreationDate = &now
 	body.Name = strings.ToLower(body.Name)
-	body.Origin = strings.ToLower(body.Origin)
+	body.Origin.Name = strings.ToLower(body.Origin.Name)
 	res, err := thisCollection.InsertOne(context.TODO(), body)
 	if err != nil {
 		return nil, fmt.Errorf("InsertTag has failed: %v", err)
@@ -79,11 +79,11 @@ type ReturnInsertTagUnwanted struct {
 
 // InsertTagUnwanted inserts the new unwanted tag and remove the images with it as well as the files
 func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (*ReturnInsertTagUnwanted, error) {
-	if body.Name == "" || body.Origin == "" {
+	if body.Name == "" || body.Origin.Name == "" {
 		return nil, errors.New("Some fields are empty!")
 	}
 	body.Name = strings.ToLower(body.Name)
-	body.Origin = strings.ToLower(body.Origin)
+	body.Origin.Name = strings.ToLower(body.Origin.Name)
 
 	// insert the unwanted tag
 	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("TAGS_UNWANTED_COLLECTION"))

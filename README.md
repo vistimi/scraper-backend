@@ -9,6 +9,11 @@ Install Golang and MongoDB
 
     git clone git@github.com:KookaS/scraper.git
 
+If pbm with package `<package>: command not found`:
+
+    export GOPATH="$HOME/go"
+    PATH="$GOPATH/bin:$PATH"
+
     
 ## run
 
@@ -43,3 +48,5 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 https://github.com/mgechev/revive
 
     revive -config revive.toml
+
+
