@@ -44,8 +44,8 @@ func InsertImage(collection *mongo.Collection, image types.Image) (primitive.Obj
 }
 
 // RemoveImage remove an image based on its mongodb id
-func RemoveImage(collection *mongo.Collection, id primitive.ObjectID, origin string) (*int64, error) {
-	query := bson.M{"_id": id, "origin": origin}
+func RemoveImage(collection *mongo.Collection, id primitive.ObjectID) (*int64, error) {
+	query := bson.M{"_id": id}
 	res, err := collection.DeleteOne(context.TODO(), query)
 	if err != nil {
 		return nil, err
@@ -54,17 +54,17 @@ func RemoveImage(collection *mongo.Collection, id primitive.ObjectID, origin str
 }
 
 // RemoveImageAndFile remove an image based on its mongodb id and remove its file
-func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID, origin string) (*int64, error) {
-	image, err := FindOne[types.Image](collection, bson.M{"_id": id, "origin": origin})
+func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID) (*int64, error) {
+	image, err := FindOne[types.Image](collection, bson.M{"_id": id})
 	if err != nil {
 		return nil, fmt.Errorf("FindImageByID has failed: %v", err)
 	}
-	deletedCount, err := RemoveImage(collection, id, origin)
+	deletedCount, err := RemoveImage(collection, id)
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImage has failed: %v", err)
 	}
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	path := fmt.Sprintf(filepath.Join(folderDir, origin, image.Name))
+	path := fmt.Sprintf(filepath.Join(folderDir, image.Origin, image.Name))
 	err = os.Remove(path)
 	if err != nil {
 		return nil, fmt.Errorf("os.Remove has failed: %v", err)
@@ -72,7 +72,7 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID, ori
 	return deletedCount, nil
 }
 
-func RemoveImagesAndFilesOneOrigin(mongoClient *mongo.Client, origin string, query bson.M, options *options.FindOptions) (*int64, error) {
+func RemoveImagesAndFiles(mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
 	var deletedCount int64
 	images, err := FindMany[types.Image](collectionImages, query, options)
@@ -80,26 +80,11 @@ func RemoveImagesAndFilesOneOrigin(mongoClient *mongo.Client, origin string, que
 		return nil, fmt.Errorf("FindImagesIDs has failed: %v", err)
 	}
 	for _, image := range images {
-		deletedOne, err := RemoveImageAndFile(collectionImages, image.ID, origin)
+		deletedOne, err := RemoveImageAndFile(collectionImages, image.ID)
 		if err != nil {
 			return nil, fmt.Errorf("RemoveImageAndFile has failed: %v", err)
 		}
 		deletedCount += *deletedOne
-	}
-	return &deletedCount, nil
-}
-
-// Remove all the images in DB and their related file matching the query and options given, for all origins
-func RemoveImagesAndFilesAllOrigins(mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
-
-	imageOrigins := utils.ImageOrigins()
-	var deletedCount int64
-	for _, origin := range imageOrigins {
-		count, err := RemoveImagesAndFilesOneOrigin(mongoClient, origin, query, options)
-		if err != nil {
-			return nil, fmt.Errorf("RemoveImageAndFile has failed: %v", err)
-		}
-		deletedCount += *count
 	}
 	return &deletedCount, nil
 }

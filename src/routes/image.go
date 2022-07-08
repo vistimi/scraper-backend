@@ -53,19 +53,26 @@ func FindImagesUnwanted(mongoClient *mongo.Client) ([]types.Image, error) {
 }
 
 // Body for the RemoveImage request
-type BodyRemoveImage struct {
-	Origin string // image origin
-	ID     primitive.ObjectID
+type ParamsRemoveImage struct {
+	ID string `uri:"id" binding:"required"`
 }
 
-func RemoveImage(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error) {
+func RemoveImage(mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, error) {
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
-	return mongodb.RemoveImageAndFile(collectionImages, body.ID, body.Origin)
+	imageID, err := primitive.ObjectIDFromHex(params.ID)
+	if err != nil {
+		return nil, err
+	}
+	return mongodb.RemoveImageAndFile(collectionImages, imageID)
 }
 
-func RemoveImageUnwanted(mongoClient *mongo.Client, body BodyRemoveImage) (*int64, error) {
+func RemoveImageUnwanted(mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, error) {
 	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	return mongodb.RemoveImage(collectionImagesUnwanted, body.ID, body.Origin)
+	imageID, err := primitive.ObjectIDFromHex(params.ID)
+	if err != nil {
+		return nil, err
+	}
+	return mongodb.RemoveImage(collectionImagesUnwanted, imageID)
 }
 
 func UpdateImageTagsPush(mongoClient *mongo.Client, body types.BodyUpdateImageTagsPush) (*types.Image, error) {

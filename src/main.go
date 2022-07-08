@@ -27,13 +27,13 @@ func main() {
 	router.PUT("/image/tags/push", wrapperHandlerBody(mongoClient, routes.UpdateImageTagsPush))
 	router.PUT("/image/tags/pull", wrapperHandlerBody(mongoClient, routes.UpdateImageTagsPull))
 	router.PUT("/image/file", wrapperHandlerBody(mongoClient, routes.UpdateImageFile))
-	router.DELETE("/image", wrapperHandlerBody(mongoClient, routes.RemoveImage))
+	router.DELETE("/image/:id", wrapperHandlerURI(mongoClient, routes.RemoveImage))
 
 	router.GET("/images/id/:origin", wrapperHandlerURI(mongoClient, routes.FindImagesIDs))
 
 	// router.GET("/image/unwanted", wrapperHandlerBody(mongoClient, routes.FindImageUnwanted))
 	router.POST("/image/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertImageUnwanted))
-	router.DELETE("/image/unwanted", wrapperHandlerBody(mongoClient, routes.RemoveImageUnwanted))
+	router.DELETE("/image/unwanted/:id", wrapperHandlerURI(mongoClient, routes.RemoveImageUnwanted))
 
 	router.GET("/images/unwanted", wrapperHandler(mongoClient, routes.FindImagesUnwanted))
 

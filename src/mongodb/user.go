@@ -51,7 +51,7 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 		},
 	}
 	options := options.Find().SetProjection(bson.M{"_id": 1})
-	deletedCount, err := RemoveImagesAndFilesOneOrigin(mongoClient, body.Origin, query, options) // check in all origins
+	deletedCount, err := RemoveImagesAndFiles(mongoClient, query, options) // check in all origins
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}

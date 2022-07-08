@@ -85,20 +85,26 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (*ReturnInsert
 	body.Name = strings.ToLower(body.Name)
 	body.Origin.Name = strings.ToLower(body.Origin.Name)
 
+	// remove the images with that unwanted tag
+	query := bson.M{"tags.name": bson.M{ "$regex": body.Name}}
+	options := options.Find().SetProjection(bson.M{"_id": 1})
+	deletedCount, err := RemoveImagesAndFiles(mongoClient, query, options)
+	fmt.Println(err)
+	fmt.Printf("deletedCount %v", deletedCount)
+	if err != nil {
+		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
+	}
+	if deletedCount == nil {
+		var zero int64 = 0
+		deletedCount = &zero
+	}
+
 	// insert the unwanted tag
 	collectionTagsUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("TAGS_UNWANTED_COLLECTION"))
 	collectionTagsWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("TAGS_WANTED_COLLECTION"))
 	insertedID, err := InsertTag(collectionTagsUnwanted, collectionTagsWanted, body)
 	if err != nil {
 		return nil, fmt.Errorf("InsertTag has failed: %v", err)
-	}
-
-	// remove the images with that unwanted tag
-	query := bson.M{"tags.name": body.Name}
-	options := options.Find().SetProjection(bson.M{"_id": 1})
-	deletedCount, err := RemoveImagesAndFilesAllOrigins(mongoClient, query, options)
-	if err != nil {
-		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}
 
 	ids := ReturnInsertTagUnwanted{
