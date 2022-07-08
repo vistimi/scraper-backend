@@ -52,6 +52,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
@@ -86,13 +87,24 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					return nil, fmt.Errorf("searchPhotosPerPageFlickr has failed: %v", err)
 				}
 				for _, photo := range searchPerPage.Photos {
-
 					// look for existing image
 					query := bson.M{"originID": photo.ID}
 					options := options.FindOne().SetProjection(bson.M{"_id": 1})
-					_, err := mongodb.FindOne[types.Image](collectionImages, query, options)
+					imageFound, err := mongodb.FindOne[types.Image](collectionImages, query, options)
 					if err != nil {
-						return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
+						return nil, fmt.Errorf("FindOne[Image] wanted existing image has failed: %v", err)
+					}
+					if imageFound != nil {
+						continue // skip existing image
+					}
+
+					// look for unwanted image
+					imageUnwantedFound, err := mongodb.FindOne[types.Image](collectionImagesUnwanted, query, options)
+					if err != nil {
+						return nil, fmt.Errorf("FindOne[Image] unwanted existing image has failed: %v", err)
+					}
+					if imageUnwantedFound != nil {
+						continue // skip image unwanted
 					}
 
 					// extract the photo informations
@@ -110,7 +122,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 					}
 					userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 					if err != nil {
-						return nil, fmt.Errorf("FindUser has failed: %v", err)
+						return nil, fmt.Errorf("FindOne[User] has failed: %v", err)
 					}
 					if userFound != nil {
 						continue // skip the image with unwanted user

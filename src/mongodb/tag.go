@@ -89,8 +89,6 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (*ReturnInsert
 	query := bson.M{"tags.name": bson.M{ "$regex": body.Name}}
 	options := options.Find().SetProjection(bson.M{"_id": 1})
 	deletedCount, err := RemoveImagesAndFiles(mongoClient, query, options)
-	fmt.Println(err)
-	fmt.Printf("deletedCount %v", deletedCount)
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}

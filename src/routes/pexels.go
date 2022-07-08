@@ -43,6 +43,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	_, wantedTags, err := mongodb.TagsNames(mongoClient)
@@ -64,8 +65,28 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 			}
 
 			for _, photo := range searchPerPage.Photos {
+				// look for existing image
+				query := bson.M{"originID": fmt.Sprint(photo.ID)}
+				options := options.FindOne().SetProjection(bson.M{"_id": 1})
+				imageFound, err := mongodb.FindOne[types.Image](collectionImages, query, options)
+				if err != nil {
+					return nil, fmt.Errorf("FindOne[Image] wanted has failed: %v", err)
+				}
+				if imageFound != nil {
+					continue // skip existing image
+				}
+
+				// look for unwanted image
+				imageUnwantedFound, err := mongodb.FindOne[types.Image](collectionImagesUnwanted, query, options)
+				if err != nil {
+					return nil, fmt.Errorf("FindOne[Image] unwanted existing image has failed: %v", err)
+				}
+				if imageUnwantedFound != nil {
+					continue // skip image unwanted
+				}
+
 				// look for unwanted Users
-				query := bson.M{"origin": origin,
+				query = bson.M{"origin": origin,
 					"$or": bson.A{
 						bson.M{"originID": fmt.Sprint(photo.PhotographerID)},
 						bson.M{"name": photo.Photographer},
@@ -73,19 +94,13 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 				}
 				userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 				if err != nil {
-					return nil, fmt.Errorf("FindUser has failed: %v", err)
+					return nil, fmt.Errorf("FindOne[User] has failed: %v", err)
 				}
 				if userFound != nil {
 					continue // skip the image with unwanted user
 				}
 
-				// look for existing image
-				query = bson.M{"originID": fmt.Sprint(photo.ID)}
-				options := options.FindOne().SetProjection(bson.M{"_id": 1})
-				_, err = mongodb.FindOne[types.Image](collectionImages, query, options)
-				if err != nil {
-					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
-				}
+				// no tags present so no need to check for unwanted tags
 
 				//find download link and extension
 				var link string

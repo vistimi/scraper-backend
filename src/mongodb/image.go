@@ -66,7 +66,8 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID) (*i
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
 	path := fmt.Sprintf(filepath.Join(folderDir, image.Origin, image.Name))
 	err = os.Remove(path)
-	if err != nil {
+	// sometimes images can have the same file stored but are present multiple in the search request
+	if err != nil && *deletedCount == 0{
 		return nil, fmt.Errorf("os.Remove has failed: %v", err)
 	}
 	return deletedCount, nil
@@ -82,7 +83,7 @@ func RemoveImagesAndFiles(mongoClient *mongo.Client, query bson.M, options *opti
 	for _, image := range images {
 		deletedOne, err := RemoveImageAndFile(collectionImages, image.ID)
 		if err != nil {
-			return nil, fmt.Errorf("RemoveImageAndFile has failed: %v", err)
+			return nil, fmt.Errorf("RemoveImageAndFile has failed for %s: %v", image.ID.Hex(), err)
 		}
 		deletedCount += *deletedOne
 	}
@@ -147,14 +148,12 @@ func UpdateImageFile(collection *mongo.Collection, body types.BodyUpdateImageFil
 		return nil, fmt.Errorf("FindOne has failed: %v", err)
 	}
 	i := 0
-	fmt.Println(*body.Box.X, *body.Box.Y, *body.Box.Width, *body.Box.Height)
 	for {
 		if i >= len(imageFound.Tags) {
 			break
 		}
 
 		tag := imageFound.Tags[i]
-		fmt.Println(tag.Name)
 		if (types.Box{}) != tag.Origin.Box {
 			// relative position of tags
 			tlx := *tag.Origin.Box.X

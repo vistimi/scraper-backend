@@ -47,6 +47,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 	}
 
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
@@ -69,6 +70,29 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 			}
 
 			for _, photo := range *searchPerPage.Results {
+				// look for existing image
+				var originID string
+				if photo.ID != nil {
+					originID = *photo.ID
+				}
+				query := bson.M{"originID": originID}
+				options := options.FindOne().SetProjection(bson.M{"_id": 1})
+				imageFound, err := mongodb.FindOne[types.Image](collectionImages, query, options)
+				if err != nil {
+					return nil, fmt.Errorf("FindOne[Image] wanted has failed: %v", err)
+				}
+				if imageFound != nil {
+					continue // skip existing image
+				}
+
+				// look for unwanted image
+				imageUnwantedFound, err := mongodb.FindOne[types.Image](collectionImagesUnwanted, query, options)
+				if err != nil {
+					return nil, fmt.Errorf("FindOne[Image] unwanted existing image has failed: %v", err)
+				}
+				if imageUnwantedFound != nil {
+					continue // skip image unwanted
+				}
 
 				// look for unwanted Users
 				var userName string
@@ -79,7 +103,7 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 				if photo.Photographer.ID != nil {
 					UserID = *photo.Photographer.ID
 				}
-				query := bson.M{"origin": origin,
+				query = bson.M{"origin": origin,
 					"$or": bson.A{
 						bson.M{"originID": UserID},
 						bson.M{"name": userName},
@@ -87,22 +111,10 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 				}
 				userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 				if err != nil {
-					return nil, fmt.Errorf("FindUser has failed: %v", err)
+					return nil, fmt.Errorf("FindOne[User] has failed: %v", err)
 				}
 				if userFound != nil {
 					continue // skip the image with unwanted user
-				}
-
-				// look for existing image
-				var originID string
-				if photo.ID != nil {
-					originID = *photo.ID
-				}
-				query = bson.M{"originID": originID}
-				options := options.FindOne().SetProjection(bson.M{"_id": 1})
-				_, err = mongodb.FindOne[types.Image](collectionImages, query, options)
-				if err != nil {
-					return nil, fmt.Errorf("FindImageIDByOriginID has failed: %v", err)
 				}
 
 				// extract the photo informations
@@ -233,7 +245,7 @@ func searchPhotosPerPageUnsplash(tag string, page int) (*unsplash.PhotoSearchRes
 			"query":     tag,
 		},
 	}
-	fmt.Println(r.URL())
+	// fmt.Println(r.URL())
 
 	body, err := r.ExecuteGET()
 	if err != nil {
