@@ -120,13 +120,13 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 				//find download link and extension
 				var link *unsplash.URL
 				switch quality {
-				case "raw": 
+				case "raw":
 					link = photo.Urls.Raw
-				case "full": 
+				case "full":
 					link = photo.Urls.Full
-				case "regular": 
+				case "regular":
 					link = photo.Urls.Regular
-				case "small": 
+				case "small":
 					link = photo.Urls.Small
 				case "thumb":
 					link = photo.Urls.Thumb
@@ -177,11 +177,12 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 				if photo.Height != nil && photo.Width != nil {
 					height = *photo.Height * width / *photo.Width
 				}
+				zero := 0
 				box := types.Box{
-					X:      0, // original x anchor
-					Y:      0, // original y anchor
-					Width:  width,
-					Height: height,
+					X:      &zero, // original x anchor
+					Y:      &zero, // original y anchor
+					Width:  &width,
+					Height: &height,
 				}
 				size := []types.ImageSize{{
 					ID:           imageSizeID,

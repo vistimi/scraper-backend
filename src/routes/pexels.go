@@ -90,13 +90,13 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 				//find download link and extension
 				var link string
 				switch quality {
-				case "large2x": 
+				case "large2x":
 					link = photo.Src.Large2X
-				case "large": 
+				case "large":
 					link = photo.Src.Large
-				case "medium": 
+				case "medium":
 					link = photo.Src.Medium
-				case "small": 
+				case "small":
 					link = photo.Src.Small
 				case "portrait":
 					link = photo.Src.Portrait
@@ -149,11 +149,12 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 				if err != nil {
 					return nil, err
 				}
+				zero := 0
 				box := types.Box{
-					X:      0, // original x anchor
-					Y:      0, // original y anchor
-					Width:  width,
-					Height: height,
+					X:      &zero, // original x anchor
+					Y:      &zero, // original y anchor
+					Width:  &width,
+					Height: &height,
 				}
 				size := []types.ImageSize{{
 					ID:           imageSizeID,

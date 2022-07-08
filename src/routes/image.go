@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"fmt"
 	"scraper/src/mongodb"
 	"scraper/src/types"
 	"scraper/src/utils"
@@ -67,12 +68,25 @@ func RemoveImageUnwanted(mongoClient *mongo.Client, body BodyRemoveImage) (*int6
 	return mongodb.RemoveImage(collectionImagesUnwanted, body.ID, body.Origin)
 }
 
-func UpdateImageTags(mongoClient *mongo.Client, body types.BodyUpdateImageTags) (*types.Image, error) {
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+func UpdateImageTagsPush(mongoClient *mongo.Client, body types.BodyUpdateImageTagsPush) (*types.Image, error) {
 	if body.ID == primitive.NilObjectID {
 		return nil, errors.New("Body not valid, ID empty")
 	}
-	return mongodb.UpdateImageTags(collectionImages, body)
+	for _, tag := range body.Tags {
+		if tag.Origin.Box.X == nil || tag.Origin.Box.Y == nil || tag.Origin.Box.Width == nil || tag.Origin.Box.Height == nil {
+			return nil, fmt.Errorf("Body not valid, box fields missing: x=%d, y=%d, w=%d, h=%d", *tag.Origin.Box.X, *tag.Origin.Box.Y, *tag.Origin.Box.Width, *tag.Origin.Box.Height)
+		}
+	}
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	return mongodb.UpdateImageTagsPush(collectionImages, body)
+}
+
+func UpdateImageTagsPull(mongoClient *mongo.Client, body types.BodyUpdateImageTagsPull) (interface{}, error) {
+	if body.ID == primitive.NilObjectID {
+		return nil, errors.New("Body not valid, ID empty")
+	}
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	return mongodb.UpdateImageTagsPull(collectionImages, body)
 }
 
 func UpdateImageFile(mongoClient *mongo.Client, body types.BodyUpdateImageFile) (*types.Image, error) {

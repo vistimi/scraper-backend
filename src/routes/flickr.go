@@ -176,11 +176,12 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						OriginID:     infoData.UserID,
 						CreationDate: &now,
 					}
+					zero := 0
 					box := types.Box{
-						X:      0, // original x anchor
-						Y:      0, // original y anchor
-						Width:  downloadData.Photos[idx].Width,
-						Height: downloadData.Photos[idx].Height,
+						X:      &zero, // original x anchor
+						Y:      &zero, // original y anchor
+						Width:  &downloadData.Photos[idx].Width,
+						Height: &downloadData.Photos[idx].Height,
 					}
 					size := []types.ImageSize{{
 						ID:           imageSizeID,
