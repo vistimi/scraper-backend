@@ -64,17 +64,17 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID) (*i
 		return nil, fmt.Errorf("RemoveImage has failed: %v", err)
 	}
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	path := fmt.Sprintf(filepath.Join(folderDir, image.Origin, image.Name))
+	path := filepath.Join(folderDir, image.Origin, image.Name)
 	err = os.Remove(path)
 	// sometimes images can have the same file stored but are present multiple in the search request
-	if err != nil && *deletedCount == 0{
+	if err != nil && *deletedCount == 0 {
 		return nil, fmt.Errorf("os.Remove has failed: %v", err)
 	}
 	return deletedCount, nil
 }
 
 func RemoveImagesAndFiles(mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
 	var deletedCount int64
 	images, err := FindMany[types.Image](collectionImages, query, options)
 	if err != nil {
@@ -91,28 +91,27 @@ func RemoveImagesAndFiles(mongoClient *mongo.Client, query bson.M, options *opti
 }
 
 // UpdateImageTags add tags to an image based on its mongodb id
-func UpdateImageTagsPush(collection *mongo.Collection, body types.BodyUpdateImageTagsPush) (*types.Image, error) {
+func UpdateImageTagsPush(collection *mongo.Collection, body types.BodyUpdateImageTagsPush) (*int64, error) {
 	query := bson.M{"_id": body.ID}
-	if body.Tags != nil {
-		for i := 0; i < len(body.Tags); i++ {
-			tag := &body.Tags[i]
-			now := time.Now()
-			tag.CreationDate = &now
-		}
-		update := bson.M{
-			"$push": bson.M{
-				"tags": bson.M{"$each": body.Tags},
-			},
-		}
-		_, err := collection.UpdateOne(context.TODO(), query, update)
-		if err != nil {
-			return nil, fmt.Errorf("UpdateOne has failed: %v", err)
-		}
+	for i := 0; i < len(body.Tags); i++ {
+		tag := &body.Tags[i]
+		now := time.Now()
+		tag.CreationDate = &now
 	}
-	return FindOne[types.Image](collection, query)
+	update := bson.M{
+		"$push": bson.M{
+			"tags": bson.M{"$each": body.Tags},
+		},
+	}
+	res, err := collection.UpdateOne(context.TODO(), query, update)
+	if err != nil {
+		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
+	}
+	return &res.ModifiedCount, nil
 }
 
-func UpdateImageTagsPull(collection *mongo.Collection, body types.BodyUpdateImageTagsPull) (interface{}, error) {
+// UpdateImageTagsPull removes specific tags from an image
+func UpdateImageTagsPull(collection *mongo.Collection, body types.BodyUpdateImageTagsPull) (*int64, error) {
 	query := bson.M{
 		"_id":    body.ID,
 		"origin": body.Origin,
@@ -133,7 +132,48 @@ func UpdateImageTagsPull(collection *mongo.Collection, body types.BodyUpdateImag
 	return &res.ModifiedCount, nil
 }
 
-func UpdateImageFile(collection *mongo.Collection, body types.BodyUpdateImageFile) (*types.Image, error) {
+// UpdateImageFile update the image with its tags when it is cropped
+func UpdateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
+	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	// update the image size and tags boxes
+	image, err := updateImageBoxes(collectionImagesPending, body)
+	if err != nil {
+		return nil, fmt.Errorf("updateImageBoxes has failed: %v", err)
+	}
+	// replace in db and file of the updated image
+	updatedCount, err := replaceImage(collectionImagesPending, image, body.File)
+	if err != nil {
+		return nil, fmt.Errorf("replaceImage has failed: %v", err)
+	}
+	return updatedCount, nil
+}
+
+// UpdateImageFile update the image with its tags when it is cropped
+func CreateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
+	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	// update the image size and tags boxes
+	image, err := updateImageBoxes(collectionImagesPending, body)
+	if err != nil {
+		return nil, fmt.Errorf("updateImageBoxes has failed: %v", err)
+	}
+	// add the current date and time to the name
+	image.Name = fmt.Sprintf("%s_%s.%s", image.ID, time.Now().Format(time.RFC3339), image.Extension)
+	// replace in db and file of the updated image
+	updatedCount, err := replaceImage(collectionImagesPending, image, body.File)
+	if err != nil {
+		return nil, fmt.Errorf("replaceImage has failed: %v", err)
+	}
+	return updatedCount, nil
+}
+
+func updateImageBoxes(collection *mongo.Collection, body types.BodyImageCrop) (*types.Image, error) {
+	query := bson.M{"_id": body.ID}
+	imageFound, err := FindOne[types.Image](collection, query)
+	if err != nil {
+		return nil, fmt.Errorf("FindOne[Image] has failed: %v", err)
+	}
+
+	// new size creation
 	imageSizeID := primitive.NewObjectID()
 	now := time.Now()
 	size := types.ImageSize{
@@ -141,18 +181,13 @@ func UpdateImageFile(collection *mongo.Collection, body types.BodyUpdateImageFil
 		CreationDate: &now,
 		Box:          body.Box, // absolute position
 	}
+	imageFound.Size = append(imageFound.Size, size)
 
-	query := bson.M{"origin": body.Origin, "name": body.Name}
-	imageFound, err := FindOne[types.Image](collection, query)
-	if err != nil {
-		return nil, fmt.Errorf("FindOne has failed: %v", err)
-	}
 	i := 0
 	for {
 		if i >= len(imageFound.Tags) {
 			break
 		}
-
 		tag := imageFound.Tags[i]
 		if (types.Box{}) != tag.Origin.Box {
 			// relative position of tags
@@ -244,11 +279,14 @@ func UpdateImageFile(collection *mongo.Collection, body types.BodyUpdateImageFil
 		}
 		i++
 	}
+	return imageFound, nil
+}
 
-	// replace the file
+func replaceImage(collection *mongo.Collection, imageReplace *types.Image, imageFile []byte) (*int64, error) {
+	// replace or create the file
 	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	path := fmt.Sprintf(filepath.Join(folderDir, body.Origin, body.Name))
-	err = os.WriteFile(path, body.File, 0644)
+	path := filepath.Join(folderDir, imageReplace.Origin, imageReplace.Name)
+	err := os.WriteFile(path, imageFile, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("os.WriteFile has failed: %v", err)
 	}
@@ -264,23 +302,23 @@ func UpdateImageFile(collection *mongo.Collection, body types.BodyUpdateImageFil
 	}
 
 	// update in db the new dimensions, tag boxes and new size
+	query := bson.M{"_id": imageReplace.ID}
 	update := bson.M{
 		"$set": bson.M{
 			"width":  imageDecoded.Width,
 			"height": imageDecoded.Height,
-			"tags":   imageFound.Tags,
-		},
-		"$push": bson.M{
-			"size": size,
+			"tags":   imageReplace.Tags,
+			"size":   imageReplace.Size,
 		},
 	}
-	_, err = collection.UpdateOne(context.TODO(), query, update)
+	res, err := collection.UpdateOne(context.TODO(), query, update)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 	}
-	return FindOne[types.Image](collection, query)
+	return &res.ModifiedCount, nil
 }
 
+// InsertImageUnwanted insert an unwanted image
 func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface{}, error) {
 	if body.Origin == "" || body.OriginID == "" {
 		return nil, errors.New("Some fields are empty!")
@@ -294,7 +332,33 @@ func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface
 	query := bson.M{"origin": body.Origin, "originID": body.OriginID}
 	insertedID, err := InsertOne(collectionImagesUnwanted, body, query)
 	if err != nil {
-		return nil, fmt.Errorf("insertUser has failed: %v", err)
+		return nil, fmt.Errorf("InsertOne[Image] unwanted has failed: %v", err)
 	}
 	return insertedID, nil
+}
+
+func TransferImage(mongoClient *mongo.Client, body types.BodyTransferImage) (interface{}, error) {
+	collectionImagesFrom, err := utils.ImagesCollection(mongoClient, body.From)
+	if err != nil {
+		return nil, err
+	}
+	collectionImagesTo, err := utils.ImagesCollection(mongoClient, body.To)
+	if err != nil {
+		return nil, err
+	}
+	query := bson.M{"originID": body.OriginID}
+	image, err := FindOne[types.Image](collectionImagesFrom, query)
+	if err != nil {
+		return nil, fmt.Errorf("FindOne[Image] has failed: %v", err)
+	}
+	image.ID = primitive.NilObjectID
+	res, err := collectionImagesTo.InsertOne(context.TODO(), *image)
+	if err != nil {
+		return nil, fmt.Errorf("InsertOne has failed: %v", err)
+	}
+	_, err = collectionImagesFrom.DeleteOne(context.TODO(), query)
+	if err != nil {
+		return nil, fmt.Errorf("DeleteOne has failed: %v", err)
+	}
+	return res.InsertedID, nil
 }

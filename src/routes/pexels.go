@@ -42,7 +42,8 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 		return nil, err
 	}
 
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
 	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
 
@@ -68,15 +69,20 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 				// look for existing image
 				query := bson.M{"originID": fmt.Sprint(photo.ID)}
 				options := options.FindOne().SetProjection(bson.M{"_id": 1})
-				imageFound, err := mongodb.FindOne[types.Image](collectionImages, query, options)
+				imagePendingFound, err := mongodb.FindOne[types.Image](collectionImagesPending, query, options)
 				if err != nil {
-					return nil, fmt.Errorf("FindOne[Image] wanted has failed: %v", err)
+					return nil, fmt.Errorf("FindOne[Image] pending existing image has failed: %v", err)
 				}
-				if imageFound != nil {
-					continue // skip existing image
+				if imagePendingFound != nil {
+					continue // skip existing wanted image
 				}
-
-				// look for unwanted image
+				imageWantedFound, err := mongodb.FindOne[types.Image](collectionImagesWanted, query, options)
+				if err != nil {
+					return nil, fmt.Errorf("FindOne[Image] wanted existing image has failed: %v", err)
+				}
+				if imageWantedFound != nil {
+					continue // skip existing pending image
+				}
 				imageUnwantedFound, err := mongodb.FindOne[types.Image](collectionImagesUnwanted, query, options)
 				if err != nil {
 					return nil, fmt.Errorf("FindOne[Image] unwanted existing image has failed: %v", err)
@@ -126,7 +132,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 
 				// download photo into folder and rename it <id>.<format>
 				fileName := fmt.Sprintf("%d.%s", photo.ID, extension)
-				path := fmt.Sprintf(filepath.Join(folderDir, origin, fileName))
+				path := filepath.Join(folderDir, origin, fileName)
 				err = DownloadFile(link, path)
 				if err != nil {
 					return nil, fmt.Errorf("DownloadFile has failed: %v", err)
@@ -189,7 +195,7 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 					CreationDate: &now,
 					Tags:         tags,
 				}
-				insertedID, err := mongodb.InsertImage(collectionImages, document)
+				insertedID, err := mongodb.InsertImage(collectionImagesPending, document)
 				if err != nil {
 					return nil, fmt.Errorf("InsertImage has failed: %v", err)
 				}

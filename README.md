@@ -33,7 +33,8 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
     SCRAPER_DB=scraper
     TAGS_UNWANTED_COLLECTION=tagsUnwanted
     TAGS_WANTED_COLLECTION=tagsWanted
-    IMAGES_COLLECTION=images
+    IMAGES_WANTED_COLLECTION=imagesWanted
+    IMAGES_PENDING_COLLECTION=imagesPending
     IMAGES_UNWANTED_COLLECTION=imagesUnwanted
     USERS_UNWANTED_COLLECTION=usersUnwanted
     IMAGE_PATH=<absolutePath>
