@@ -320,21 +320,17 @@ func replaceImage(collection *mongo.Collection, imageReplace *types.Image, image
 
 // InsertImageUnwanted insert an unwanted image
 func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface{}, error) {
-	if body.Origin == "" || body.OriginID == "" {
-		return nil, errors.New("Some fields are empty!")
-	}
 	now := time.Now()
 	body.CreationDate = &now
 	body.Origin = strings.ToLower(body.Origin)
 
 	// insert the unwanted image
 	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	query := bson.M{"origin": body.Origin, "originID": body.OriginID}
-	insertedID, err := InsertOne(collectionImagesUnwanted, body, query)
+	res, err := collectionImagesUnwanted.InsertOne(context.TODO(), body)
 	if err != nil {
-		return nil, fmt.Errorf("InsertOne[Image] unwanted has failed: %v", err)
+		return nil, fmt.Errorf("InsertOne has failed: %v", err)
 	}
-	return insertedID, nil
+	return res.InsertedID, nil
 }
 
 func TransferImage(mongoClient *mongo.Client, body types.BodyTransferImage) (interface{}, error) {

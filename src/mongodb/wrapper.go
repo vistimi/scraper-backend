@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
 	"scraper/src/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -52,22 +51,4 @@ func FindMany[T wrapperSchema](collection *mongo.Collection, query bson.M, optio
 		return nil, err
 	}
 	return found, nil
-}
-
-func InsertOne[T wrapperSchema](collection *mongo.Collection, body T, query bson.M) (interface{}, error) {
-	// only add unique element in the collection
-	found, err := FindOne[T](collection, query)
-	if err != nil {
-		return nil, err
-	}
-	if found != nil {
-		return nil, fmt.Errorf(`The element %T exist already in the collection`, *new(T))
-	}
-
-	// insert element if unique
-	res, err := collection.InsertOne(context.TODO(), body)
-	if err != nil {
-		return nil, err
-	}
-	return res.InsertedID, nil
 }

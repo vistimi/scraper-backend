@@ -37,9 +37,9 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 			bson.M{"name": body.Name},
 		},
 	}
-	insertedID, err := InsertOne(collectionUserUnwanted, body, query)
+	res, err := collectionUserUnwanted.InsertOne(context.TODO(), body)
 	if err != nil {
-		return nil, fmt.Errorf("insertUser has failed: %v", err)
+		return nil, fmt.Errorf("InsertOne has failed: %v", err)
 	}
 
 	// remove the images with that unwanted user
@@ -57,7 +57,7 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 	}
 
 	ids := ReturnInsertUserUnwanted{
-		InsertedTagID:     insertedID,
+		InsertedTagID:     res.InsertedID,
 		DeletedImageCount: *deletedCount,
 	}
 	return &ids, nil
