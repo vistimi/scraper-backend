@@ -21,7 +21,7 @@ If pbm with package `<package>: command not found`:
 
 ## build
 
-    go build .
+    go build -o scraper src/main.go
 
 ## License
 
@@ -49,5 +49,10 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 https://github.com/mgechev/revive
 
     revive -config revive.toml
+
+## Docker
+
+    docker build -t scraper-img .
+    docker run -it --rm --name scraper-run scraper-img
 
 
