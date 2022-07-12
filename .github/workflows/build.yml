@@ -2,8 +2,7 @@ name: Build project
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
