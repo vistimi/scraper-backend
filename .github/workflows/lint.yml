@@ -1,9 +1,8 @@
 name: Lint
 on:
-  workflow_dispatch:
   push:
     branches:
-      - master
+      - [master]
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
@@ -12,8 +11,9 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    steps:
+    environment: production
 
+    steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3
 
