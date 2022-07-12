@@ -10,7 +10,7 @@ env:
   ECS_SERVICE: scraperService
   ECS_CLUSTER: scraperCluster
   ECS_TASK_DEFINITION: .aws/task-definition.json
-  CONTAINER_NAME: scraper
+  CONTAINER_NAME: scraperContainer
 
 permissions:
   contents: read
