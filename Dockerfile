@@ -18,4 +18,6 @@ WORKDIR /usr/app
 
 EXPOSE 8080
 
+RUN echo $IMAGE_PATH
+
 CMD ["./scraper"]
