@@ -28,11 +28,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '1.18.3' # The Go version to download (if necessary) and use.
-      - name: print env
-        run: |
-          echo "${{ secrets.IMAGE_PATH }}"
-          echo "The path to image is ${{ env.IMAGE_PATH }}" 
-          echo "The path to image is $IMAGE_PATH" 
       - name: build
         run: go build src/main.go
 
@@ -65,10 +60,15 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
         IMAGE_PATH: ${{ secrets.IMAGE_PATH }}
+        SCRAPER_DB: ${{ secrets.SCRAPER_DB }}
       run: |
         # Build a docker container and
         # push it to ECR so that it can
         # be deployed to ECS.
+        echo "${{env.IMAGE_PATH}}"
+        echo "${{secrets.IMAGE_PATH}}"
+        echo "${{env.SCRAPER_DB}}"
+        echo "${{secrets.IMAGE_PATH}}"
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
