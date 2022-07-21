@@ -3,6 +3,8 @@ name: Deploy to Amazon ECS
 on:
   push:
     branches: [master]
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 env:
   AWS_REGION: us-east-1
@@ -16,10 +18,31 @@ permissions:
   contents: read
 
 jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    environment: production # production secret env variables
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.18.3' # The Go version to download (if necessary) and use.
+      - name: print env
+        run: |
+          echo "${{ secrets.IMAGE_PATH }}"
+          echo "The path to image is ${{ env.IMAGE_PATH }}" 
+          echo "The path to image is $IMAGE_PATH" 
+      - name: build
+        run: go build src/main.go
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    environment: production
+    needs: [build]
+    if: github.event_name != 'pull_request'
+    environment: 
+      name: production
 
     steps:
     - name: Checkout
