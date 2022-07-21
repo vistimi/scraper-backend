@@ -59,25 +59,6 @@ jobs:
           # aws informations
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
-        with:
-          build-args: |
-            # env variables
-            MONGODB_URI: ${{ secrets.MONGODB_URI }}
-            SCRAPER_DB: ${{ secrets.SCRAPER_DB }}
-            TAGS_UNWANTED_COLLECTION: ${{ secrets.TAGS_UNWANTED_COLLECTION }}
-            TAGS_WANTED_COLLECTION: ${{ secrets.TAGS_WANTED_COLLECTION }}
-            IMAGES_WANTED_COLLECTION: ${{ secrets.IMAGES_WANTED_COLLECTION }}
-            IMAGES_PENDING_COLLECTION: ${{ secrets.IMAGES_PENDING_COLLECTION }}
-            IMAGES_UNWANTED_COLLECTION: ${{ secrets.IMAGES_UNWANTED_COLLECTION }}
-            USERS_UNWANTED_COLLECTION: ${{ secrets.USERS_UNWANTED_COLLECTION }}
-            IMAGE_PATH: ${{ secrets.IMAGE_PATH }}
-            FLICKR_PRIVATE_KEY: ${{ secrets.FLICKR_PRIVATE_KEY }}
-            FLICKR_PUBLIC_KEY: ${{ secrets.FLICKR_PUBLIC_KEY }}
-            UNSPLASH_PRIVATE_KEY: ${{ secrets.UNSPLASH_PRIVATE_KEY }}
-            UNSPLASH_PUBLIC_KEY: ${{ secrets.UNSPLASH_PUBLIC_KEY }}
-            BURST_PRIVATE_KEY: ${{ secrets.BURST_PRIVATE_KEY }}
-            BURST_PUBLIC_KEY: ${{ secrets.BURST_PUBLIC_KEY }}
-            PEXELS_PUBLIC_KEY: ${{ secrets.PEXELS_PUBLIC_KEY }}
         run: |
           # Build a docker container and
           # push it to ECR so that it can
