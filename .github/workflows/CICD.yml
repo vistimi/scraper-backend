@@ -9,7 +9,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: scraper_repository
-  ECS_SERVICE: scraperContainer-service
+  ECS_SERVICE: scraperSerivceFargate
   ECS_CLUSTER: scraperCluster
   ECS_TASK_DEFINITION: .aws/task-definition-fargate.json
   CONTAINER_NAME: scraperContainer
