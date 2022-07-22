@@ -7,19 +7,22 @@ Online scraper for building a dataset for ML.
 
 Install Golang and MongoDB
 
-    git clone git@github.com:KookaS/scraper.git
-
 If pbm with package `<package>: command not found`:
 
     export GOPATH="$HOME/go"
     PATH="$GOPATH/bin:$PATH"
 
+## Docker
+
+docker build -t scraper-img .
+docker run -it --rm --name scraper-run --env-file .env scraper-img
+
     
-## run
+## run without docker
 
     go run src/main.go
 
-## build
+## build without docker
 
     go build -o scraper src/main.go
 
@@ -28,6 +31,8 @@ If pbm with package `<package>: command not found`:
 must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
 ## .env
+
+Remove in src/utils/env.go the godotenv part if you run in container.
 
     MONGODB_URI=mongodb://localhost:27017
     SCRAPER_DB=scraper
@@ -49,10 +54,5 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 https://github.com/mgechev/revive
 
     revive -config revive.toml
-
-## Docker
-
-    docker build -t scraper-img .
-    docker run -it --rm --name scraper-run scraper-img
 
 
