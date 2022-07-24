@@ -10,7 +10,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: scraper_repository
   ECS_SERVICE: scraperClusterEC2
-  ECS_CLUSTER: scraperClusterECS
+  ECS_CLUSTER: ScraperClusterECS
   ECS_TASK_DEFINITION: .aws/task-definition-ec2.json
   CONTAINER_NAME: scraperContainerEC2
 
