@@ -9,10 +9,10 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: scraper_repository
-  ECS_SERVICE: scraperServiceEC2
+  ECS_SERVICE: ScraperServiceEC2
   ECS_CLUSTER: ScraperClusterECS
   ECS_TASK_DEFINITION: .aws/task-definition-ec2.json
-  CONTAINER_NAME: scraperContainerEC2
+  CONTAINER_NAME: ScraperContainerEC2
 
 permissions:
   contents: read
@@ -79,6 +79,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
+          service: ${{ env.ECS_SERdeployVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
