@@ -21,6 +21,10 @@ COPY --from=builder /usr/tmp/scraper /usr/app/scraper
 
 WORKDIR /usr/app
 
+# port for scraper
 EXPOSE 8080
+
+# port for mongodb
+EXPOSE 27017
 
 CMD ["./scraper"]
