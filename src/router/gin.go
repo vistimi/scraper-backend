@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
 	"scraper/src/mongodb"
 	"scraper/src/utils"
@@ -10,7 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Router(mongoClient *mongo.Client) (*gin.Engine){
+func Router(mongoClient *mongo.Client) *gin.Engine {
+	fmt.Println("Loading the Router")
 	router := gin.Default()
 	router.Use(cors.Default())
 
@@ -58,6 +60,7 @@ func Router(mongoClient *mongo.Client) (*gin.Engine){
 
 	// start the backend
 	router.Run("localhost:8080")
+	fmt.Println("Loaded the Router")
 	return router
 }
 
