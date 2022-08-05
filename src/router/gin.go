@@ -16,6 +16,9 @@ func Router(mongoClient *mongo.Client) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
+	// health check
+	router.Any("/healthCheck", func(c *gin.Context) { c.JSON(http.StatusOK, "Health check ok!") })
+
 	// routes for one image pending or wanted
 	router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
 	router.GET("/image/:id/:collection", wrapperHandlerURI(mongoClient, FindImage))
