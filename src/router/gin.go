@@ -62,7 +62,7 @@ func Router(mongoClient *mongo.Client) *gin.Engine {
 	router.POST("/search/pexels/:quality", wrapperHandlerURI(mongoClient, SearchPhotosPexels))
 
 	// start the backend
-	router.Run("localhost:8080")
+	router.Run("0.0.0.0:8080")
 	fmt.Println("Loaded the Router")
 	return router
 }
