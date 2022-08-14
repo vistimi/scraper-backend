@@ -1,14 +1,11 @@
 package router
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/manager"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/foolin/pagser"
 
 	"path/filepath"
@@ -169,18 +166,10 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					fileName := fmt.Sprintf("%s.%s", photo.ID, infoData.OriginalFormat)
 					path := filepath.Join(origin, fileName)
 
-					body, err := GetFile(downloadData.Photos[idx].Source)
+					_, err = UploadS3(s3Client, downloadData.Photos[idx].Source, path)
 					if err != nil {
-						return nil, fmt.Errorf("GetFile has failed: %v", err)
+						return nil, fmt.Errorf("UploadS3 has failed: %v", err)
 					}
-
-					// upload in s3 the file
-					uploader := manager.NewUploader(s3Client)
-					result, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
-						Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
-						Key:    aws.String(path),
-						Body:   body,
-					})
 
 					// image creation
 					imageSizeID := primitive.NewObjectID()

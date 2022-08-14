@@ -1,7 +1,6 @@
 package router
 
 import (
-	"context"
 	"fmt"
 	"scraper/src/mongodb"
 	"scraper/src/types"
@@ -15,8 +14,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/manager"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hbagdi/go-unsplash/unsplash"
 
 	"encoding/json"
@@ -159,18 +156,10 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 				fileName := fmt.Sprintf("%s.%s", *photo.ID, extension)
 				path := filepath.Join(origin, fileName)
 
-				body, err := GetFile(link.String())
+				_, err = UploadS3(s3Client, link.String(), path)
 				if err != nil {
-					return nil, fmt.Errorf("GetFile has failed: %v", err)
+					return nil, fmt.Errorf("UploadS3 has failed: %v", err)
 				}
-
-				// upload in s3 the file
-				uploader := manager.NewUploader(s3Client)
-				result, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
-					Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
-					Key:    aws.String(path),
-					Body:   body,
-				})
 
 				// tags creation
 				var tags []types.Tag
