@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,7 +26,7 @@ type ParamsSearchPhotoPexels struct {
 	Quality string `uri:"quality" binding:"required"`
 }
 
-func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexels) (interface{}, error) {
+func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoPexels) (interface{}, error) {
 	quality := params.Quality
 	qualitiesAvailable := []string{"large2x", "large", "medium", "small", "portrait", "landscape", "tiny"}
 	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
@@ -130,12 +131,13 @@ func SearchPhotosPexels(mongoClient *mongo.Client, params ParamsSearchPhotoPexel
 				extension := string(regexpMatch.Find([]byte(link)))
 				extension = extension[1 : len(extension)-1] // remove the `.` and `?` because retgexp hasn't got assertions
 
-				// download photo into folder and rename it <id>.<format>
+				// get the file and rename it <id>.<format>
 				fileName := fmt.Sprintf("%d.%s", photo.ID, extension)
-				path := filepath.Join(folderDir, origin, fileName)
-				err = DownloadFile(link, path)
+				path := filepath.Join(origin, fileName)
+
+				_, err = UploadS3(s3Client, link, path)
 				if err != nil {
-					return nil, fmt.Errorf("DownloadFile has failed: %v", err)
+					return nil, fmt.Errorf("UploadS3 has failed: %v", err)
 				}
 
 				// image creation
