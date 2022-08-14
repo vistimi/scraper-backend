@@ -1,11 +1,14 @@
 package router
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/manager"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/foolin/pagser"
 
 	"path/filepath"
@@ -32,7 +35,7 @@ type ParamsSearchPhotoFlickr struct {
 }
 
 // Find all the photos with specific quality and folder directory.
-func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error) {
+func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error) {
 
 	quality := params.Quality
 	qualitiesAvailable := []string{"Small", "Medium", "Large", "Original"}
@@ -43,13 +46,7 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 	var insertedIDs []primitive.ObjectID
 	parser := pagser.New() // parsing html in string responses
 
-	// If path is already a directory, MkdirAll does nothing and returns nil
-	folderDir := utils.DotEnvVariable("IMAGE_PATH")
 	origin := "flickr"
-	err := os.MkdirAll(filepath.Join(folderDir, origin), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
 
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
 	collectionImagesWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
@@ -168,13 +165,22 @@ func SearchPhotosFlickr(mongoClient *mongo.Client, params ParamsSearchPhotoFlick
 						return nil, fmt.Errorf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:%v", label, regexpMatch, photo.ID, downloadData)
 					}
 
-					// download photo into folder and rename it <id>.<format>
+					// get the file and rename it <id>.<format>
 					fileName := fmt.Sprintf("%s.%s", photo.ID, infoData.OriginalFormat)
-					path := filepath.Join(folderDir, origin, fileName)
-					err = DownloadFile(downloadData.Photos[idx].Source, path)
+					path := filepath.Join(origin, fileName)
+
+					body, err := GetFile(downloadData.Photos[idx].Source)
 					if err != nil {
-						return nil, fmt.Errorf("DownloadFile has failed: %v", err)
+						return nil, fmt.Errorf("GetFile has failed: %v", err)
 					}
+
+					// upload in s3 the file
+					uploader := manager.NewUploader(s3Client)
+					result, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
+						Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+						Key:    aws.String(path),
+						Body:   body,
+					})
 
 					// image creation
 					imageSizeID := primitive.NewObjectID()

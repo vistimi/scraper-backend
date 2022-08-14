@@ -8,6 +8,8 @@ import (
 
 	"scraper/src/utils"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -54,7 +56,7 @@ func RemoveImage(collection *mongo.Collection, id primitive.ObjectID) (*int64, e
 }
 
 // RemoveImageAndFile remove an image based on its mongodb id and remove its file
-func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID) (*int64, error) {
+func RemoveImageAndFile(s3Client *s3.Client, collection *mongo.Collection, id primitive.ObjectID) (*int64, error) {
 	image, err := FindOne[types.Image](collection, bson.M{"_id": id})
 	if err != nil {
 		return nil, fmt.Errorf("FindImageByID has failed: %v", err)
@@ -63,9 +65,14 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID) (*i
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImage has failed: %v", err)
 	}
-	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	path := filepath.Join(folderDir, image.Origin, image.Name)
-	err = os.Remove(path)
+
+	path := filepath.Join(image.Origin, image.Name)
+
+	s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+		Key:    aws.String(path),
+	})
+
 	// sometimes images can have the same file stored but are present multiple in the search request
 	if err != nil && *deletedCount == 0 {
 		return nil, fmt.Errorf("os.Remove has failed: %v", err)
@@ -73,7 +80,7 @@ func RemoveImageAndFile(collection *mongo.Collection, id primitive.ObjectID) (*i
 	return deletedCount, nil
 }
 
-func RemoveImagesAndFiles(mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
+func RemoveImagesAndFiles(s3Client *s3.Client, mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
 	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
 	var deletedCount int64
 	images, err := FindMany[types.Image](collectionImages, query, options)
@@ -81,7 +88,7 @@ func RemoveImagesAndFiles(mongoClient *mongo.Client, query bson.M, options *opti
 		return nil, fmt.Errorf("FindImagesIDs has failed: %v", err)
 	}
 	for _, image := range images {
-		deletedOne, err := RemoveImageAndFile(collectionImages, image.ID)
+		deletedOne, err := RemoveImageAndFile(s3Client, collectionImages, image.ID)
 		if err != nil {
 			return nil, fmt.Errorf("RemoveImageAndFile has failed for %s: %v", image.ID.Hex(), err)
 		}

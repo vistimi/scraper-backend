@@ -7,6 +7,7 @@ import (
 	"scraper/src/types"
 	"scraper/src/utils"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -60,13 +61,13 @@ type ParamsRemoveImage struct {
 }
 
 // RemoveImageAndFile removes in db and file of a pending image
-func RemoveImageAndFile(mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, error) {
+func RemoveImageAndFile(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, error) {
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
 	imageID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveImageAndFile(collectionImagesPending, imageID)
+	return mongodb.RemoveImageAndFile(s3Client, collectionImagesPending, imageID)
 }
 
 // RemoveImage removes in db an unwanted image

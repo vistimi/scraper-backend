@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,7 +22,7 @@ type ReturnInsertUserUnwanted struct {
 }
 
 // InsertUserUnwanted inserts the new unwanted user and remove the images with it as well as the files
-func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInsertUserUnwanted, error) {
+func InsertUserUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body types.User) (*ReturnInsertUserUnwanted, error) {
 	if body.Name == "" || body.Origin == "" || body.OriginID == "" {
 		return nil, errors.New("Some fields are empty!")
 	}
@@ -51,7 +52,7 @@ func InsertUserUnwanted(mongoClient *mongo.Client, body types.User) (*ReturnInse
 		},
 	}
 	options := options.Find().SetProjection(bson.M{"_id": 1})
-	deletedCount, err := RemoveImagesAndFiles(mongoClient, query, options) // check in all origins
+	deletedCount, err := RemoveImagesAndFiles(s3Client, mongoClient, query, options) // check in all origins
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}

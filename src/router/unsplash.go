@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"fmt"
 	"scraper/src/mongodb"
 	"scraper/src/types"
@@ -13,6 +14,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/exp/slices"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/manager"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hbagdi/go-unsplash/unsplash"
 
 	"encoding/json"
@@ -29,7 +33,7 @@ type ParamsSearchPhotoUnsplash struct {
 	Quality string `uri:"quality" binding:"required"`
 }
 
-func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUnsplash) ([]primitive.ObjectID, error) {
+func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoUnsplash) ([]primitive.ObjectID, error) {
 	quality := params.Quality
 	qualitiesAvailable := []string{"raw", "full", "regular", "small", "thumb"}
 	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
@@ -151,13 +155,22 @@ func SearchPhotosUnsplash(mongoClient *mongo.Client, params ParamsSearchPhotoUns
 				}
 				extension := link.Query().Get("fm")
 
-				// download photo into folder and rename it <id>.<format>
+				// get the file and rename it <id>.<format>
 				fileName := fmt.Sprintf("%s.%s", *photo.ID, extension)
-				path := filepath.Join(folderDir, origin, fileName)
-				err = DownloadFile(link.String(), path)
+				path := filepath.Join(origin, fileName)
+
+				body, err := GetFile(link.String())
 				if err != nil {
-					return nil, fmt.Errorf("DownloadFile has failed: %v", err)
+					return nil, fmt.Errorf("GetFile has failed: %v", err)
 				}
+
+				// upload in s3 the file
+				uploader := manager.NewUploader(s3Client)
+				result, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
+					Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+					Key:    aws.String(path),
+					Body:   body,
+				})
 
 				// tags creation
 				var tags []types.Tag

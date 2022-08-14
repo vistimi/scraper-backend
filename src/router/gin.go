@@ -6,12 +6,13 @@ import (
 	"scraper/src/mongodb"
 	"scraper/src/utils"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Router(mongoClient *mongo.Client) *gin.Engine {
+func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	fmt.Println("Loading the Router")
 	router := gin.Default()
 	router.Use(cors.Default())
@@ -21,13 +22,14 @@ func Router(mongoClient *mongo.Client) *gin.Engine {
 
 	// routes for one image pending or wanted
 	router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
+	
 	router.GET("/image/:id/:collection", wrapperHandlerURI(mongoClient, FindImage))
 	router.PUT("/image/tags/push", wrapperHandlerBody(mongoClient, UpdateImageTagsPush))
 	router.PUT("/image/tags/pull", wrapperHandlerBody(mongoClient, UpdateImageTagsPull))
 	router.PUT("/image/crop", wrapperHandlerBody(mongoClient, mongodb.UpdateImageCrop))
 	router.POST("/image/crop", wrapperHandlerBody(mongoClient, mongodb.CreateImageCrop))
 	router.POST("/image/transfer", wrapperHandlerBody(mongoClient, mongodb.TransferImage))
-	router.DELETE("/image/:id", wrapperHandlerURI(mongoClient, RemoveImageAndFile))
+	router.DELETE("/image/:id", wrapperHandlerURIS3(s3Client, mongoClient, RemoveImageAndFile))
 
 	// routes for multiple images pending or wanted
 	router.GET("/images/id/:origin/:collection", wrapperHandlerURI(mongoClient, FindImagesIDs))
@@ -41,7 +43,7 @@ func Router(mongoClient *mongo.Client) *gin.Engine {
 
 	// routes for one tag
 	router.POST("/tag/wanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagWanted))
-	router.POST("/tag/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertTagUnwanted))
+	router.POST("/tag/unwanted", wrapperHandlerBodyS3(s3Client, mongoClient, mongodb.InsertTagUnwanted))
 	router.DELETE("/tag/wanted/:id", wrapperHandlerURI(mongoClient, RemoveTagWanted))
 	router.DELETE("/tag/unwanted/:id", wrapperHandlerURI(mongoClient, RemoveTagUnwanted))
 
@@ -50,16 +52,16 @@ func Router(mongoClient *mongo.Client) *gin.Engine {
 	router.GET("/tags/unwanted", wrapperHandler(mongoClient, mongodb.TagsUnwanted))
 
 	// routes for one user unwanted
-	router.POST("/user/unwanted", wrapperHandlerBody(mongoClient, mongodb.InsertUserUnwanted))
+	router.POST("/user/unwanted", wrapperHandlerBodyS3(s3Client, mongoClient, mongodb.InsertUserUnwanted))
 	router.DELETE("/user/unwanted/:id", wrapperHandlerURI(mongoClient, RemoveUserUnwanted))
 
 	// routes for multiplt users unwanted
 	router.GET("/users/unwanted", wrapperHandler(mongoClient, mongodb.UsersUnwanted))
 
 	// routes for scraping the internet
-	router.POST("/search/flickr/:quality", wrapperHandlerURI(mongoClient, SearchPhotosFlickr))
-	router.POST("/search/unsplash/:quality", wrapperHandlerURI(mongoClient, SearchPhotosUnsplash))
-	router.POST("/search/pexels/:quality", wrapperHandlerURI(mongoClient, SearchPhotosPexels))
+	router.POST("/search/flickr/:quality", wrapperHandlerURIS3(s3Client, mongoClient, SearchPhotosFlickr))
+	router.POST("/search/unsplash/:quality", wrapperHandlerURIS3(s3Client, mongoClient, SearchPhotosUnsplash))
+	router.POST("/search/pexels/:quality", wrapperHandlerURIS3(s3Client, mongoClient, SearchPhotosPexels))
 
 	// start the backend
 	router.Run("0.0.0.0:8080")
@@ -74,6 +76,15 @@ type mongoSchema interface {
 // wrapper for the response with argument
 func wrapperResponseArg[M mongoSchema, A any, R any](c *gin.Context, f func(mongo M, arg A) (R, error), mongo M, arg A) {
 	res, err := f(mongo, arg)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func wrapperResponseArgS3[M mongoSchema, A any, R any](c *gin.Context, f func(s3Client *s3.Client, mongo M, arg A) (R, error), s3Client *s3.Client, mongo M, arg A) {
+	res, err := f(s3Client, mongo, arg)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return
@@ -119,5 +130,29 @@ func wrapperHandlerURI[P any, R any](mongoClient *mongo.Client, f func(mongo *mo
 func wrapperHandler[R any](mongoClient *mongo.Client, f func(mongo *mongo.Client) (R, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		wrapperResponse(c, f, mongoClient)
+	}
+}
+
+// wrapper for the ginHandler with body with collectionName
+func wrapperHandlerBodyS3[B any, R any](s3Client *s3.Client, mongoClient *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, body B) (R, error)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body B
+		if err := c.BindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+			return
+		}
+		wrapperResponseArgS3(c, f, s3Client, mongoClient, body)
+	}
+}
+
+// wrapper for the ginHandler with URI
+func wrapperHandlerURIS3[P any, R any](s3Client *s3.Client,mongoClient  *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, params P) (R, error)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var params P
+		if err := c.ShouldBindUri(&params); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+			return
+		}
+		wrapperResponseArgS3(c, f, s3Client, mongoClient, params)
 	}
 }

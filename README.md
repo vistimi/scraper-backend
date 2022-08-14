@@ -42,7 +42,7 @@ Remove in src/utils/env.go the godotenv part if you run in container.
     IMAGES_PENDING_COLLECTION=imagesPending
     IMAGES_UNWANTED_COLLECTION=imagesUnwanted
     USERS_UNWANTED_COLLECTION=usersUnwanted
-    IMAGE_PATH=<absolutePath>
+    IMAGES_BUCKET=<s3_bucket_name>
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
     UNSPLASH_PRIVATE_KEY=***

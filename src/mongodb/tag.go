@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -78,7 +79,7 @@ type ReturnInsertTagUnwanted struct {
 }
 
 // InsertTagUnwanted inserts the new unwanted tag and remove the images with it as well as the files
-func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (*ReturnInsertTagUnwanted, error) {
+func InsertTagUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body types.Tag) (*ReturnInsertTagUnwanted, error) {
 	if body.Name == "" || body.Origin.Name == "" {
 		return nil, errors.New("Some fields are empty!")
 	}
@@ -88,7 +89,7 @@ func InsertTagUnwanted(mongoClient *mongo.Client, body types.Tag) (*ReturnInsert
 	// remove the images with that unwanted tag
 	query := bson.M{"tags.name": bson.M{ "$regex": body.Name}}
 	options := options.Find().SetProjection(bson.M{"_id": 1})
-	deletedCount, err := RemoveImagesAndFiles(mongoClient, query, options)
+	deletedCount, err := RemoveImagesAndFiles(s3Client, mongoClient, query, options)
 	if err != nil {
 		return nil, fmt.Errorf("RemoveImagesAndFiles has failed: %v", err)
 	}
