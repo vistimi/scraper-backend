@@ -19,12 +19,14 @@ import (
 )
 
 type ParamsFindImageFile struct {
-	Origin string `uri:"origin" binding:"required"`
-	Name   string `uri:"name" binding:"required"`
+	Origin    string `uri:"origin" binding:"required"`
+	OriginID  string `uri:"originID" binding:"required"`
+	Extension string `uri:"extension" binding:"required"`
 }
 
-func FindImageFile(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsFindImageFile) ([]byte, error) {
-	path := filepath.Join(params.Origin, params.Name)
+func FindImageFile(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsFindImageFile) (*DataSchema, error) {
+	fileName := fmt.Sprintf("%s.%s", params.OriginID, params.Extension)
+	path := filepath.Join(params.Origin, fileName)
 
 	res, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
@@ -39,7 +41,8 @@ func FindImageFile(s3Client *s3.Client, mongoClient *mongo.Client, params Params
 	if err != nil {
 		return nil, fmt.Errorf("ioutil.ReadAll has failed: %v", err)
 	}
-	return buffer, nil
+	data := DataSchema{dataType: params.Extension, dataFile: buffer}
+	return &data, nil
 }
 
 type ParamsFindImagesIDs struct {

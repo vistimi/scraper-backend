@@ -69,6 +69,11 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	return router
 }
 
+type DataSchema struct {
+	dataType string
+	dataFile []byte
+}
+
 type mongoSchema interface {
 	*mongo.Client
 }
@@ -92,13 +97,23 @@ func wrapperJSONResponseArgS3[M mongoSchema, A any, R any](c *gin.Context, f fun
 	c.JSON(http.StatusOK, res)
 }
 
-func wrapperDataResponseArgS3[M mongoSchema, A any, R []byte](c *gin.Context, f func(s3Client *s3.Client, mongo M, arg A) (R, error), s3Client *s3.Client, mongo M, arg A) {
+func wrapperDataResponseArgS3[M mongoSchema, A any](c *gin.Context, f func(s3Client *s3.Client, mongo M, arg A) (*DataSchema, error), s3Client *s3.Client, mongo M, arg A) {
 	data, err := f(s3Client, mongo, arg)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return
 	}
-	c.Data(http.StatusOK, "application/octet-stream", data)
+	switch data.dataType {
+	case "jpg":
+		c.Data(http.StatusOK, "image/jpeg", data.dataFile)
+	case "jpeg":
+		c.Data(http.StatusOK, "image/jpeg", data.dataFile)
+	case "png":
+		c.Data(http.StatusOK, "image/png", data.dataFile)
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"status": fmt.Errorf("Wrong content-type: %s", data.dataType)})
+	}
+	return
 }
 
 // wrapper for the response
@@ -166,7 +181,7 @@ func wrapperJSONHandlerURIS3[P any, R any](s3Client *s3.Client, mongoClient *mon
 	}
 }
 
-func wrapperDataHandlerURIS3[P any, R []byte](s3Client *s3.Client, mongoClient *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, params P) (R, error)) gin.HandlerFunc {
+func wrapperDataHandlerURIS3[P any](s3Client *s3.Client, mongoClient *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, params P) (*DataSchema, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var params P
 		if err := c.ShouldBindUri(&params); err != nil {
