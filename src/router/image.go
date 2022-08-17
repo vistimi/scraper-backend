@@ -1,18 +1,46 @@
 package router
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"scraper/src/mongodb"
 	"scraper/src/types"
 	"scraper/src/utils"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type ParamsFindImageFile struct {
+	Origin string `uri:"origin" binding:"required"`
+	Name   string `uri:"name" binding:"required"`
+}
+
+func FindImageFile(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsFindImageFile) ([]byte, error) {
+	path := filepath.Join(params.Origin, params.Name)
+
+	res, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+		Key:    aws.String(path),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("FindImageByID has failed: %v", err)
+	}
+	defer res.Body.Close()
+
+	buffer, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadAll has failed: %v", err)
+	}
+	return buffer, nil
+}
 
 type ParamsFindImagesIDs struct {
 	Origin     string `uri:"origin" binding:"required"`
@@ -102,4 +130,3 @@ func UpdateImageTagsPull(mongoClient *mongo.Client, body types.BodyUpdateImageTa
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
 	return mongodb.UpdateImageTagsPull(collectionImagesPending, body)
 }
-

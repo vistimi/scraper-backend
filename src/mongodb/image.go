@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"bytes"
 	"errors"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 
 	"scraper/src/utils"
 
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,7 +31,6 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"os"
 )
 
 // InsertImage insert an image in its collection
@@ -68,7 +69,7 @@ func RemoveImageAndFile(s3Client *s3.Client, collection *mongo.Collection, id pr
 
 	path := filepath.Join(image.Origin, image.Name)
 
-	s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+	_, err = s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
 		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
 	})
@@ -140,7 +141,7 @@ func UpdateImageTagsPull(collection *mongo.Collection, body types.BodyUpdateImag
 }
 
 // UpdateImageFile update the image with its tags when it is cropped
-func UpdateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
+func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
 	// update the image size and tags boxes
 	image, err := updateImageBoxes(collectionImagesPending, body)
@@ -148,7 +149,7 @@ func UpdateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int6
 		return nil, fmt.Errorf("updateImageBoxes has failed: %v", err)
 	}
 	// replace in db and file of the updated image
-	updatedCount, err := replaceImage(collectionImagesPending, image, body.File)
+	updatedCount, err := replaceImage(s3Client, collectionImagesPending, image, body.File)
 	if err != nil {
 		return nil, fmt.Errorf("replaceImage has failed: %v", err)
 	}
@@ -156,7 +157,7 @@ func UpdateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int6
 }
 
 // UpdateImageFile update the image with its tags when it is cropped
-func CreateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
+func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
 	// update the image size and tags boxes
 	image, err := updateImageBoxes(collectionImagesPending, body)
@@ -166,7 +167,7 @@ func CreateImageCrop(mongoClient *mongo.Client, body types.BodyImageCrop) (*int6
 	// add the current date and time to the name
 	image.Name = fmt.Sprintf("%s_%s.%s", image.ID, time.Now().Format(time.RFC3339), image.Extension)
 	// replace in db and file of the updated image
-	updatedCount, err := replaceImage(collectionImagesPending, image, body.File)
+	updatedCount, err := replaceImage(s3Client, collectionImagesPending, image, body.File)
 	if err != nil {
 		return nil, fmt.Errorf("replaceImage has failed: %v", err)
 	}
@@ -289,31 +290,36 @@ func updateImageBoxes(collection *mongo.Collection, body types.BodyImageCrop) (*
 	return imageFound, nil
 }
 
-func replaceImage(collection *mongo.Collection, imageReplace *types.Image, imageFile []byte) (*int64, error) {
+func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageReplace *types.Image, imageFile []byte) (*int64, error) {
 	// replace or create the file
-	folderDir := utils.DotEnvVariable("IMAGE_PATH")
-	path := filepath.Join(folderDir, imageReplace.Origin, imageReplace.Name)
-	err := os.WriteFile(path, imageFile, 0644)
+	path := filepath.Join(imageReplace.Origin, imageReplace.Name)
+
+	reader := bytes.NewReader(imageFile)
+
+	// upload new image in s3
+	uploader := manager.NewUploader(s3Client)
+	_, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
+		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+		Key:    aws.String(path),
+		Body:   reader,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("os.WriteFile has failed: %v", err)
+		return nil, fmt.Errorf("uploader.Upload has failed: %v", err)
 	}
 
-	// get the new dimensions
-	file, err := os.Open(path)
+	// get image size
+	img, _, err := image.Decode(reader)
 	if err != nil {
-		return nil, fmt.Errorf("os.Open has failed: %v", err)
+		return nil, fmt.Errorf("image.Decode has failed: %v", err)
 	}
-	imageDecoded, _, err := image.DecodeConfig(file)
-	if err != nil {
-		return nil, fmt.Errorf("image.DecodeConfig has failed. Only jpeg/jpg and png supported: %v", err)
-	}
+	bound := img.Bounds()
 
 	// update in db the new dimensions, tag boxes and new size
 	query := bson.M{"_id": imageReplace.ID}
 	update := bson.M{
 		"$set": bson.M{
-			"width":  imageDecoded.Width,
-			"height": imageDecoded.Height,
+			"width":  bound.Dx(),
+			"height": bound.Dy(),
 			"tags":   imageReplace.Tags,
 			"size":   imageReplace.Size,
 		},

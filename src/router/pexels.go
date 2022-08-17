@@ -35,13 +35,7 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 	}
 	var insertedIDs []primitive.ObjectID
 
-	// If path is already a directory, MkdirAll does nothing and returns nil
-	folderDir := utils.DotEnvVariable("IMAGE_PATH")
 	origin := "pexels"
-	err := os.MkdirAll(filepath.Join(folderDir, origin), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
 
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
 	collectionImagesWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))

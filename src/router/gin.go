@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"scraper/src/mongodb"
-	"scraper/src/utils"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-contrib/cors"
@@ -21,13 +20,14 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	router.Any("/", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 
 	// routes for one image pending or wanted
-	router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
-	
+	// router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
+
+	router.GET("/image/file/:origin/:name", wrapperHandlerURIS3(s3Client, mongoClient, FindImageFile))
 	router.GET("/image/:id/:collection", wrapperHandlerURI(mongoClient, FindImage))
 	router.PUT("/image/tags/push", wrapperHandlerBody(mongoClient, UpdateImageTagsPush))
 	router.PUT("/image/tags/pull", wrapperHandlerBody(mongoClient, UpdateImageTagsPull))
-	router.PUT("/image/crop", wrapperHandlerBody(mongoClient, mongodb.UpdateImageCrop))
-	router.POST("/image/crop", wrapperHandlerBody(mongoClient, mongodb.CreateImageCrop))
+	router.PUT("/image/crop", wrapperHandlerBodyS3(s3Client, mongoClient, mongodb.UpdateImageCrop))
+	router.POST("/image/crop", wrapperHandlerBodyS3(s3Client, mongoClient, mongodb.CreateImageCrop))
 	router.POST("/image/transfer", wrapperHandlerBody(mongoClient, mongodb.TransferImage))
 	router.DELETE("/image/:id", wrapperHandlerURIS3(s3Client, mongoClient, RemoveImageAndFile))
 
@@ -146,7 +146,7 @@ func wrapperHandlerBodyS3[B any, R any](s3Client *s3.Client, mongoClient *mongo.
 }
 
 // wrapper for the ginHandler with URI
-func wrapperHandlerURIS3[P any, R any](s3Client *s3.Client,mongoClient  *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, params P) (R, error)) gin.HandlerFunc {
+func wrapperHandlerURIS3[P any, R any](s3Client *s3.Client, mongoClient *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, params P) (R, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var params P
 		if err := c.ShouldBindUri(&params); err != nil {
