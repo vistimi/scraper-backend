@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"scraper/src/utils"
@@ -10,8 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 )
 
-func UploadS3(s3Client *s3.Client, link string, path string) (*manager.UploadOutput, error){
-	body, err := GetFile(link)
+func UploadS3(s3Client *s3.Client, link string, path string) (*manager.UploadOutput, error) {
+	// get buffer of image
+	buffer, err := GetFile(link)
 	if err != nil {
 		return nil, fmt.Errorf("GetFile has failed: %v", err)
 	}
@@ -21,6 +23,6 @@ func UploadS3(s3Client *s3.Client, link string, path string) (*manager.UploadOut
 	return uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
-		Body:   body,
+		Body:   bytes.NewReader(buffer),
 	})
 }

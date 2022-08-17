@@ -1,13 +1,14 @@
 package router
 
 import (
-	"io"
-	"net/http"
-	"errors"
-	"os"
 	"bytes"
-	"net/url"
+	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
 )
 
 type Request struct {
@@ -65,22 +66,29 @@ func EncodeQuery(args map[string]string) string {
 	return s.String()
 }
 
-func GetFile(URL string) (io.Reader, error) {
+// GetFile returns the buffer of the downloaded image
+func GetFile(URL string) ([]byte, error) {
 	response, err := http.Get(URL)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
+
 	if response.StatusCode != 200 {
 		return nil, errors.New("Received non 200 response code")
 	}
-	return response.Body, nil
+
+	buffer, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadAll has failed: %v", err)
+	}
+	return buffer, nil
 }
 
 // Download a file from an URL body response
 func DownloadFile(URL string, fileName string) error {
 	//Get the response bytes from the url
-	body, err := GetFile(URL)
+	buffer, err := GetFile(URL)
 	
 	//Create a empty file
 	file, err := os.Create(fileName)
@@ -90,7 +98,7 @@ func DownloadFile(URL string, fileName string) error {
 	defer file.Close()
 
 	//Write the bytes to the fiel
-	_, err = io.Copy(file, body)
+	_, err = io.Copy(file, bytes.NewReader(buffer))
 	if err != nil {
 		return err
 	}
