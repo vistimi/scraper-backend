@@ -185,7 +185,7 @@ func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 
 	// replace in db and file of the updated image
 	updatedCount, err := replaceImage(s3Client, collectionImagesPending, imageData, img)
-	if err != nil || *updatedCount == 0 {
+	if err != nil {
 		return nil, fmt.Errorf("replaceImage has failed: %v", err)
 	}
 	return updatedCount, nil
@@ -206,7 +206,7 @@ func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 
 	// replace in db and file of the updated image
 	updatedCount, err := replaceImage(s3Client, collectionImagesPending, imageData, img)
-	if err != nil || *updatedCount == 0 {
+	if err != nil {
 		return nil, fmt.Errorf("replaceImage has failed: %v", err)
 	}
 	return updatedCount, nil
@@ -367,15 +367,14 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 			"size":   imageData.Size,
 		},
 	}
-	upsert := true
-	options := options.UpdateOptions{
-			Upsert: &upsert,
-	}
-	res, err := collection.UpdateOne(context.TODO(), query, update, &options)
+	options := options.Update().SetUpsert(true)
+	res, err := collection.UpdateOne(context.TODO(), query, update, options)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 	}
-	fmt.Printf("%v", res.UpsertedID)
+	if res.UpsertedCount == 0 && res.ModifiedCount == 0{
+		return nil, fmt.Errorf("No upsert or update have been done")
+	}
 	return &res.ModifiedCount, nil
 }
 

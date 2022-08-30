@@ -19,6 +19,9 @@ COPY --from=builder /usr/tmp/scraper /usr/app/scraper
 
 WORKDIR /usr/app
 
+# not debug mode for production
+ENV GIN_MODE=release
+
 # port for scraper
 EXPOSE 8080
 
