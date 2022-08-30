@@ -1,7 +1,6 @@
 package mongodb
 
 import (
-	"fmt"
 	"log"
 	"scraper/src/utils"
 
@@ -14,8 +13,6 @@ import (
 )
 
 func ConnectMongoDB() *mongo.Client {
-	fmt.Println("Connecting to MongoDB")
-
 	uri := utils.DotEnvVariable("MONGODB_URI")
 
 	// context, cancel := context.WithTimeout(context.TODO(), 20*time.Second)
@@ -35,6 +32,5 @@ func ConnectMongoDB() *mongo.Client {
 	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Connected to MongoDB")
 	return client
 }

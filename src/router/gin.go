@@ -12,7 +12,6 @@ import (
 )
 
 func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
-	fmt.Println("Loading the Router")
 	router := gin.Default()
 	router.Use(cors.Default())
 
@@ -65,7 +64,6 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 
 	// start the backend
 	router.Run("0.0.0.0:8080")
-	fmt.Println("Loaded the Router")
 	return router
 }
 
