@@ -324,7 +324,11 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageReplac
 			"size":   imageReplace.Size,
 		},
 	}
-	res, err := collection.UpdateOne(context.TODO(), query, update)
+	upsert := true
+	options := options.UpdateOptions{
+			Upsert: &upsert,
+	}
+	res, err := collection.UpdateOne(context.TODO(), query, update, &options)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 	}
