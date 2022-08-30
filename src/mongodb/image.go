@@ -322,17 +322,17 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 	return imageData, nil
 }
 
-func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageReplace *types.Image, img image.Image) (*int64, error) {
+func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *types.Image, img image.Image) (*int64, error) {
 	// create buffer
 	buffer := new(bytes.Buffer)
 
 	// encode image to buffer
-	if (imageReplace.Extension == "jpeg" || imageReplace.Extension == "jpg"){
+	if (imageData.Extension == "jpeg" || imageData.Extension == "jpg"){
 		err := jpeg.Encode(buffer, img, nil)
 		if err != nil {
 			return nil, fmt.Errorf("jpeg.Encode has failed: %v", err)
 		}
-	} else if (imageReplace.Extension == "png") {
+	} else if (imageData.Extension == "png") {
 		err := png.Encode(buffer, img)
 		if err != nil {
 			return nil, fmt.Errorf("png.Encode has failed: %v", err)
@@ -345,7 +345,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageReplac
 	reader := bytes.NewReader(buffer.Bytes())
 
 	// upload new image in s3
-	path := filepath.Join(imageReplace.Origin, imageReplace.Name)
+	path := filepath.Join(imageData.Origin, imageData.Name)
 	uploader := manager.NewUploader(s3Client)
 	_, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
@@ -358,13 +358,13 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageReplac
 
 	// update in db the new dimensions, tag boxes and new size
 	bound := img.Bounds()
-	query := bson.M{"_id": imageReplace.ID}
+	query := bson.M{"name": imageData.Name}
 	update := bson.M{
 		"$set": bson.M{
 			"width":  bound.Dx(),
 			"height": bound.Dy(),
-			"tags":   imageReplace.Tags,
-			"size":   imageReplace.Size,
+			"tags":   imageData.Tags,
+			"size":   imageData.Size,
 		},
 	}
 	upsert := true
