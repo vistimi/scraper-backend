@@ -50,6 +50,7 @@ type TagOrigin struct {
 	Weights     string             `bson:"weights,omitempty" json:"weights,omitempty"`         // weights of the model used for the detector
 	ImageSizeID primitive.ObjectID `bson:"imageSizeID,omitempty" json:"imageSizeID,omitempty"` // reference to the anchor point
 	Box         Box                `bson:"box,omitempty" json:"box,omitempty"`                 // reference of the bounding box relative to the anchor
+	Confidence  float32            `bson:"confidence,omitempty" json:"confidence,omitempty"`   // accuracy of the model
 }
 
 type Box struct {

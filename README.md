@@ -15,7 +15,7 @@ If pbm with package `<package>: command not found`:
 ## Docker
 
 sudo docker build -t scraper-img .
-sudo docker run -it --rm --name scraper-run --env-file .env scraper-img
+sudo docker run -it -p 8080:8080 -p 27017:27017 --rm --name scraper-run --env-file .env scraper-img
 
     
 ## run without docker

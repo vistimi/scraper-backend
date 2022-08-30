@@ -55,7 +55,7 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	router.POST("/user/unwanted", wrapperJSONHandlerBodyS3(s3Client, mongoClient, mongodb.InsertUserUnwanted))
 	router.DELETE("/user/unwanted/:id", wrapperJSONHandlerURI(mongoClient, RemoveUserUnwanted))
 
-	// routes for multiplt users unwanted
+	// routes for multiple users unwanted
 	router.GET("/users/unwanted", wrapperJSONHandler(mongoClient, mongodb.UsersUnwanted))
 
 	// routes for scraping the internet
