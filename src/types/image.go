@@ -22,7 +22,7 @@ type BodyUpdateImageTagsPull struct {
 type BodyImageCrop struct {
 	ID   primitive.ObjectID `bson:"id,omitempty" json:"id,omitempty"`
 	Box  Box                `bson:"box,omitempty" json:"box,omitempty"`
-	File []byte             `bson:"file,omitempty" json:"file,omitempty"`
+	// File []byte             `bson:"file,omitempty" json:"file,omitempty"`
 }
 
 type BodyTransferImage struct {

@@ -1,17 +1,14 @@
 package router
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"scraper/src/mongodb"
 	"scraper/src/types"
 	"scraper/src/utils"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go/aws"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,22 +21,13 @@ type ParamsFindImageFile struct {
 	Extension string `uri:"extension" binding:"required"`
 }
 
-func FindImageFile(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsFindImageFile) (*DataSchema, error) {
+func FindImageFile(s3Client *s3.Client, params ParamsFindImageFile) (*DataSchema, error) {
 	fileName := fmt.Sprintf("%s.%s", params.OriginID, params.Extension)
 	path := filepath.Join(params.Origin, fileName)
 
-	res, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
-		Key:    aws.String(path),
-	})
+	buffer, err := utils.GetItemS3(s3Client, path)
 	if err != nil {
-		return nil, fmt.Errorf("FindImageByID has failed: %v", err)
-	}
-	defer res.Body.Close()
-
-	buffer, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll has failed: %v", err)
+		return nil, err
 	}
 	data := DataSchema{dataType: params.Extension, dataFile: buffer}
 	return &data, nil

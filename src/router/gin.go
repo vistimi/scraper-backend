@@ -22,7 +22,7 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	// routes for one image pending or wanted
 	// router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
 
-	router.GET("/image/file/:origin/:originID/:extension", wrapperDataHandlerURIS3(s3Client, mongoClient, FindImageFile))
+	router.GET("/image/file/:origin/:originID/:extension", wrapperDataHandlerURIS3(s3Client, FindImageFile))
 	router.GET("/image/:id/:collection", wrapperJSONHandlerURI(mongoClient, FindImage))
 	router.PUT("/image/tags/push", wrapperJSONHandlerBody(mongoClient, UpdateImageTagsPush))
 	router.PUT("/image/tags/pull", wrapperJSONHandlerBody(mongoClient, UpdateImageTagsPull))
@@ -97,8 +97,8 @@ func wrapperJSONResponseArgS3[M mongoSchema, A any, R any](c *gin.Context, f fun
 	c.JSON(http.StatusOK, res)
 }
 
-func wrapperDataResponseArgS3[M mongoSchema, A any](c *gin.Context, f func(s3Client *s3.Client, mongo M, arg A) (*DataSchema, error), s3Client *s3.Client, mongo M, arg A) {
-	data, err := f(s3Client, mongo, arg)
+func wrapperDataResponseArgS3[A any](c *gin.Context, f func(s3Client *s3.Client, arg A) (*DataSchema, error), s3Client *s3.Client, arg A) {
+	data, err := f(s3Client, arg)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return
@@ -181,13 +181,13 @@ func wrapperJSONHandlerURIS3[P any, R any](s3Client *s3.Client, mongoClient *mon
 	}
 }
 
-func wrapperDataHandlerURIS3[P any](s3Client *s3.Client, mongoClient *mongo.Client, f func(s3Client *s3.Client, mongo *mongo.Client, params P) (*DataSchema, error)) gin.HandlerFunc {
+func wrapperDataHandlerURIS3[P any](s3Client *s3.Client, f func(s3Client *s3.Client, params P) (*DataSchema, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var params P
 		if err := c.ShouldBindUri(&params); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
-		wrapperDataResponseArgS3(c, f, s3Client, mongoClient, params)
+		wrapperDataResponseArgS3(c, f, s3Client, params)
 	}
 }

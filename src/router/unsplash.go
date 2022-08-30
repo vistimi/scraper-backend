@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"fmt"
 	"scraper/src/mongodb"
 	"scraper/src/types"
@@ -149,9 +150,15 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 				fileName := fmt.Sprintf("%s.%s", *photo.ID, extension)
 				path := filepath.Join(origin, fileName)
 
-				_, err = UploadS3(s3Client, link.String(), path)
+				// get buffer of image
+				buffer, err := utils.GetFile(link.String())
 				if err != nil {
-					return nil, fmt.Errorf("UploadS3 has failed: %v", err)
+					return nil, fmt.Errorf("GetFile has failed: %v", err)
+				}
+
+				_, err = utils.UploadItemS3(s3Client, bytes.NewReader(buffer), path)
+				if err != nil {
+					return nil, fmt.Errorf("UploadItemS3 has failed: %v", err)
 				}
 
 				// tags creation
@@ -237,7 +244,7 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 }
 
 func searchPhotosPerPageUnsplash(tag string, page int) (*unsplash.PhotoSearchResult, error) {
-	r := &Request{
+	r := &utils.Request{
 		Host: "https://api.unsplash.com/search/photos/?",
 		Args: map[string]string{
 			"client_id": utils.DotEnvVariable("UNSPLASH_PUBLIC_KEY"),

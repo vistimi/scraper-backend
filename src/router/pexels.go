@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"scraper/src/mongodb"
@@ -128,9 +129,15 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 				fileName := fmt.Sprintf("%d.%s", photo.ID, extension)
 				path := filepath.Join(origin, fileName)
 
-				_, err = UploadS3(s3Client, link, path)
+				// get buffer of image
+				buffer, err := utils.GetFile(link)
 				if err != nil {
-					return nil, fmt.Errorf("UploadS3 has failed: %v", err)
+					return nil, fmt.Errorf("GetFile has failed: %v", err)
+				}
+
+				_, err = utils.UploadItemS3(s3Client, bytes.NewReader(buffer), path)
+				if err != nil {
+					return nil, fmt.Errorf("UploadItemS3 has failed: %v", err)
 				}
 
 				// image creation
@@ -236,7 +243,7 @@ type SearchPhotoResponsePexels struct {
 }
 
 func searchPhotosPerPagePexels(tag string, page int) (*SearchPhotoResponsePexels, error) {
-	r := &Request{
+	r := &utils.Request{
 		Host: "https://api.pexels.com/v1/search?",
 		Args: map[string]string{
 			"query":    tag,

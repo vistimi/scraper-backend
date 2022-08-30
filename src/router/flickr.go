@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"time"
@@ -166,9 +167,15 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					fileName := fmt.Sprintf("%s.%s", photo.ID, infoData.OriginalFormat)
 					path := filepath.Join(origin, fileName)
 
-					_, err = UploadS3(s3Client, downloadData.Photos[idx].Source, path)
+					// get buffer of image
+					buffer, err := utils.GetFile(downloadData.Photos[idx].Source)
 					if err != nil {
-						return nil, fmt.Errorf("UploadS3 has failed: %v", err)
+						return nil, fmt.Errorf("GetFile has failed: %v", err)
+					}
+
+					_, err = utils.UploadItemS3(s3Client, bytes.NewReader(buffer), path)
+					if err != nil {
+						return nil, fmt.Errorf("UploadItemS3 has failed: %v", err)
 					}
 
 					// image creation
@@ -243,7 +250,7 @@ type PhotoFlickr struct {
 
 // Search images for one page of max 500 images
 func searchPhotosPerPageFlickr(parser *pagser.Pagser, licenseID string, tags string, page string) (*SearchPhotPerPageData, error) {
-	r := &Request{
+	r := &utils.Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
 			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
@@ -291,7 +298,7 @@ type DownloadPhotoData struct {
 }
 
 func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error) {
-	r := &Request{
+	r := &utils.Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
 			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
@@ -338,7 +345,7 @@ type Tag struct {
 }
 
 func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error) {
-	r := &Request{
+	r := &utils.Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
 			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
