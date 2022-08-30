@@ -165,7 +165,7 @@ func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 		return nil, fmt.Errorf("updateImageBoxes has failed: %v", err)
 	}
 	// add the current date and time to the name
-	image.Name = fmt.Sprintf("%s_%s.%s", image.ID, time.Now().Format(time.RFC3339), image.Extension)
+	image.Name = fmt.Sprintf("%s_%s.%s", image.OriginID, time.Now().Format(time.RFC3339), image.Extension)
 	// replace in db and file of the updated image
 	updatedCount, err := replaceImage(s3Client, collectionImagesPending, image, body.File)
 	if err != nil {
