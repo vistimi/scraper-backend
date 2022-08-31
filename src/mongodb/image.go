@@ -146,7 +146,8 @@ func UpdateImageTagsPull(collection *mongo.Collection, body types.BodyUpdateImag
 func cropFileAndData (s3Client *s3.Client, mongoCollection *mongo.Collection, body types.BodyImageCrop) (image.Image, *types.Image, error) {
 	// get information of the image
 	query := bson.M{"_id": body.ID}
-	imageData, err := FindOne[types.Image](mongoCollection, query)
+	options := options.FindOne().SetProjection(bson.M{"_id": 0})	// no _id for replacing later on
+	imageData, err := FindOne[types.Image](mongoCollection, query, options)
 	if err != nil {
 		return nil, nil, fmt.Errorf("FindOne[Image] has failed: %v", err)
 	}
@@ -333,7 +334,6 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 	if res.UpsertedCount == 0 && res.ModifiedCount == 0{
 		return nil, fmt.Errorf("No upsert or update have been done")
 	}
-	fmt.Printf("%v", res)
 
 	// create buffer
 	buffer := new(bytes.Buffer)
