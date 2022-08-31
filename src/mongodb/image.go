@@ -323,9 +323,29 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 }
 
 func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *types.Image, img image.Image) (*int64, error) {
+	// update in db the new dimensions, tag boxes and new size
+	bound := img.Bounds()
+	query := bson.M{"name": imageData.Name}
+	update := bson.M{
+		"$set": bson.M{
+			"width":  bound.Dx(),
+			"height": bound.Dy(),
+			"tags":   imageData.Tags,
+			"size":   imageData.Size,
+		},
+	}
+	options := options.Update().SetUpsert(true)
+	res, err := collection.UpdateOne(context.TODO(), query, update, options)
+	if err != nil {
+		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
+	}
+	if res.UpsertedCount == 0 && res.ModifiedCount == 0{
+		return nil, fmt.Errorf("No upsert or update have been done")
+	}
+	fmt.Printf("%v", res)
+
 	// create buffer
 	buffer := new(bytes.Buffer)
-
 	// encode image to buffer
 	if (imageData.Extension == "jpeg" || imageData.Extension == "jpg"){
 		err := jpeg.Encode(buffer, img, nil)
@@ -347,7 +367,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 	// upload new image in s3
 	path := filepath.Join(imageData.Origin, imageData.Name)
 	uploader := manager.NewUploader(s3Client)
-	_, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
+	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
 		Body:   reader,
@@ -356,25 +376,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 		return nil, fmt.Errorf("uploader.Upload has failed: %v", err)
 	}
 
-	// update in db the new dimensions, tag boxes and new size
-	bound := img.Bounds()
-	query := bson.M{"name": imageData.Name}
-	update := bson.M{
-		"$set": bson.M{
-			"width":  bound.Dx(),
-			"height": bound.Dy(),
-			"tags":   imageData.Tags,
-			"size":   imageData.Size,
-		},
-	}
-	options := options.Update().SetUpsert(true)
-	res, err := collection.UpdateOne(context.TODO(), query, update, options)
-	if err != nil {
-		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
-	}
-	if res.UpsertedCount == 0 && res.ModifiedCount == 0{
-		return nil, fmt.Errorf("No upsert or update have been done")
-	}
+
 	return &res.ModifiedCount, nil
 }
 
