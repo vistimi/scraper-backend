@@ -324,18 +324,9 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 
 func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *types.Image, img image.Image) (*int64, error) {
 	// update in db the new dimensions, tag boxes and new size
-	bound := img.Bounds()
-	query := bson.M{"name": imageData.Name}
-	update := bson.M{
-		"$set": bson.M{
-			"width":  bound.Dx(),
-			"height": bound.Dy(),
-			"tags":   imageData.Tags,
-			"size":   imageData.Size,
-		},
-	}
-	options := options.Update().SetUpsert(true)
-	res, err := collection.UpdateOne(context.TODO(), query, update, options)
+	query := bson.M{"name": imageData.Name}	// match the existing or new name
+	options := options.Replace().SetUpsert(true)
+	res, err := collection.ReplaceOne(context.TODO(), query, imageData, options)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 	}
