@@ -109,8 +109,11 @@ func UpdateImageTagsPush(collection *mongo.Collection, body types.BodyUpdateImag
 		tag.CreationDate = &now
 	}
 	update := bson.M{
-		"$push": bson.M{
-			"tags": bson.M{"$each": body.Tags},
+		"tags": bson.M{
+			"$ifNull": bson.A{
+				bson.M{"$concatArrays": bson.A{"$tags", body.Tags}},
+				body.Tags,
+			},
 		},
 	}
 	res, err := collection.UpdateOne(context.TODO(), query, update)
@@ -143,10 +146,10 @@ func UpdateImageTagsPull(collection *mongo.Collection, body types.BodyUpdateImag
 }
 
 // cropFileAndData updates the data in db and crop the original file
-func cropFileAndData (s3Client *s3.Client, mongoCollection *mongo.Collection, body types.BodyImageCrop) (image.Image, *types.Image, error) {
+func cropFileAndData(s3Client *s3.Client, mongoCollection *mongo.Collection, body types.BodyImageCrop) (image.Image, *types.Image, error) {
 	// get information of the image
 	query := bson.M{"_id": body.ID}
-	options := options.FindOne().SetProjection(bson.M{"_id": 0})	// no _id for replacing later on
+	options := options.FindOne().SetProjection(bson.M{"_id": 0}) // no _id for replacing later on
 	imageData, err := FindOne[types.Image](mongoCollection, query, options)
 	if err != nil {
 		return nil, nil, fmt.Errorf("FindOne[Image] has failed: %v", err)
@@ -195,7 +198,7 @@ func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 // UpdateImageFile update the image with its tags when it is cropped
 func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
 	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
-	
+
 	// crop data and file
 	img, imageData, err := cropFileAndData(s3Client, collectionImagesPending, body)
 	if err != nil {
@@ -325,25 +328,25 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 
 func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *types.Image, img image.Image) (*int64, error) {
 	// update in db the new dimensions, tag boxes and new size
-	query := bson.M{"name": imageData.Name}	// match the existing or new name
+	query := bson.M{"name": imageData.Name} // match the existing or new name
 	options := options.Replace().SetUpsert(true)
 	res, err := collection.ReplaceOne(context.TODO(), query, imageData, options)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 	}
-	if res.UpsertedCount == 0 && res.ModifiedCount == 0{
+	if res.UpsertedCount == 0 && res.ModifiedCount == 0 {
 		return nil, fmt.Errorf("No upsert or update have been done")
 	}
 
 	// create buffer
 	buffer := new(bytes.Buffer)
 	// encode image to buffer
-	if (imageData.Extension == "jpeg" || imageData.Extension == "jpg"){
+	if imageData.Extension == "jpeg" || imageData.Extension == "jpg" {
 		err := jpeg.Encode(buffer, img, nil)
 		if err != nil {
 			return nil, fmt.Errorf("jpeg.Encode has failed: %v", err)
 		}
-	} else if (imageData.Extension == "png") {
+	} else if imageData.Extension == "png" {
 		err := png.Encode(buffer, img)
 		if err != nil {
 			return nil, fmt.Errorf("png.Encode has failed: %v", err)
@@ -366,7 +369,6 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 	if err != nil {
 		return nil, fmt.Errorf("uploader.Upload has failed: %v", err)
 	}
-
 
 	return &res.ModifiedCount, nil
 }
