@@ -109,10 +109,12 @@ func UpdateImageTagsPush(collection *mongo.Collection, body types.BodyUpdateImag
 		tag.CreationDate = &now
 	}
 	update := bson.M{
-		"tags": bson.M{
-			"$ifNull": bson.A{
-				bson.M{"$concatArrays": bson.A{"$tags", body.Tags}},
-				body.Tags,
+		"$set": bson.M{
+			"tags": bson.M{
+				"$ifNull": bson.A{
+					bson.M{"$concatArrays": bson.A{"$tags", body.Tags}},
+					body.Tags,
+				},
 			},
 		},
 	}
