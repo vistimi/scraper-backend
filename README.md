@@ -12,15 +12,37 @@ If pbm with package `<package>: command not found`:
     export GOPATH="$HOME/go"
     PATH="$GOPATH/bin:$PATH"
 
+## Localstack
+
+https://docs.localstack.cloud/get-started/#localstack-cli
+https://github.com/localstack/localstack
+
+The code should spawn a new container but in case you want to try yourself:
+    
+    localstack update all
+    localstack start -d
+    localstack stop
+
+or with docker:
+
+    docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
+
+if errors (cmd not found) occur:
+
+    export PATH=/home/olivier/.local/bin:$PATH
+
+Change some lines in:
+
+    src/utils/aws.go
+    src/utils/env.go
 ## Docker
 
-sudo docker build -t scraper-img .
-sudo docker run -it -p 8080:8080 -p 27017:27017 --rm --name scraper-run --env-file .env scraper-img
+    sudo docker build -t scraper-img .
+    sudo docker run -it -p 8080:8080 -p 27017:27017 --rm --name scraper-run --env-file .env scraper-img
 
-    
 ## run without docker
 
-    go run src/main.go
+    ENV=local go run src/main.go
 
 ## build without docker
 
@@ -31,8 +53,6 @@ sudo docker run -it -p 8080:8080 -p 27017:27017 --rm --name scraper-run --env-fi
 must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
 ## .env
-
-Remove in src/utils/env.go the godotenv part if you run in container.
 
     MONGODB_URI=mongodb://localhost:27017
     SCRAPER_DB=scraper
@@ -48,6 +68,7 @@ Remove in src/utils/env.go the godotenv part if you run in container.
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
+    ENV=local
 
 ## linter
 
