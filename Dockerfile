@@ -9,6 +9,7 @@ RUN go mod download && go mod verify
 
 # build project
 COPY . .
+ENV GIN_MODE=release
 RUN go build -o scraper src/main.go
 
 # create a new empty image
@@ -18,9 +19,6 @@ FROM alpine:latest
 COPY --from=builder /usr/tmp/scraper /usr/app/scraper
 
 WORKDIR /usr/app
-
-# not debug mode for production
-ENV GIN_MODE=release
 
 # port for scraper
 EXPOSE 8080

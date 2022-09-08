@@ -31,7 +31,7 @@ func InsertUserUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body typ
 	body.Origin = strings.ToLower(body.Origin)
 
 	// insert the unwanted user
-	collectionUserUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionUserUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
 	query := bson.M{"origin": body.Origin,
 		"$or": bson.A{
 			bson.M{"originID": body.OriginID},
@@ -76,6 +76,6 @@ func RemoveUser(collection *mongo.Collection, id primitive.ObjectID) (*int64, er
 
 // TagsUnwanted find all the wanted tags
 func UsersUnwanted(mongoClient *mongo.Client) ([]types.User, error) {
-	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
 	return FindMany[types.User](collectionUsersUnwanted, bson.M{})
 }

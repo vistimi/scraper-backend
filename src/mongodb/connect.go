@@ -13,7 +13,7 @@ import (
 )
 
 func ConnectMongoDB() *mongo.Client {
-	uri := utils.DotEnvVariable("MONGODB_URI")
+	uri := utils.GetEnvVariable("MONGODB_URI")
 
 	// context, cancel := context.WithTimeout(context.TODO(), 20*time.Second)
 	// defer cancel()

@@ -41,10 +41,10 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	origin := "unsplash"
 
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
-	collectionImagesWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -247,7 +247,7 @@ func searchPhotosPerPageUnsplash(tag string, page int) (*unsplash.PhotoSearchRes
 	r := &utils.Request{
 		Host: "https://api.unsplash.com/search/photos/?",
 		Args: map[string]string{
-			"client_id": utils.DotEnvVariable("UNSPLASH_PUBLIC_KEY"),
+			"client_id": utils.GetEnvVariable("UNSPLASH_PUBLIC_KEY"),
 			"per_page":  "80", // default 10
 			"page":      fmt.Sprint(page),
 			"query":     tag,

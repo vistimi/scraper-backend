@@ -40,19 +40,24 @@ Change some lines in:
     sudo docker build -t scraper-img .
     sudo docker run -it -p 8080:8080 -p 27017:27017 --rm --name scraper-run --env-file <state>.env scraper-img
 
-## run without docker
+## Run
+
+### Run without docker
 
     ENV=local go run src/main.go
 
-## build without docker
+### Build without docker
 
     go build -o scraper src/main.go
+    ./scraper
 
 ## License
 
 must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
-## .env
+## Env
+
+Create a local.env file:
 
     MONGODB_URI=mongodb://localhost:27017
     SCRAPER_DB=scraper

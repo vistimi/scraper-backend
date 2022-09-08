@@ -16,39 +16,40 @@ import (
 	"github.com/elgohr/go-localstack"
 )
 
-func LocalS3() aws.Config {
+func LocalS3() (aws.Config, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-    defer cancel()
-    
-    l, err := localstack.NewInstance()
-    if err != nil {
-        log.Fatalf("Could not connect to Docker %v", err)
-    }
-    if err := l.StartWithContext(ctx); err != nil {
-        log.Fatalf("Could not start localstack %v", err)
-    }
-    
-    cfg, err := config.LoadDefaultConfig(ctx,
-        config.WithRegion("us-east-1"),
-        config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
-            return aws.Endpoint{
-			    PartitionID:       "aws", 
-			    URL:               l.EndpointV2(localstack.SQS), 
-			    SigningRegion:     "us-east-1", 
-			    HostnameImmutable: true,
-		    }, nil
-        })),
-        config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("dummy", "dummy", "dummy")),
-    )
-    if err != nil {
-        log.Fatalf("Could not get config %v", err)
-    }
-	return cfg
+	defer cancel()
+
+	l, err := localstack.NewInstance()
+	if err != nil {
+		log.Fatalf("Could not connect to Docker %v", err)
+	}
+	if err := l.StartWithContext(ctx); err != nil {
+		log.Fatalf("Could not start localstack %v", err)
+	}
+
+	url := l.EndpointV2(localstack.S3)
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion("us-east-1"),
+		config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				PartitionID:       "aws",
+				URL:               url,
+				SigningRegion:     "us-east-1",
+				HostnameImmutable: false,
+			}, nil
+		})),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("dummy", "dummy", "dummy")),
+	)
+	if err != nil {
+		log.Fatalf("Could not get config %v", err)
+	}
+	return cfg, url
 }
 
 func AwsS3() aws.Config {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-    defer cancel()
+	defer cancel()
 
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -65,7 +66,7 @@ func UploadItemS3(s3Client *s3.Client, buffer io.Reader, path string) (*manager.
 	// upload in s3 the file
 	uploader := manager.NewUploader(s3Client)
 	return uploader.Upload(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(DotEnvVariable("IMAGES_BUCKET")),
+		Bucket: aws.String(GetEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
 		Body:   buffer,
 	})
@@ -73,7 +74,7 @@ func UploadItemS3(s3Client *s3.Client, buffer io.Reader, path string) (*manager.
 
 func GetItemS3(s3Client *s3.Client, path string) ([]byte, error) {
 	res, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(DotEnvVariable("IMAGES_BUCKET")),
+		Bucket: aws.String(GetEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
 	})
 	if err != nil {

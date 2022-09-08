@@ -46,10 +46,10 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 
 	origin := "flickr"
 
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
-	collectionImagesWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -253,7 +253,7 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, licenseID string, tags str
 	r := &utils.Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
+			"api_key":  utils.GetEnvVariable("FLICKR_PUBLIC_KEY"),
 			"method":   "flickr.photos.search",
 			"tags":     tags,
 			"license":  licenseID,
@@ -301,7 +301,7 @@ func downloadPhoto(parser *pagser.Pagser, id string) (*DownloadPhotoData, error)
 	r := &utils.Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
+			"api_key":  utils.GetEnvVariable("FLICKR_PUBLIC_KEY"),
 			"method":   "flickr.photos.getSizes",
 			"photo_id": id,
 		},
@@ -348,7 +348,7 @@ func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error)
 	r := &utils.Request{
 		Host: "https://api.flickr.com/services/rest/?",
 		Args: map[string]string{
-			"api_key":  utils.DotEnvVariable("FLICKR_PUBLIC_KEY"),
+			"api_key":  utils.GetEnvVariable("FLICKR_PUBLIC_KEY"),
 			"method":   "flickr.photos.getInfo",
 			"photo_id": photo.ID,
 		},

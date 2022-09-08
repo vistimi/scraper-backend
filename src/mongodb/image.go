@@ -9,9 +9,9 @@ import (
 
 	"scraper/src/utils"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -72,7 +72,7 @@ func RemoveImageAndFile(s3Client *s3.Client, collection *mongo.Collection, id pr
 	path := filepath.Join(image.Origin, image.Name)
 
 	_, err = s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
-		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+		Bucket: aws.String(utils.GetEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
 	})
 
@@ -84,7 +84,7 @@ func RemoveImageAndFile(s3Client *s3.Client, collection *mongo.Collection, id pr
 }
 
 func RemoveImagesAndFiles(s3Client *s3.Client, mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
-	collectionImages := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
 	var deletedCount int64
 	images, err := FindMany[types.Image](collectionImages, query, options)
 	if err != nil {
@@ -181,7 +181,7 @@ func cropFileAndData(s3Client *s3.Client, mongoCollection *mongo.Collection, bod
 
 // UpdateImageFile update the image with its tags when it is cropped
 func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 
 	// crop data and file
 	img, imageData, err := cropFileAndData(s3Client, collectionImagesPending, body)
@@ -199,7 +199,7 @@ func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 
 // UpdateImageFile update the image with its tags when it is cropped
 func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 
 	// crop data and file
 	img, imageData, err := cropFileAndData(s3Client, collectionImagesPending, body)
@@ -364,7 +364,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 	path := filepath.Join(imageData.Origin, imageData.Name)
 	uploader := manager.NewUploader(s3Client)
 	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(utils.DotEnvVariable("IMAGES_BUCKET")),
+		Bucket: aws.String(utils.GetEnvVariable("IMAGES_BUCKET")),
 		Key:    aws.String(path),
 		Body:   reader,
 	})
@@ -382,7 +382,7 @@ func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface
 	body.Origin = strings.ToLower(body.Origin)
 
 	// insert the unwanted image
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	res, err := collectionImagesUnwanted.InsertOne(context.TODO(), body)
 	if err != nil {
 		return nil, fmt.Errorf("InsertOne has failed: %v", err)

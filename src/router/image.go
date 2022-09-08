@@ -69,7 +69,7 @@ func FindImage(mongoClient *mongo.Client, params ParamsFindImage) (*types.Image,
 
 // FindImagesUnwanted get all the unwanted images
 func FindImagesUnwanted(mongoClient *mongo.Client) ([]types.Image, error) {
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	// no options needed because not much is stored for unwanted images
 	return mongodb.FindMany[types.Image](collectionImagesUnwanted, bson.M{})
 }
@@ -81,7 +81,7 @@ type ParamsRemoveImage struct {
 
 // RemoveImageAndFile removes in db and file of a pending image
 func RemoveImageAndFile(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, error) {
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 	imageID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func RemoveImageAndFile(s3Client *s3.Client, mongoClient *mongo.Client, params P
 
 // RemoveImage removes in db an unwanted image
 func RemoveImage(mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, error) {
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
 	imageID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func UpdateImageTagsPush(mongoClient *mongo.Client, body types.BodyUpdateImageTa
 			return nil, fmt.Errorf("Body not valid, box fields missing: %v", tag.Origin.Box)
 		}
 	}
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 	return mongodb.UpdateImageTagsPush(collectionImagesPending, body)
 }
 
@@ -118,6 +118,6 @@ func UpdateImageTagsPull(mongoClient *mongo.Client, body types.BodyUpdateImageTa
 	if body.ID == primitive.NilObjectID {
 		return nil, errors.New("Body not valid, ID empty")
 	}
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 	return mongodb.UpdateImageTagsPull(collectionImagesPending, body)
 }

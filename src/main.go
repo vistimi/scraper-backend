@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"scraper/src/mongodb"
 	"scraper/src/router"
@@ -11,7 +12,7 @@ import (
 
 func main() {
 	var cfg aws.Config
-	switch utils.DotEnvVariable("ENV") {
+	switch utils.GetEnvVariable("ENV") {
 	case "production":
 		cfg = utils.AwsS3()
 	case "staging":
@@ -19,8 +20,12 @@ func main() {
 	case "development":
 		log.Fatal("ENV development not implemented yet")
 	case "local":
-		utils.LoadEnvVariables(".env")
-		cfg = utils.LocalS3()
+		utils.LoadEnvVariables("local.env")
+		configS3, urlS3 := utils.LocalS3()
+		cfg = configS3
+		fmt.Println(urlS3)
+		utils.SetEnvVariable("IMAGES_BUCKET", urlS3)
+
 	default:
 		log.Fatal("ENV variable is either production, staging, development or local")
 	}

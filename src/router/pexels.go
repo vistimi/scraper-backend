@@ -37,10 +37,10 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 
 	origin := "pexels"
 
-	collectionImagesPending := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_PENDING_COLLECTION"))
-	collectionImagesWanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_WANTED_COLLECTION"))
-	collectionImagesUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.DotEnvVariable("SCRAPER_DB")).Collection(utils.DotEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
 
 	_, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -251,7 +251,7 @@ func searchPhotosPerPagePexels(tag string, page int) (*SearchPhotoResponsePexels
 			"page":     fmt.Sprint(page),
 		},
 		Header: map[string][]string{
-			"Authorization": {utils.DotEnvVariable("PEXELS_PUBLIC_KEY")},
+			"Authorization": {utils.GetEnvVariable("PEXELS_PUBLIC_KEY")},
 		},
 	}
 	// fmt.Println(r.URL())
