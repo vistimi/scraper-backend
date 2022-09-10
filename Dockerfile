@@ -26,4 +26,4 @@ EXPOSE 8080
 # port for mongodb
 EXPOSE 27017
 
-CMD ["ENV=production ./scraper"]
+CMD ["./scraper"]
