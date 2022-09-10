@@ -17,24 +17,9 @@ If pbm with package `<package>: command not found`:
 https://docs.localstack.cloud/get-started/#localstack-cli
 https://github.com/localstack/localstack
 
-The code should spawn a new container but in case you want to try yourself:
-    
-    localstack update all
-    localstack start -d
-    localstack stop
-
 or with docker:
 
     docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
-
-if errors (cmd not found) occur:
-
-    export PATH=/home/olivier/.local/bin:$PATH
-
-Change some lines in:
-
-    src/utils/aws.go
-    src/utils/env.go
 ## Docker
 
     sudo docker build -t scraper-img .
@@ -49,7 +34,7 @@ Change some lines in:
 ### Build without docker
 
     go build -o scraper src/main.go
-    ./scraper
+    ENV=local ./scraper
 
 ## License
 
@@ -81,4 +66,7 @@ https://github.com/mgechev/revive
 
     revive -config revive.toml
 
+## Dependencies
+
+    go mod tidy
 
