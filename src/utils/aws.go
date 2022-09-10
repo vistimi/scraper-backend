@@ -10,44 +10,53 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/elgohr/go-localstack"
 )
 
-func LocalS3() (aws.Config, string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+func LocalS3() *s3.Client{
+	awsEndpoint := "http://localhost:4566"
+	awsRegion := "us-east-1"
 
-	l, err := localstack.NewInstance()
-	if err != nil {
-		log.Fatalf("Could not connect to Docker %v", err)
-	}
-	if err := l.StartWithContext(ctx); err != nil {
-		log.Fatalf("Could not start localstack %v", err)
-	}
-
-	url := l.EndpointV2(localstack.S3)
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion("us-east-1"),
-		config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
+	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		if awsEndpoint != "" {
 			return aws.Endpoint{
-				PartitionID:       "aws",
-				URL:               url,
-				SigningRegion:     "us-east-1",
-				HostnameImmutable: false,
+				PartitionID:   "aws",
+				URL:           awsEndpoint,
+				SigningRegion: awsRegion,
 			}, nil
-		})),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("dummy", "dummy", "dummy")),
+		}
+
+		// returning EndpointNotFoundError will allow the service to fallback to its default resolution
+		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+	})
+
+	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(awsRegion),
+		config.WithEndpointResolverWithOptions(customResolver),
 	)
 	if err != nil {
-		log.Fatalf("Could not get config %v", err)
+		log.Fatalf("Cannot load the AWS configs: %s", err)
 	}
-	return cfg, url
+
+	// Create the resource client
+	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	bucketName := GetEnvVariable("IMAGES_BUCKET")
+
+	_, err = client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+	if err != nil {
+		log.Fatalf("Cannot load the AWS configs: %s", err)
+	}
+
+	return client
 }
 
-func AwsS3() aws.Config {
+func AwsS3() *s3.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
@@ -55,15 +64,10 @@ func AwsS3() aws.Config {
 	if err != nil {
 		log.Fatalf("Could not get config %v", err)
 	}
-	return cfg
-}
-
-func ConnectS3(cfg aws.Config) *s3.Client {
 	return s3.NewFromConfig(cfg)
 }
 
 func UploadItemS3(s3Client *s3.Client, buffer io.Reader, path string) (*manager.UploadOutput, error) {
-	// upload in s3 the file
 	uploader := manager.NewUploader(s3Client)
 	return uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(GetEnvVariable("IMAGES_BUCKET")),
