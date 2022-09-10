@@ -160,7 +160,7 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 						})
 					}
 					if idx == -1 {
-						return nil, fmt.Errorf("Cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:%v", label, regexpMatch, photo.ID, downloadData)
+						return nil, fmt.Errorf("cannot find label %s and its derivatives %s in SearchPhoto! id %s has available the following:%v", label, regexpMatch, photo.ID, downloadData)
 					}
 
 					// get the file and rename it <id>.<format>
@@ -278,7 +278,7 @@ func searchPhotosPerPageFlickr(parser *pagser.Pagser, licenseID string, tags str
 		return nil, fmt.Errorf("SearchPhotoPerPageRequest is not ok%v", pageData)
 	}
 	if pageData.Page == 0 || pageData.Pages == 0 || pageData.PerPage == 0 || pageData.Total == 0 {
-		return nil, errors.New("Some informations are missing from SearchPhotoPerPage")
+		return nil, errors.New("some informations are missing from SearchPhotoPerPage")
 	}
 	return &pageData, nil
 }
@@ -373,7 +373,7 @@ func infoPhoto(parser *pagser.Pagser, photo PhotoFlickr) (*InfoPhotoData, error)
 		return nil, fmt.Errorf("IDs do not match! search id: %s, info id: %s", photo.ID, infoData.ID)
 	}
 	if photo.Secret != infoData.Secret {
-		return nil, fmt.Errorf("Secrets do not match for id: %s! search secret: %s, info secret: %s", photo.ID, photo.Secret, infoData.Secret)
+		return nil, fmt.Errorf("secrets do not match for id: %s! search secret: %s, info secret: %s", photo.ID, photo.Secret, infoData.Secret)
 	}
 	return &infoData, nil
 }

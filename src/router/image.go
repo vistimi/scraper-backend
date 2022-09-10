@@ -102,11 +102,11 @@ func RemoveImage(mongoClient *mongo.Client, params ParamsRemoveImage) (*int64, e
 // UpdateImageTagsPush add tags to a pending image
 func UpdateImageTagsPush(mongoClient *mongo.Client, body types.BodyUpdateImageTagsPush) (*int64, error) {
 	if body.ID == primitive.NilObjectID {
-		return nil, errors.New("Body not valid, ID empty")
+		return nil, errors.New("body not valid, ID empty")
 	}
 	for _, tag := range body.Tags {
 		if tag.Origin.Box.X == nil || tag.Origin.Box.Y == nil || tag.Origin.Box.Width == nil || tag.Origin.Box.Height == nil {
-			return nil, fmt.Errorf("Body not valid, box fields missing: %v", tag.Origin.Box)
+			return nil, fmt.Errorf("body not valid, box fields missing: %v", tag.Origin.Box)
 		}
 	}
 	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
@@ -116,7 +116,7 @@ func UpdateImageTagsPush(mongoClient *mongo.Client, body types.BodyUpdateImageTa
 // UpdateImageTagsPush remove tags to a pending image
 func UpdateImageTagsPull(mongoClient *mongo.Client, body types.BodyUpdateImageTagsPull) (*int64, error) {
 	if body.ID == primitive.NilObjectID {
-		return nil, errors.New("Body not valid, ID empty")
+		return nil, errors.New("body not valid, ID empty")
 	}
 	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 	return mongodb.UpdateImageTagsPull(collectionImagesPending, body)

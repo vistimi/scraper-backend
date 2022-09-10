@@ -109,9 +109,8 @@ func wrapperDataResponseArgS3[A any](c *gin.Context, f func(s3Client *s3.Client,
 	case "png":
 		c.Data(http.StatusOK, "image/png", data.dataFile)
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"status": fmt.Errorf("Wrong content-type: %s", data.dataType)})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": fmt.Errorf("wrong content-type: %s", data.dataType)})
 	}
-	return
 }
 
 // wrapper for the response
