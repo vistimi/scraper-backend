@@ -113,6 +113,9 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					if err != nil {
 						return nil, fmt.Errorf("InfoPhoto has failed: %v", err)
 					}
+					if (infoData.OriginalFormat == "jpeg"){
+						infoData.OriginalFormat = "jpg"
+					}
 
 					// look for unwanted Users
 					query = bson.M{"origin": origin,

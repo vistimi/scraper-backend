@@ -145,6 +145,9 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 					link = photo.Urls.Thumb
 				}
 				extension := link.Query().Get("fm")
+				if (extension == "jpeg"){
+					extension = "jpg"
+				}
 
 				// get the file and rename it <id>.<format>
 				fileName := fmt.Sprintf("%s.%s", *photo.ID, extension)

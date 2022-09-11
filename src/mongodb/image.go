@@ -30,9 +30,7 @@ import (
 
 	"image"
 	"image/jpeg"
-	_ "image/jpeg"
 	"image/png"
-	_ "image/png"
 )
 
 // InsertImage insert an image in its collection
@@ -43,7 +41,7 @@ func InsertImage(collection *mongo.Collection, image types.Image) (primitive.Obj
 	}
 	insertedID, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return primitive.NilObjectID, errors.New("Safecast of ObjectID did not work")
+		return primitive.NilObjectID, errors.New("safecast of ObjectID did not work")
 	}
 	return insertedID, nil
 }
@@ -108,8 +106,7 @@ func UpdateImageTagsPush(collection *mongo.Collection, body types.BodyUpdateImag
 		now := time.Now()
 		tag.CreationDate = &now
 	}
-	update := bson.M{"$push": bson.M{"tags": bson.M{"$each": body.Tags}},
-	}
+	update := bson.M{"$push": bson.M{"tags": bson.M{"$each": body.Tags}}}
 	res, err := collection.UpdateOne(context.TODO(), query, update)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
@@ -167,6 +164,9 @@ func cropFileAndData(s3Client *s3.Client, mongoCollection *mongo.Collection, bod
 	// crop the image with the bounding box rectangle
 	cropRect := image.Rect(*body.Box.X, *body.Box.Y, *body.Box.X+*body.Box.Width, *body.Box.Y+*body.Box.Height)
 	img, err = utils.CropImage(img, cropRect)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return img, imageData, nil
 }
@@ -189,7 +189,6 @@ func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 	return updatedCount, nil
 }
 
-// UpdateImageFile update the image with its tags when it is cropped
 func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
 	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 
@@ -208,6 +207,27 @@ func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 		return nil, fmt.Errorf("replaceImage has failed: %v", err)
 	}
 	return updatedCount, nil
+}
+
+func CopyImage(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCopy) (*string, error) {
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+
+	sourcePath := fmt.Sprintf("%s/%s.%s", body.Origin, body.OriginID, body.Extension)
+	name := fmt.Sprintf("%s_%s.%s", body.OriginID, time.Now().Format(time.RFC3339), body.Extension)
+	destinationPath := fmt.Sprintf("%s/%s", body.Origin, name)
+
+	query := bson.M{"originID": body.OriginID}
+	image, err := FindOne[types.Image](collectionImagesPending, query)
+	if err != nil {
+		return nil, fmt.Errorf("FindOne[Image] has failed: %v", err)
+	}
+	image.ID = primitive.NilObjectID
+	image.Name = name
+	_, err = collectionImagesPending.InsertOne(context.TODO(), *image)
+	if err != nil {
+		return nil, fmt.Errorf("InsertOne has failed: %v", err)
+	}
+	return utils.CopyItemS3(s3Client, sourcePath, destinationPath)
 }
 
 func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.Image, error) {
@@ -329,12 +349,13 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 		return nil, fmt.Errorf("UpdateOne has failed: %v", err)
 	}
 	if res.UpsertedCount == 0 && res.ModifiedCount == 0 {
-		return nil, fmt.Errorf("No upsert or update have been done")
+		return nil, fmt.Errorf("no upsert or update have been done")
 	}
 
 	// create buffer
 	buffer := new(bytes.Buffer)
 	// encode image to buffer
+
 	if imageData.Extension == "jpeg" || imageData.Extension == "jpg" {
 		err := jpeg.Encode(buffer, img, nil)
 		if err != nil {
@@ -346,7 +367,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 			return nil, fmt.Errorf("png.Encode has failed: %v", err)
 		}
 	} else {
-		return nil, fmt.Errorf("No image extension matching the buffer conversion")
+		return nil, fmt.Errorf("no image extension matching the buffer conversion")
 	}
 
 	// convert buffer to reader

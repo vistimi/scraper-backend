@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -91,4 +92,17 @@ func GetItemS3(s3Client *s3.Client, path string) ([]byte, error) {
 		return nil, fmt.Errorf("ioutil.ReadAll has failed: %v", err)
 	}
 	return buffer, nil
+}
+
+func CopyItemS3(s3Client *s3.Client, sourcePath string, destinationPath string) (*string, error) {
+	sourceUrl := filepath.Join(GetEnvVariable("IMAGES_BUCKET"), sourcePath)
+    output, err := s3Client.CopyObject(context.TODO(), &s3.CopyObjectInput{
+		Bucket: aws.String(GetEnvVariable("IMAGES_BUCKET")),
+        CopySource: aws.String(sourceUrl), 
+		Key: aws.String(destinationPath),
+	})
+    if err != nil {
+        return nil, fmt.Errorf("CopyObject has failed: %v", err)
+    }
+	return output.CopyObjectResult.ETag, nil
 }

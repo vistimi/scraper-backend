@@ -124,6 +124,9 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 				regexpMatch := regexp.MustCompile(`\.\w+\?`) // matches a word  preceded by `.` and followed by `?`
 				extension := string(regexpMatch.Find([]byte(link)))
 				extension = extension[1 : len(extension)-1] // remove the `.` and `?` because retgexp hasn't got assertions
+				if (extension == "jpeg"){
+					extension = "jpg"
+				}
 
 				// get the file and rename it <id>.<format>
 				fileName := fmt.Sprintf("%d.%s", photo.ID, extension)

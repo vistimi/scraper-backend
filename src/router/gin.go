@@ -27,6 +27,7 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	router.PUT("/image/tags/pull", wrapperJSONHandlerBody(mongoClient, UpdateImageTagsPull))
 	router.PUT("/image/crop", wrapperJSONHandlerBodyS3(s3Client, mongoClient, mongodb.UpdateImageCrop))
 	router.POST("/image/crop", wrapperJSONHandlerBodyS3(s3Client, mongoClient, mongodb.CreateImageCrop))
+	router.POST("/image/copy", wrapperJSONHandlerBodyS3(s3Client, mongoClient, mongodb.CopyImage))
 	router.POST("/image/transfer", wrapperJSONHandlerBody(mongoClient, mongodb.TransferImage))
 	router.DELETE("/image/:id", wrapperJSONHandlerURIS3(s3Client, mongoClient, RemoveImageAndFile))
 

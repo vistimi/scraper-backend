@@ -25,6 +25,12 @@ type BodyImageCrop struct {
 	// File []byte             `bson:"file,omitempty" json:"file,omitempty"`
 }
 
+type BodyImageCopy struct {
+	Origin    string `bson:"origin,omitempty" json:"origin,omitempty"`
+	OriginID  string `bson:"originID,omitempty" json:"originID,omitempty"`
+	Extension string `bson:"extension,omitempty" json:"extension,omitempty"`
+}
+
 type BodyTransferImage struct {
 	OriginID string `bson:"originID,omitempty" json:"originID,omitempty"`
 	From     string `bson:"from,omitempty" json:"from,omitempty"`
