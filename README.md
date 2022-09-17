@@ -19,7 +19,7 @@ https://github.com/localstack/localstack
 
 or with docker:
 
-    docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
+    docker run --rm -it -p 4566:4566 localstack/localstack
 ## Docker
 
     sudo docker build -t scraper-img .
@@ -69,4 +69,9 @@ https://github.com/mgechev/revive
 ## Dependencies
 
     go mod tidy
+
+## AWS Bash scripts
+
+    sudo chmod +x <script-file>
+    ./<script-file>
 
