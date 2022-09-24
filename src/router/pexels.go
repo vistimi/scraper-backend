@@ -192,7 +192,7 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					OriginID:     fmt.Sprint(photo.ID),
 					User:         user,
 					Extension:    extension,
-					Name:         fileName,
+					Name:         fmt.Sprint(photo.ID),
 					Size:         size,
 					Title:        "",
 					Description:  photo.Alt,

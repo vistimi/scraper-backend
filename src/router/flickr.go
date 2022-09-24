@@ -216,7 +216,7 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 						OriginID:     photo.ID,
 						User:         user,
 						Extension:    infoData.OriginalFormat,
-						Name:         fileName,
+						Name:         photo.ID,
 						Size:         size,
 						Title:        infoData.Title,
 						Description:  infoData.Description,

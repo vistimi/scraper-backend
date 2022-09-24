@@ -17,12 +17,12 @@ import (
 
 type ParamsFindImageFile struct {
 	Origin    string `uri:"origin" binding:"required"`
-	OriginID  string `uri:"originID" binding:"required"`
+	Name      string `uri:"name" binding:"required"`
 	Extension string `uri:"extension" binding:"required"`
 }
 
 func FindImageFile(s3Client *s3.Client, params ParamsFindImageFile) (*DataSchema, error) {
-	fileName := fmt.Sprintf("%s.%s", params.OriginID, params.Extension)
+	fileName := fmt.Sprintf("%s.%s", params.Name, params.Extension)
 	path := filepath.Join(params.Origin, fileName)
 
 	buffer, err := utils.GetItemS3(s3Client, path)

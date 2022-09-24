@@ -225,7 +225,7 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 					OriginID:     originID,
 					User:         user,
 					Extension:    extension,
-					Name:         fileName,
+					Name:         originID,
 					Size:         size,
 					Title:        title,
 					Description:  description,
