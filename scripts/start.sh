@@ -41,7 +41,7 @@ GET_ELB_DNSs=$(
         --output text
 )
 elbDNS=${GET_ELB_DNSs}
-echo "elbDNS = ${elbDNS}"
+echo "elbDNS = http://${elbDNS}"
 
 # get target group of elb
 GET_TGs=$(

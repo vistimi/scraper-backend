@@ -19,6 +19,10 @@ GET_TASKs=$(
 taskArn=${GET_TASKs}
 echo "taskArn = ${taskArn}"
 
+if [ "${taskArn}" = "None" ]; then
+  exit 1
+fi
+
 # stop running tasks
 STOP_TASKs=$(
     aws ecs stop-task \
