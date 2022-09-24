@@ -13,5 +13,7 @@
 
 # dotenv environment variables file
 *.env*
+
 # default build name
 main
+scraper
