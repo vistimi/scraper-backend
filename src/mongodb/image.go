@@ -374,7 +374,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 	reader := bytes.NewReader(buffer.Bytes())
 
 	// upload new image in s3
-	path := filepath.Join(imageData.Origin, imageData.Name, imageData.Extension)
+	path := fmt.Sprintf("%s/%s.%s", imageData.Origin, imageData.Name, imageData.Extension)
 	uploader := manager.NewUploader(s3Client)
 	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(utils.GetEnvVariable("IMAGES_BUCKET")),
