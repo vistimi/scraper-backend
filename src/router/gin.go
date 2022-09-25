@@ -21,7 +21,7 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	// routes for one image pending or wanted
 	// router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
 
-	router.GET("/image/file/:name/:extension", wrapperDataHandlerURIS3(s3Client, FindImageFile))
+	router.GET("/image/file/:origin/:name/:extension", wrapperDataHandlerURIS3(s3Client, FindImageFile))
 	router.GET("/image/:id/:collection", wrapperJSONHandlerURI(mongoClient, FindImage))
 	router.PUT("/image/tags/push", wrapperJSONHandlerBody(mongoClient, UpdateImageTagsPush))
 	router.PUT("/image/tags/pull", wrapperJSONHandlerBody(mongoClient, UpdateImageTagsPull))
