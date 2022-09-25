@@ -199,7 +199,7 @@ func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 	}
 
 	// add the current date and time to the new name
-	imageData.Name = fmt.Sprintf("%s_%s.%s", imageData.OriginID, time.Now().Format(time.RFC3339), imageData.Extension)
+	imageData.Name = fmt.Sprintf("%s_%s", imageData.OriginID, time.Now().Format(time.RFC3339))
 
 	// replace in db and file of the updated image
 	updatedCount, err := replaceImage(s3Client, collectionImagesPending, imageData, img)
@@ -212,11 +212,11 @@ func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 func CopyImage(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCopy) (*string, error) {
 	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
 
-	sourcePath := fmt.Sprintf("%s/%s.%s", body.Origin, body.OriginID, body.Extension)
-	name := fmt.Sprintf("%s_%s.%s", body.OriginID, time.Now().Format(time.RFC3339), body.Extension)
-	destinationPath := fmt.Sprintf("%s/%s", body.Origin, name)
+	sourcePath := fmt.Sprintf("%s/%s.%s", body.Origin, body.Name, body.Extension)
+	name := fmt.Sprintf("%s_%s", body.OriginID, time.Now().Format(time.RFC3339))
+	destinationPath := fmt.Sprintf("%s/%s.%s", body.Origin, name, body.Extension)
 
-	query := bson.M{"originID": body.OriginID}
+	query := bson.M{"name": body.Name}
 	image, err := FindOne[types.Image](collectionImagesPending, query)
 	if err != nil {
 		return nil, fmt.Errorf("FindOne[Image] has failed: %v", err)
@@ -374,7 +374,7 @@ func replaceImage(s3Client *s3.Client, collection *mongo.Collection, imageData *
 	reader := bytes.NewReader(buffer.Bytes())
 
 	// upload new image in s3
-	path := filepath.Join(imageData.Origin, imageData.Name)
+	path := filepath.Join(imageData.Origin, imageData.Name, imageData.Extension)
 	uploader := manager.NewUploader(s3Client)
 	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(utils.GetEnvVariable("IMAGES_BUCKET")),

@@ -20,14 +20,15 @@ type BodyUpdateImageTagsPull struct {
 }
 
 type BodyImageCrop struct {
-	ID   primitive.ObjectID `bson:"id,omitempty" json:"id,omitempty"`
-	Box  Box                `bson:"box,omitempty" json:"box,omitempty"`
+	ID  primitive.ObjectID `bson:"id,omitempty" json:"id,omitempty"`
+	Box Box                `bson:"box,omitempty" json:"box,omitempty"`
 	// File []byte             `bson:"file,omitempty" json:"file,omitempty"`
 }
 
 type BodyImageCopy struct {
 	Origin    string `bson:"origin,omitempty" json:"origin,omitempty"`
 	OriginID  string `bson:"originID,omitempty" json:"originID,omitempty"`
+	Name      string `bson:"name,omitempty" json:"name,omitempty"`
 	Extension string `bson:"extension,omitempty" json:"extension,omitempty"`
 }
 
