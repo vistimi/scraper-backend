@@ -105,7 +105,7 @@ func UpdateImageTagsPush(mongoClient *mongo.Client, body types.BodyUpdateImageTa
 		return nil, errors.New("body not valid, ID empty")
 	}
 	for _, tag := range body.Tags {
-		if tag.Origin.Box.X == nil || tag.Origin.Box.Y == nil || tag.Origin.Box.Width == nil || tag.Origin.Box.Height == nil {
+		if tag.Origin.Box.Tlx == nil || tag.Origin.Box.Tly == nil || tag.Origin.Box.Width == nil || tag.Origin.Box.Height == nil {
 			return nil, fmt.Errorf("body not valid, box fields missing: %v", tag.Origin.Box)
 		}
 	}

@@ -201,8 +201,8 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					}
 					zero := 0
 					box := types.Box{
-						X:      &zero, // original x anchor
-						Y:      &zero, // original y anchor
+						Tlx:      &zero, // original x anchor
+						Tly:      &zero, // original y anchor
 						Width:  &downloadData.Photos[idx].Width,
 						Height: &downloadData.Photos[idx].Height,
 					}

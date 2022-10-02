@@ -24,7 +24,7 @@ type ReturnInsertUserUnwanted struct {
 // InsertUserUnwanted inserts the new unwanted user and remove the images with it as well as the files
 func InsertUserUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body types.User) (*ReturnInsertUserUnwanted, error) {
 	if body.Name == "" || body.Origin == "" || body.OriginID == "" {
-		return nil, errors.New("Some fields are empty!")
+		return nil, errors.New("some fields are empty")
 	}
 	now := time.Now()
 	body.CreationDate = &now

@@ -54,8 +54,8 @@ type TagOrigin struct {
 }
 
 type Box struct {
-	X      *int `bson:"x,omitempty" json:"x,omitempty"`           // top left x coordinate (pointer because 0 is a possible value)
-	Y      *int `bson:"y,omitempty" json:"y,omitempty"`           // top left y coordinate (pointer because 0 is a possible value)
+	Tlx    *int `bson:"tlx,omitempty" json:"tlx,omitempty"`       // top left x coordinate (pointer because 0 is a possible value)
+	Tly    *int `bson:"tly,omitempty" json:"tly,omitempty"`       // top left y coordinate (pointer because 0 is a possible value)
 	Width  *int `bson:"width,omitempty" json:"width,omitempty"`   // width (pointer because 0 is a possible value)
 	Height *int `bson:"height,omitempty" json:"height,omitempty"` // height (pointer because 0 is a possible value)
 }

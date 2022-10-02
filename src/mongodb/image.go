@@ -162,7 +162,7 @@ func cropFileAndData(s3Client *s3.Client, mongoCollection *mongo.Collection, bod
 	img, _, _ := image.Decode(bytes.NewReader(buffer))
 
 	// crop the image with the bounding box rectangle
-	cropRect := image.Rect(*body.Box.X, *body.Box.Y, *body.Box.X+*body.Box.Width, *body.Box.Y+*body.Box.Height)
+	cropRect := image.Rect(*body.Box.Tlx, *body.Box.Tly, *body.Box.Tlx+*body.Box.Width, *body.Box.Tly+*body.Box.Height)
 	img, err = utils.CropImage(img, cropRect)
 	if err != nil {
 		return nil, nil, err
@@ -249,13 +249,13 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 		tag := imageData.Tags[i]
 		if (types.Box{}) != tag.Origin.Box {
 			// relative position of tags
-			tlx := *tag.Origin.Box.X
-			tly := *tag.Origin.Box.Y
+			tlx := *tag.Origin.Box.Tlx
+			tly := *tag.Origin.Box.Tly
 			width := *tag.Origin.Box.Width
 			height := *tag.Origin.Box.Height
 
 			// box outside on the image right
-			if tlx > *body.Box.X+*body.Box.Width {
+			if tlx > *body.Box.Tlx+*body.Box.Width {
 				// last element removed
 				if i == len(imageData.Tags)-1 {
 					imageData.Tags = imageData.Tags[:i]
@@ -265,20 +265,20 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 				continue
 			}
 			// box left outside on the image left
-			if tlx < *body.Box.X {
+			if tlx < *body.Box.Tlx {
 				// box outside on the image left
-				if tlx+width < *body.Box.X {
+				if tlx+width < *body.Box.Tlx {
 					width = 0
 				} else { // box right inside the image
-					width = width - *body.Box.X + tlx
+					width = width - *body.Box.Tlx + tlx
 				}
-				tlx = *body.Box.X
+				tlx = *body.Box.Tlx
 			} else { // box left inside image
 				// box right outside on the image right
-				if tlx+width > *body.Box.X+*body.Box.Width {
-					width = *body.Box.X + *body.Box.Width - tlx
+				if tlx+width > *body.Box.Tlx+*body.Box.Width {
+					width = *body.Box.Tlx + *body.Box.Width - tlx
 				}
-				tlx = tlx - *body.Box.X
+				tlx = tlx - *body.Box.Tlx
 			}
 			// box width too small
 			if width < 50 {
@@ -292,7 +292,7 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 			}
 
 			// box outside at the image bottom
-			if tly > *body.Box.Y+*body.Box.Height {
+			if tly > *body.Box.Tly+*body.Box.Height {
 				// last element removed
 				if i == len(imageData.Tags)-1 {
 					imageData.Tags = imageData.Tags[:i]
@@ -302,20 +302,20 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 				continue
 			}
 			// box top outside on the image top
-			if tly < *body.Box.Y {
+			if tly < *body.Box.Tly {
 				// box outside on the image top
-				if tly+height < *body.Box.Y {
+				if tly+height < *body.Box.Tly {
 					height = 0
 				} else { // box bottom inside the image
-					height = height - *body.Box.Y + tly
+					height = height - *body.Box.Tly + tly
 				}
-				tly = *body.Box.Y
+				tly = *body.Box.Tly
 			} else { // box top inside image
 				// box bottom outside on the image bottom
-				if tly+height > *body.Box.Y+*body.Box.Height {
-					height = *body.Box.Y + *body.Box.Height - tly
+				if tly+height > *body.Box.Tly+*body.Box.Height {
+					height = *body.Box.Tly + *body.Box.Height - tly
 				}
-				tly = tly - *body.Box.Y
+				tly = tly - *body.Box.Tly
 			}
 			// box height too small
 			if height < 50 {
@@ -330,8 +330,8 @@ func updateImageBoxes(body types.BodyImageCrop, imageData *types.Image) (*types.
 
 			// set the new relative reference to the newly cropped image
 			tag.Origin.ImageSizeID = imageSizeID
-			tag.Origin.Box.X = &tlx
-			tag.Origin.Box.Y = &tly
+			tag.Origin.Box.Tlx = &tlx
+			tag.Origin.Box.Tly = &tly
 			tag.Origin.Box.Width = &width
 			tag.Origin.Box.Height = &height
 		}

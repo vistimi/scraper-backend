@@ -81,7 +81,7 @@ type ReturnInsertTagUnwanted struct {
 // InsertTagUnwanted inserts the new unwanted tag and remove the images with it as well as the files
 func InsertTagUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body types.Tag) (*ReturnInsertTagUnwanted, error) {
 	if body.Name == "" || body.Origin.Name == "" {
-		return nil, errors.New("Some fields are empty!")
+		return nil, errors.New("some fields are empty")
 	}
 	body.Name = strings.ToLower(body.Name)
 	body.Origin.Name = strings.ToLower(body.Origin.Name)

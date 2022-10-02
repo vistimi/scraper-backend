@@ -202,8 +202,8 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 				}
 				zero := 0
 				box := types.Box{
-					X:      &zero, // original x anchor
-					Y:      &zero, // original y anchor
+					Tlx:      &zero, // original x anchor
+					Tly:      &zero, // original y anchor
 					Width:  &width,
 					Height: &height,
 				}
