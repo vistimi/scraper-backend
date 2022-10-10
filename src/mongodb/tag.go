@@ -99,8 +99,8 @@ func InsertTagUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body type
 	}
 
 	// insert the unwanted tag
-	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNWANTED_COLLECTION"))
-	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_WANTED_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNDESIRED_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_DESIRED_COLLECTION"))
 	insertedID, err := InsertTag(collectionTagsUnwanted, collectionTagsWanted, body)
 	if err != nil {
 		return nil, fmt.Errorf("InsertTag has failed: %v", err)
@@ -115,20 +115,20 @@ func InsertTagUnwanted(s3Client *s3.Client, mongoClient *mongo.Client, body type
 
 // InsertTagWanted insert a new tag
 func InsertTagWanted(mongoClient *mongo.Client, tag types.Tag) (interface{}, error) {
-	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_WANTED_COLLECTION"))
-	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNWANTED_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_DESIRED_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNDESIRED_COLLECTION"))
 	return InsertTag(collectionTagsWanted, collectionTagsUnwanted, tag)
 }
 
 // TagsWanted find all the wanted tags
 func TagsWanted(mongoClient *mongo.Client) ([]types.Tag, error) {
-	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_WANTED_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_DESIRED_COLLECTION"))
 	return FindMany[types.Tag](collectionTagsWanted, bson.M{})
 }
 
 // TagsUnwanted find all the wanted tags
 func TagsUnwanted(mongoClient *mongo.Client) ([]types.Tag, error) {
-	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNWANTED_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNDESIRED_COLLECTION"))
 	return FindMany[types.Tag](collectionTagsUnwanted, bson.M{})
 }
 
@@ -144,7 +144,7 @@ func RemoveTag(collection *mongo.Collection, id primitive.ObjectID) (*int64, err
 
 // TagsWanted find all the names of wanted tags
 func TagsWantedNames(mongoClient *mongo.Client) ([]string, error) {
-	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_WANTED_COLLECTION"))
+	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_DESIRED_COLLECTION"))
 	res, err := FindMany[types.Tag](collectionTagsWanted, bson.M{})
 	if err != nil {
 		return nil, fmt.Errorf("FindTags Wanted has failed: \n%v", err)
@@ -158,7 +158,7 @@ func TagsWantedNames(mongoClient *mongo.Client) ([]string, error) {
 
 // TagsUnwantednames find all the names of wanted tags
 func TagsUnwantedNames(mongoClient *mongo.Client) ([]string, error) {
-	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNWANTED_COLLECTION"))
+	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNDESIRED_COLLECTION"))
 	res, err := FindMany[types.Tag](collectionTagsUnwanted, bson.M{})
 	if err != nil {
 		return nil, fmt.Errorf("FindTags Unwated has failed: \n%v", err)

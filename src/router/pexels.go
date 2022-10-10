@@ -37,10 +37,10 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 
 	origin := "pexels"
 
-	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
-	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
-	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PENDING"))
+	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PRODUCTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("UNDESIRED"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNDESIRED_COLLECTION"))
 
 	_, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -124,7 +124,7 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 				regexpMatch := regexp.MustCompile(`\.\w+\?`) // matches a word  preceded by `.` and followed by `?`
 				extension := string(regexpMatch.Find([]byte(link)))
 				extension = extension[1 : len(extension)-1] // remove the `.` and `?` because retgexp hasn't got assertions
-				if (extension == "jpeg"){
+				if extension == "jpeg" {
 					extension = "jpg"
 				}
 
@@ -177,8 +177,8 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 				}
 				zero := 0
 				box := types.Box{
-					Tlx:      &zero, // original x anchor
-					Tly:      &zero, // original y anchor
+					Tlx:    &zero, // original x anchor
+					Tly:    &zero, // original y anchor
 					Width:  &width,
 					Height: &height,
 				}

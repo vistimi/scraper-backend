@@ -46,10 +46,10 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 
 	origin := "flickr"
 
-	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
-	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
-	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PENDING"))
+	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PRODUCTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("UNDESIRED"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNDESIRED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -113,7 +113,7 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					if err != nil {
 						return nil, fmt.Errorf("InfoPhoto has failed: %v", err)
 					}
-					if (infoData.OriginalFormat == "jpeg"){
+					if infoData.OriginalFormat == "jpeg" {
 						infoData.OriginalFormat = "jpg"
 					}
 
@@ -201,8 +201,8 @@ func SearchPhotosFlickr(s3Client *s3.Client, mongoClient *mongo.Client, params P
 					}
 					zero := 0
 					box := types.Box{
-						Tlx:      &zero, // original x anchor
-						Tly:      &zero, // original y anchor
+						Tlx:    &zero, // original x anchor
+						Tly:    &zero, // original y anchor
 						Width:  &downloadData.Photos[idx].Width,
 						Height: &downloadData.Photos[idx].Height,
 					}

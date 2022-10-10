@@ -82,7 +82,7 @@ func RemoveImageAndFile(s3Client *s3.Client, collection *mongo.Collection, id pr
 }
 
 func RemoveImagesAndFiles(s3Client *s3.Client, mongoClient *mongo.Client, query bson.M, options *options.FindOptions) (*int64, error) {
-	collectionImages := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
+	collectionImages := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PRODUCTION"))
 	var deletedCount int64
 	images, err := FindMany[types.Image](collectionImages, query, options)
 	if err != nil {
@@ -173,7 +173,7 @@ func cropFileAndData(s3Client *s3.Client, mongoCollection *mongo.Collection, bod
 
 // UpdateImageFile update the image with its tags when it is cropped
 func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
-	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PENDING"))
 
 	// crop data and file
 	img, imageData, err := cropFileAndData(s3Client, collectionImagesPending, body)
@@ -190,7 +190,7 @@ func UpdateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 }
 
 func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCrop) (*int64, error) {
-	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PENDING"))
 
 	// crop data and file
 	img, imageData, err := cropFileAndData(s3Client, collectionImagesPending, body)
@@ -210,7 +210,7 @@ func CreateImageCrop(s3Client *s3.Client, mongoClient *mongo.Client, body types.
 }
 
 func CopyImage(s3Client *s3.Client, mongoClient *mongo.Client, body types.BodyImageCopy) (*string, error) {
-	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PENDING"))
 
 	sourcePath := fmt.Sprintf("%s/%s.%s", body.Origin, body.Name, body.Extension)
 	name := fmt.Sprintf("%s_%s", body.OriginID, time.Now().Format(time.RFC3339))
@@ -395,7 +395,7 @@ func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface
 	body.Origin = strings.ToLower(body.Origin)
 
 	// insert the unwanted image
-	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("UNDESIRED"))
 	res, err := collectionImagesUnwanted.InsertOne(context.TODO(), body)
 	if err != nil {
 		return nil, fmt.Errorf("InsertOne has failed: %v", err)

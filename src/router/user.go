@@ -9,7 +9,7 @@ import (
 )
 
 func RemoveUserUnwanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
-	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNDESIRED_COLLECTION"))
 	userID, err := primitive.ObjectIDFromHex(params.ID)
 	if err != nil {
 		return nil, err

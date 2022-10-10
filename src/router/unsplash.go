@@ -41,10 +41,10 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 	// If path is already a directory, MkdirAll does nothing and returns nil
 	origin := "unsplash"
 
-	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_PENDING_COLLECTION"))
-	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_WANTED_COLLECTION"))
-	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("IMAGES_UNWANTED_COLLECTION"))
-	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNWANTED_COLLECTION"))
+	collectionImagesPending := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PENDING"))
+	collectionImagesWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("PRODUCTION"))
+	collectionImagesUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("UNDESIRED"))
+	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNDESIRED_COLLECTION"))
 
 	unwantedTags, wantedTags, err := mongodb.TagsNames(mongoClient)
 	if err != nil {
@@ -145,7 +145,7 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 					link = photo.Urls.Thumb
 				}
 				extension := link.Query().Get("fm")
-				if (extension == "jpeg"){
+				if extension == "jpeg" {
 					extension = "jpg"
 				}
 
@@ -202,8 +202,8 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 				}
 				zero := 0
 				box := types.Box{
-					Tlx:      &zero, // original x anchor
-					Tly:      &zero, // original y anchor
+					Tlx:    &zero, // original x anchor
+					Tly:    &zero, // original y anchor
 					Width:  &width,
 					Height: &height,
 				}

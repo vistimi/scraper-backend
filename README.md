@@ -46,12 +46,13 @@ Create a local.env file:
 
     MONGODB_URI=mongodb://localhost:27017
     SCRAPER_DB=scraper
-    TAGS_UNWANTED_COLLECTION=tagsUnwanted
-    TAGS_WANTED_COLLECTION=tagsWanted
-    IMAGES_WANTED_COLLECTION=imagesWanted
-    IMAGES_PENDING_COLLECTION=imagesPending
-    IMAGES_UNWANTED_COLLECTION=imagesUnwanted
-    USERS_UNWANTED_COLLECTION=usersUnwanted
+    TAGS_UNDESIRED_COLLECTION=tagsUndesired
+    TAGS_DESIRED_COLLECTION=tagsDesired
+    PRODUCTION=imagesProduction
+    PENDING=imagesPending
+    UNDESIRED=imagesUndesired
+    VALIDATION=imagesValidation
+    USERS_UNDESIRED_COLLECTION=usersUndesired
     IMAGES_BUCKET=<s3_bucket_name>
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
@@ -59,6 +60,8 @@ Create a local.env file:
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
     ENV=local
+
+ENV is either `production`, `staging`, `development` or `local`
 
 ## linter
 
