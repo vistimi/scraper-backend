@@ -1,21 +1,89 @@
 name: CI/CD
 
+# only on trunk branch use secrets
 on:
   push:
     branches: [production, staging, dev]
   pull_request:
     types: [opened, edited, synchronize, reopened]
+  # workflow_dispatch:
+  #   inputs:
+  #     aws_account_name:
+  #       description: 'AWS Account name, default github account name'
+  #       required: true
+  #       type: string
+  #       default: ${{ secrets.AWS_ACCOUNT_NAME }}
+  #     aws_account_id:
+  #       description: 'AWS Account ID'
+  #       required: true
+  #       type: string
+  #       default: ${{ secrets.AWS_ACCOUNT_ID }}
+  #     aws_region:
+  #       description: 'AWS Region to launch the instance'
+  #       required: true
+  #       type: string
+  #       default: ${{ secrets.AWS_REGION }}
+  #     environment_name:
+  #       description: 'The name of the branch or env'
+  #       required: true
+  #       type: string  # check if not environment
+  #       default: ${{ github.ref_name }}
+  #     # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+  #     container_cpu:
+  #       description: 'The CPU value used by the container, 1024 == (1 vCPU). Beware that the memory need to scale with cpu.'
+  #       required: true
+  #       type: choice
+  #       options:
+  #       - '256'
+  #       - '512'
+  #       - '1024' 
+  #       - '2048'
+  #       - '4096' 
+  #       - '8192'
+  #       - '16384'
+  #     container_memory:
+  #       description: 'The Memory value used by the container, 1024 MiB == 1 GB. Beware that the memory need to scale with cpu.'
+  #       required: true
+  #       type: string
+  #     container_memory_reservation:
+  #       description: 'The memory reservation, needs to be inferior to memory allocated.'
+  #       required: true
+  #       type: string
+  #     aws_task_role:
+  #       description: 'The IAM role defined for the task to perform, need access to all needed resources'
+  #       required: true
+  #       type: string
 
 env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: scraper_repository
-  # ECS_SERVICE: scraperServiceEC2
-  ECS_SERVICE: scraperServiceFargate
-  ECS_CLUSTER: scraperClusterECS
-  # ECS_TASK_DEFINITION: .aws/task-definition-ec2.json
-  ECS_TASK_DEFINITION: .aws/task-definition-fargate.json
-  # CONTAINER_NAME: ScraperContainerEC2
-  CONTAINER_NAME: scraperContainerFargate
+  # AWS_ACCOUNT_NAME: ${{ inputs.aws_account_name }}
+  # AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
+  # AWS_REGION: ${{ inputs.aws_region }}
+  # PROJECT_NAME: 'scraper'
+  # SERVICE_NAME: 'backend'
+  # ENVIRONMENT_NAME: ${{ inputs.environment_name }}
+  # COMMON_NAME: "$AWS_ACCOUNT_NAME-$AWS_REGION-$PROJECT_NAME-$SERVICE_NAME-$ENVIRONMENT_NAME"
+  # CPU: ${{ inputs.container_cpu }}
+  # MEMORY: ${{ inputs.container_memory }}
+  # MEMORY_RESERVATION: ${{ inputs.container_memory_reservation }}
+  # AWS_EXEC_ROLE : ${{ inputs.aws_task_role }}
+  # AWS_TASK_ROLE: ${{ inputs.aws_task_role }}
+
+  AWS_ACCOUNT_NAME: 'KookaS'
+  AWS_ACCOUNT_ID: 401582117818
+  AWS_REGION: 'us-east-1'
+  PROJECT_NAME: 'scraper'
+  SERVICE_NAME: 'backend'
+  ENVIRONMENT_NAME: "test"
+  COMMON_NAME: "$AWS_ACCOUNT_NAME-$AWS_REGION-$PROJECT_NAME-$SERVICE_NAME-$ENVIRONMENT_NAME"
+  CPU: 256
+  MEMORY: 512
+  MEMORY_RESERVATION: 500
+  AWS_EXEC_ROLE : Role_ECS_S3
+  AWS_TASK_ROLE: Role_ECS_S3
+  ECR_REPOSITORY: "${COMMON_NAME}-repository"
+  ECS_SERVICE: "${COMMON_NAME}-service"
+  ECS_CLUSTER: "${COMMON_NAME}-cluster"
+  CONTAINER_NAME: "${COMMON_NAME}-container"
 
 permissions:
   contents: read
@@ -32,12 +100,15 @@ jobs:
           go-version: "1.18.3" # The Go version to download (if necessary) and use.
       - name: build
         run: go build src/main.go
+    
+  json:
+    uses: ./.github/workflows/workflow-2.yml
 
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [build]
-    if: github.ref == 'refs/heads/production'
+    needs: [build, json]
+    # if: github.ref == 'refs/heads/production'
 
     environment:
       name: production  # production secret env variables
@@ -71,11 +142,21 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
+      - name: create-json
+        id: create-json
+        run: |
+          bash task-definition.sh AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID}" AWS_EXEC_ROLE="${AWS_EXEC_ROLE}" \
+          AWS_BUCKET_ENV_NAME="${COMMON_NAME}-secret" AWS_FILE_ENV_NAME="production.env" \
+          CPU="${CPU}" MEMORY="${MEMORY}" MEMORY_RESERVATION="${MEMORY_RESERVATION}" \
+          AWS_REGION="$AWS_REGION" ECR_NAME="${COMMON_NAME}" NAME="${NAME}-container" \
+          DEFINITION_FAMILY="${COMMON_NAME}-definition" AWS_TASK_ROLE="${AWS_TASK_ROLE}" \
+      
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          task-definition: .aws/task_definition_override.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
 
