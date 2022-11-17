@@ -1,20 +1,44 @@
+#!/bin/bash
+
+for ARGUMENT in "$@"
+do
+   KEY=$(echo $ARGUMENT | cut -f1 -d=)
+
+   KEY_LENGTH=${#KEY}
+   VALUE="${ARGUMENT:$KEY_LENGTH+1}"
+
+   export "$KEY"="$VALUE"
+done
+
+# "containerDefinitions": [
+#     {
+#         "logConfiguration": {
+#             "logDriver": "awslogs",
+#             "secretOptions": null,
+#             "options": {
+#             "awslogs-group": "/ecs/scraperDefinitionFargate",
+#             "awslogs-region": "us-east-1",
+#             "awslogs-stream-prefix": "ecs"
+#             }
+#         },
+#     }
+# ]
+
+cat << EOF > ${FILE_NAME}
 {
   "ipcMode": null,
-  "executionRoleArn": "arn:aws:iam::ABC:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${AWS_EXEC_ROLE}",
   "containerDefinitions": [
     {
       "dnsSearchDomains": null,
       "environmentFiles": [
         {
-          "value": "arn:aws:s3:::s3-scraper-production-secrets/production.env",
+          "value": "arn:aws:s3:::${AWS_BUCKET_ENV_NAME}/${AWS_FILE_ENV_NAME}",
           "type": "s3"
         }
       ],
       "logConfiguration": null,
-      "entryPoint": [
-        "sh",
-        "-c"
-      ],
+      "entryPoint": [],
       "portMappings": [
         {
           "hostPort": 8080,
@@ -29,20 +53,20 @@
       ],
       "command": [],
       "linuxParameters": null,
-      "cpu": 1024,
+      "cpu": ${CPU},
       "environment": [],
       "resourceRequirements": null,
       "ulimits": null,
       "dnsServers": null,
       "mountPoints": [],
-      "workingDirectory": "/usr/app",
+      "workingDirectory": null,
       "secrets": null,
       "dockerSecurityOptions": null,
-      "memory": 30720,
-      "memoryReservation": 30000,
+      "memory": ${MEMORY},
+      "memoryReservation": ${MEMORY_RESERVATION},
       "volumesFrom": [],
       "stopTimeout": null,
-      "image": "401582117818.dkr.ecr.us-east-1.amazonaws.com/scraper_repository:8e7e16a6e89faf1d95514a5afaa1798b7263e3a7",
+      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_NAME}:8e7e16a6e89faf1d95514a5afaa1798b7263e3a7",
       "startTimeout": null,
       "firelensConfiguration": null,
       "dependsOn": null,
@@ -59,21 +83,24 @@
       "dockerLabels": null,
       "systemControls": null,
       "privileged": null,
-      "name": "ScraperContainerEC2"
+      "name": ${NAME}
     }
   ],
   "placementConstraints": [],
-  "memory": "30720",
-  "taskRoleArn": "arn:aws:iam::401582117818:role/Role_ECS_S3",
-  "family": "ScraperDefinitionEC2",
+  "memory": ${MEMORY},
+  "taskRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${AWS_TASK_ROLE}",
+  "family": ${DEFINITION_FAMILY},
   "pidMode": null,
   "requiresCompatibilities": [
     "EC2"
   ],
   "networkMode": null,
   "runtimePlatform": null,
-  "cpu": "1024",
+  "cpu": ${CPU},
   "inferenceAccelerators": null,
   "proxyConfiguration": null,
   "volumes": []
 }
+EOF
+
+cat ${FILE_NAME}

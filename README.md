@@ -12,6 +12,14 @@ If pbm with package `<package>: command not found`:
     export GOPATH="$HOME/go"
     PATH="$GOPATH/bin:$PATH"
 
+## workflow
+
+https://github.com/nektos/act
+
+    sudo wget https://github.com/nektos/act/releases/download/v0.2.33/act_Linux_x86_64.tar.gz \
+    && sudo mv cloud-nuke_linux_amd64 /usr/local/bin/act \
+    && sudo chmod +rx /usr/local/bin/act
+
 ## Localstack
 
 https://docs.localstack.cloud/get-started/#localstack-cli
