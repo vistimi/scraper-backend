@@ -1,0 +1,13 @@
+{
+    "inputs": {
+        "access-key": "AKIAV3ABI2O5MUSVYPCE",
+        "secret-key": "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",
+        "aws-service": "ecr-public",
+        "aws-account_name": "KookaS",
+        "aws-account-id": "401582117818",
+        "aws-region": "us-east-1",
+        "docker-path": ".github/workflows",
+        "ecr-repository-name": "workflow-helper",
+        "keep-images-amount": "1"
+    }
+}

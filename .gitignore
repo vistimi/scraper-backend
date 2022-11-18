@@ -17,3 +17,6 @@
 # default build name
 main
 scraper
+
+# devcontainer
+act*.json

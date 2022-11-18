@@ -6,76 +6,105 @@ on:
     branches: [production, staging, dev]
   pull_request:
     types: [opened, edited, synchronize, reopened]
-  # workflow_dispatch:
-  #   inputs:
-  #     aws_account_name:
-  #       description: 'AWS Account name, default github account name'
-  #       required: true
-  #       type: string
-  #       default: ${{ secrets.AWS_ACCOUNT_NAME }}
-  #     aws_account_id:
-  #       description: 'AWS Account ID'
-  #       required: true
-  #       type: string
-  #       default: ${{ secrets.AWS_ACCOUNT_ID }}
-  #     aws_region:
-  #       description: 'AWS Region to launch the instance'
-  #       required: true
-  #       type: string
-  #       default: ${{ secrets.AWS_REGION }}
-  #     environment_name:
-  #       description: 'The name of the branch or env'
-  #       required: true
-  #       type: string  # check if not environment
-  #       default: ${{ github.ref_name }}
-  #     # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
-  #     container_cpu:
-  #       description: 'The CPU value used by the container, 1024 == (1 vCPU). Beware that the memory need to scale with cpu.'
-  #       required: true
-  #       type: choice
-  #       options:
-  #       - '256'
-  #       - '512'
-  #       - '1024'
-  #       - '2048'
-  #       - '4096'
-  #       - '8192'
-  #       - '16384'
-  #     container_memory:
-  #       description: 'The Memory value used by the container, 1024 MiB == 1 GB. Beware that the memory need to scale with cpu.'
-  #       required: true
-  #       type: string
-  #     container_memory_reservation:
-  #       description: 'The memory reservation, needs to be inferior to memory allocated.'
-  #       required: true
-  #       type: string
-  #     aws_task_role:
-  #       description: 'The IAM role defined for the task to perform, need access to all needed resources'
-  #       required: true
-  #       type: string
-        # keep_images_amount:
-        # description: 'Amount of images kept in the registry'
-        # required: true
-        # type: string
+  workflow_dispatch:
+    inputs:
+      aws-account-name:
+        description: 'AWS Account name, default github account name'
+        required: true
+        type: string
+        default: ${{ secrets.AWS_ACCOUNT_NAME }}
+      aws-account-id:
+        description: 'AWS Account ID'
+        required: true
+        type: string
+        default: ${{ secrets.AWS_ACCOUNT_ID }}
+      aws-region:
+        description: 'AWS Region to launch the instance'
+        required: true
+        type: string
+        default: ${{ secrets.AWS_REGION }}
+      environment-name:
+        description: 'The name of the branch or env'
+        required: true
+        type: string  # check if not environment
+        default: ${{ github.ref_name }}
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+      container-cpu:
+        description: 'The CPU value used by the container, 1024 == (1 vCPU). Beware that the memory need to scale with cpu.'
+        required: true
+        type: string
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+      container-memory:
+        description: 'The Memory value used by the container, 1024 MiB == 1 GB. Beware that the memory need to scale with cpu.'
+        required: true
+        type: string
+      container-memory-reservation:
+        description: 'The memory reservation, needs to be inferior to memory allocated.'
+        required: true
+        type: string
+      aws-exec-role:
+        description: 'The ARN of the task execution role that grants the Amazon ECS container agent permission to make AWS API calls on your behalf'
+        required: true
+        type: string
+      aws-task-role:
+        description: 'The IAM role defined for the task to perform, need access to all needed resources'
+        required: true
+        type: string
+      keep-images-amount:
+        description: 'Amount of images kept in the registry'
+        required: true
+        type: string
 
-# env:
-  # AWS_ACCOUNT_NAME: ${{ inputs.aws_account_name }}
-  # AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
-  # AWS_REGION: ${{ inputs.aws_region }}
-  # PROJECT_NAME: 'scraper'
-  # SERVICE_NAME: 'backend'
-  # ENVIRONMENT_NAME: ${{ inputs.environment_name }}
-  # COMMON_NAME: "$AWS_ACCOUNT_NAME-$AWS_REGION-$PROJECT_NAME-$SERVICE_NAME-$ENVIRONMENT_NAME"
-  # CPU: ${{ inputs.container_cpu }}
-  # MEMORY: ${{ inputs.container_memory }}
-  # MEMORY_RESERVATION: ${{ inputs.container_memory_reservation }}
-  # AWS_EXEC_ROLE : ${{ inputs.aws_task_role }}
-  # AWS_TASK_ROLE: ${{ inputs.aws_task_role }}
-
-# permissions:
-#   contents: read
+env:
+  AWS_ACCOUNT_NAME: ${{ inputs.aws-account-name }}
+  AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+  AWS_REGION: ${{ inputs.aws-region }}
+  CPU: ${{ inputs.container-cpu }}
+  MEMORY: ${{ inputs.container-memory }}
+  MEMORY_RESERVATION: ${{ inputs.container-memory-reservation }}
+  AWS_EXEC_ROLE : ${{ inputs.aws-exec-role }}
+  AWS_TASK_ROLE: ${{ inputs.aws-task-role }}
+  KEEP_IMAGES_AMOUNT: ${{ inputs.keep-images-amount }}
+  PROJECT_NAME: 'scraper'
+  SERVICE_NAME: 'backend'
+  ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+  COMMON_NAME: "${{ env.AWS_ACCOUNT_NAME }}-${{env.AWS_REGION}}-${{env.PROJECT_NAME}}-${{env.SERVICE_NAME}}-${{env.ENVIRONMENT_NAME}}"
+  ECR_REPOSITORY: "${{env.COMMON_NAME}}-repository"
+  ECS_SERVICE: "${{env.COMMON_NAME}}-service"
+  ECS_CLUSTER: "${{env.COMMON_NAME}}-cluster"
+  CONTAINER_NAME: "${{env.COMMON_NAME}}-container"
+  DEF_FILE_NAME: "task_definition_override.json"
+  POLICY_FILE_NAME: "registry_policy.json"
 
 jobs:
+  display:
+    name: Show non-sensitive env variables
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display variables
+        run: |
+          printf " \
+          AWS_ACCOUNT_NAME = ${AWS_ACCOUNT_NAME}\n \
+          AWS_ACCOUNT_ID = ${AWS_ACCOUNT_ID}\n \
+          AWS_REGION = ${AWS_REGION}\n \
+          CPU = ${CPU}\n \
+          MEMORY = ${MEMORY}\n \
+          MEMORY_RESERVATION = ${MEMORY_RESERVATION}\n \
+          AWS_EXEC_ROLE = ${AWS_EXEC_ROLE}\n \
+          AWS_TASK_ROLE = ${AWS_TASK_ROLE}\n \
+          KEEP_IMAGES_AMOUNT = ${KEEP_IMAGES_AMOUNT}\n \
+          PROJECT_NAME = ${PROJECT_NAME}\n \
+          SERVICE_NAME = ${SERVICE_NAME}\n \
+          ENVIRONMENT_NAME = ${ENVIRONMENT_NAME}\n \
+          COMMON_NAME = ${COMMON_NAME}\n \
+          ECR_REPOSITORY = ${ECR_REPOSITORY}\n \
+          ECS_SERVICE = ${ECS_SERVICE}\n \
+          ECS_CLUSTER = ${ECS_CLUSTER}\n \
+          CONTAINER_NAME = ${CONTAINER_NAME}\n \
+          DEF_FILE_NAME = ${DEF_FILE_NAME}\n \
+          POLICY_FILE_NAME = ${POLICY_FILE_NAME}\n \
+          "
+          
   # build:
   #   name: Build
   #   runs-on: ubuntu-latest
@@ -88,126 +117,104 @@ jobs:
   #     - name: build
   #       run: go build src/main.go
 
-  test:
-    name: testtt
+  ecr:
+    uses: ./.github/workflows/ecr.yml
+    with:
+      aws-service: "ecr"
+      aws-account_name: ${{ env.AWS_ACCOUNT_NAME }}
+      aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
+      aws-region: ${{ env.AWS_REGION }}
+      access-key: ${{ env.AWS_ACCESS_KEY_ID }}
+      secret-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+      docker-path: ${{ env.ECR_REPOSITORY }}
+      ecr-repository-name: ${{ env.KEEP_IMAGES_AMOUNT }}
+      keep-images-amount: ${{ env.POLICY_FILE_NAME }}
+
+  deploy:
+    name: Deploy in container
     runs-on: ubuntu-latest
-    container:
-      image: amazon/aws-cli:latest
+    environment:
+      name: production # production secret env variables
+    needs: [ecr]
+    # if: github.ref == 'refs/heads/production'
+    # container:
+    #   image: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/amazonlinux:latest
+           
+
     steps:
-      - run: |
-          echo "+eedd"
-          ls
-          pwd
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  # deploy:
-  #   name: Deploy in container
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: production # production secret env variables
-  #   # needs: [build]
-  #   # if: github.ref == 'refs/heads/production'
-  #   container:
-  #     image: amazon/aws-cli:latest
-  #     volumes:
-  #       - ${{ github.workspace }}:/github/home/
-  #     env:
-  #         GH_REPO: "KookaS/scraper-backend"
-  #         BRANCH: "main"
-  #         AWS_ACCOUNT_NAME: "kookas"
-  #         AWS_ACCOUNT_ID: 401582117818
-  #         AWS_REGION: "us-east-1"
-  #         PROJECT_NAME: "scraper"
-  #         SERVICE_NAME: "backend"
-  #         ENVIRONMENT_NAME: "test"
-  #         COMMON_NAME: "${{ env.AWS_ACCOUNT_NAME }}-${{env.AWS_REGION}}-${{env.PROJECT_NAME}}-${{env.SERVICE_NAME}}-${{env.ENVIRONMENT_NAME}}"
-  #         CPU: 256
-  #         MEMORY: 512
-  #         MEMORY_RESERVATION: 500
-  #         AWS_EXEC_ROLE: Role_ECS_S3
-  #         AWS_TASK_ROLE: Role_ECS_S3
-  #         ECR_REPOSITORY: "${{env.COMMON_NAME}}-repository"
-  #         ECS_SERVICE: "${{env.COMMON_NAME}}-service"
-  #         ECS_CLUSTER: "${{env.COMMON_NAME}}-cluster"
-  #         CONTAINER_NAME: "${{env.COMMON_NAME}}-container"
-  #         DEF_FILE_NAME: "task_definition_override.json"
-  #         POLICY_FILE_NAME: "registry_policy.json"
-  #         KEEP_IMAGES_AMOUNT: 1   
-
-  #   steps:
-  #     - run: ls
-
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
       
-  #     # - name: install AWS CLI
-  #     #   run: |
-  #     #     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-  #     #     unzip -q awscliv2.zip
-  #     #     sudo ./aws/install
-  #     #     echo ""
-  #     #     aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     #     aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     #     # less is a prerequisite for aws cli in linux 
-  #     #     sudo apt-get update && sudo apt-get -q install -yy less
+      - name: install AWS CLI
+        run: |
+          # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          # unzip -q awscliv2.zip
+          # sudo ./aws/install
+          # echo ""
+          aws --version
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # less is a prerequisite for aws cli in linux 
+          # sudo apt-get update && sudo apt-get -q install -yy less
 
-  #     - name: create registry
-  #       run: |
-  #         # TODO: remove old repo
-  #         aws ecr create-repository --repository-name $ECR_REPOSITORY --region $AWS_REGION --no-paginate
+      - name: create registry
+        run: |
+          aws ecr delete-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${AWS_REGION}
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${AWS_REGION}
 
-  #     - name: create json registry policy
-  #       run: |
-  #         sudo bash /github/home/.aws/registry_policy.sh FILE_NAME="${POLICY_FILE_NAME}" \
-  #           KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
+      - name: create json registry policy
+        run: |
+          bash ${GITHUB_WORKSPACE}/.aws/registry_policy.sh FILE_NAME="${POLICY_FILE_NAME}" \
+            KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
 
-  #     - name: add json policy
-  #       run: |
-  #         aws ecr put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text ${POLICY_FILE_NAME}
+      - name: add json policy
+        run: |
+          aws ecr put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text file://${POLICY_FILE_NAME}
 
-  #     - name: Login to Amazon ECR
-  #       id: login-ecr
-  #       uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-  #     - name: Build, tag, and push image to Amazon ECR
-  #       id: build-image
-  #       env:
-  #         # aws informations
-  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #         IMAGE_TAG: ${{ github.sha }}
-  #       run: |
-  #         # Build a docker container and push it to ECR so that it can be deployed to ECS.
-  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-  #         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          # aws informations
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and push it to ECR so that it can be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-  #     - name: create json task definition
-  #       run: |
-  #         sudo bash /github/home/.aws/task_definition.sh FILE_NAME="${DEF_FILE_NAME}" \
-  #           AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID}" AWS_EXEC_ROLE="${AWS_EXEC_ROLE}" \
-  #           AWS_BUCKET_ENV_NAME="${COMMON_NAME}-secret" AWS_FILE_ENV_NAME="production.env" \
-  #           CPU="${CPU}" MEMORY="${MEMORY}" MEMORY_RESERVATION="${MEMORY_RESERVATION}" \
-  #           AWS_REGION="$AWS_REGION" ECR_NAME="${COMMON_NAME}" NAME="${NAME}-container" \
-  #           DEFINITION_FAMILY="${COMMON_NAME}-definition" AWS_TASK_ROLE="${AWS_TASK_ROLE}"
+      - name: create json task definition
+        run: |
+          bash ${GITHUB_WORKSPACE}/.aws/task_definition.sh FILE_NAME="${DEF_FILE_NAME}" \
+            AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID}" AWS_EXEC_ROLE="${AWS_EXEC_ROLE}" \
+            AWS_BUCKET_ENV_NAME="${COMMON_NAME}-secret" AWS_FILE_ENV_NAME="production.env" \
+            CPU="${CPU}" MEMORY="${MEMORY}" MEMORY_RESERVATION="${MEMORY_RESERVATION}" \
+            AWS_REGION="$AWS_REGION" ECR_NAME="${COMMON_NAME}" NAME="${NAME}-container" \
+            DEFINITION_FAMILY="${COMMON_NAME}-definition" AWS_TASK_ROLE="${AWS_TASK_ROLE}"
 
-  #     - name: Fill in the new image ID in the Amazon ECS task definition
-  #       id: task-def
-  #       uses: aws-actions/amazon-ecs-render-task-definition@v1
-  #       with:
-  #         task-definition: ${{ env.DEF_FILE_NAME}}
-  #         container-name: ${{ env.CONTAINER_NAME }}
-  #         image: ${{ steps.build-image.outputs.image }}
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.DEF_FILE_NAME}}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
 
-  #     - name: Deploy Amazon ECS task definition
-  #       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-  #       with:
-  #         task-definition: ${{ steps.task-def.outputs.task-definition }}
-  #         service: ${{ env.ECS_SERdeployVICE }}
-  #         cluster: ${{ env.ECS_CLUSTER }}
-  #         wait-for-service-stability: true
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERdeployVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
