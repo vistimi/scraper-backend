@@ -120,11 +120,11 @@ jobs:
       aws-account_name: $AWS_ACCOUNT_NAME
       aws-account-id: $AWS_ACCOUNT_ID
       aws-region: $AWS_REGION
-      access-key: $AWS_ACCESS_KEY_ID
-      secret-key: $AWS_SECRET_ACCESS_KEY
-      docker-path: $ECR_REPOSITORY
-      ecr-repository-name: $KEEP_IMAGES_AMOUNT
-      keep-images-amount: $POLICY_FILE_NAME
+      access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      docker-folder-path: "" # default file in ./
+      ecr-repository-name: $ECR_REPOSITORY
+      keep-images-amount: $KEEP_IMAGES_AMOUNT
 
   deploy:
     name: Deploy in container

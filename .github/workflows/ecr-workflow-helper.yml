@@ -10,7 +10,6 @@ on:
         options: 
         - ecr
         - ecr-public
-        default: ecr
       aws-account_name:
         description: 'AWS Account name, default github account name'
         required: true
@@ -25,22 +24,18 @@ on:
         description: 'AWS Region to launch the instance'
         required: true
         type: string
-        default: ${{ secrets.AWS_REGION }}
       access-key:
         description: 'AWS Region to launch the instance'
         required: true
         type: string
-        default: ${{ secrets.AWS_ACCESS_KEY_ID }}
       secret-key:
         description: 'AWS Region to launch the instance'
         required: true
         type: string
-        default: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       docker-path:
         description: 'The path to the folder where the file exists'
         required: true
         type: string
-        default: ${{ github.workspace }}/Dockerfile
       ecr-repository-name:
         description: 'The name of the repository'
         required: true
@@ -48,7 +43,6 @@ on:
       keep-images-amount:
         description: 'The path to the docker file'
         type: string
-        default: "1"
 
 env:
   AWS_CLI_SERVICE: ${{ inputs.aws-service }}
