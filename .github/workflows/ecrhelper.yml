@@ -1,4 +1,4 @@
-name: ECR_HELPER
+name: ECRHELPER
 
 on:
   workflow_dispatch:
