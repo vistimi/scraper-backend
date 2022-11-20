@@ -1,4 +1,4 @@
-name: Publish image for workflow
+name: ECR_HELPER
 
 on:
   workflow_dispatch:
