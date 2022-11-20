@@ -124,8 +124,8 @@ jobs:
       registry-name: $AWS_ACCOUNT_NAME
       keep-images-amount: $KEEP_IMAGES_AMOUNT
     secrets:
-      access-key: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-      secret-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+      access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 
   deploy:

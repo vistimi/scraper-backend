@@ -37,12 +37,14 @@ on:
         required: true
 
 env:
-  AWS_CLI_SERVICE: ${{ github.event.inputs.aws-cli-service }}
+  # AWS_CLI_SERVICE: ${{ github.event.inputs.aws-cli-service }}
+  AWS_CLI_SERVICE: "ecr"
   AWS_ACCOUNT_NAME: ${{ github.event.inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ github.event.inputs.aws-account-id }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
   DOCKER_FOLDER_PATH: ${{ github.event.inputs.docker-folder-path }}
-  ECR_REPOSITORY: ${{ github.event.inputs.registry-name }}
+  # ECR_REPOSITORY: ${{ github.event.inputs.registry-name }}
+  ECR_REPOSITORY: "TEST"
   KEEP_IMAGES_AMOUNT: ${{ github.event.inputs.keep-images-amount }}
   POLICY_FILE_NAME: "temp-file"
 
@@ -98,7 +100,7 @@ jobs:
 
       - name: create registry
         run: |
-          if [[ $(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryName]") != ${{ env.ECR_REPOSITORY }} ]]; then
+          if [[ $(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryName]") != ${{ env.ECR_REPOSITORY }} ]]; then
             echo "Creating the repository because it does not exist"
             if [[ $AWS_CLI_SERVICE == ecr ]]; then
               aws ${{ env.AWS_CLI_SERVICE }} create-repository \
