@@ -131,9 +131,6 @@ jobs:
       name: production # TODO: change for each user
     env:
       ECR_REPOSITORY: ${COMMON_NAME,,}-repository
-      ECS_SERVICE: ${COMMON_NAME,,}-service
-      ECS_CLUSTER: ${COMMON_NAME,,}-cluster
-      CONTAINER_NAME: ${COMMON_NAME,,}-container
       AWS_CLI_SERVICE: ecr
       DOCKER_FOLDER_PATH: ""
       POLICY_FILE_NAME: "temp-file"
@@ -215,6 +212,10 @@ jobs:
     environment:
       name: production # TODO: change for each user
     needs: [ecr]
+    env:
+      ECS_SERVICE: ${COMMON_NAME,,}-service
+      ECS_CLUSTER: ${COMMON_NAME,,}-cluster
+      CONTAINER_NAME: ${COMMON_NAME,,}-container
     # if: github.ref == 'refs/heads/production'
     # container:
     #   image: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/amazonlinux:latest
