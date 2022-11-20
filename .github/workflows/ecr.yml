@@ -3,7 +3,7 @@ name: ECR
 on:
   workflow_call:
     inputs:
-      aws-cli-service:
+      cli-service:
         description: 'AWS CLI service, e.g. ecr or ecr-public'
         required: true
         type: string
@@ -37,8 +37,8 @@ on:
         required: true
 
 env:
-  # AWS_CLI_SERVICE: ${{ github.event.inputs.aws-cli-service }}
-  AWS_CLI_SERVICE: "ecr"
+  AWS_CLI_SERVICE: ${{ github.event.inputs.aws-cli-service }}
+  # AWS_CLI_SERVICE: "ecr"
   AWS_ACCOUNT_NAME: ${{ github.event.inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ github.event.inputs.aws-account-id }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
