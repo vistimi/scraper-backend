@@ -65,10 +65,10 @@ env:
   SERVICE_NAME: 'backend'
   ENVIRONMENT_NAME: ${{ inputs.environment-name }}
   COMMON_NAME: "${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}"
-  ECR_REPOSITORY: "$COMMON_NAME-repository"
-  ECS_SERVICE: "$COMMON_NAME-service"
-  ECS_CLUSTER: "$COMMON_NAME-cluster"
-  CONTAINER_NAME: "$COMMON_NAME-container"
+  ECR_REPOSITORY: "${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}-repository"
+  ECS_SERVICE: "${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}-service"
+  ECS_CLUSTER: "${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}-cluster"
+  CONTAINER_NAME: "${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}-container"
   DEF_FILE_NAME: "task_definition_override.json"
   POLICY_FILE_NAME: "registry_policy.json"
 
