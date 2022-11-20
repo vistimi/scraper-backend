@@ -68,34 +68,7 @@ env:
   DEF_FILE_NAME: "task_definition_override.json"
   POLICY_FILE_NAME: "registry_policy.json"
 
-jobs:
-  variables:
-    name: Variables
-    runs-on: ubuntu-latest
-    steps:
-      - name: Display variables
-        run: |
-          printf " \
-          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
-          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
-          AWS_REGION = $AWS_REGION\n \
-          CPU = $CPU\n \
-          MEMORY = $MEMORY\n \
-          MEMORY_RESERVATION = $MEMORY_RESERVATION\n \
-          AWS_EXEC_ROLE = $AWS_EXEC_ROLE\n \
-          AWS_TASK_ROLE = $AWS_TASK_ROLE\n \
-          KEEP_IMAGES_AMOUNT = $KEEP_IMAGES_AMOUNT\n \
-          PROJECT_NAME = $PROJECT_NAME\n \
-          SERVICE_NAME = $SERVICE_NAME\n \
-          ENVIRONMENT_NAME = $ENVIRONMENT_NAME\n \
-          COMMON_NAME = $COMMON_NAME\n \
-          ECR_REPOSITORY = $ECR_REPOSITORY\n \
-          ECS_SERVICE = $ECS_SERVICE\n \
-          ECS_CLUSTER = $ECS_CLUSTER\n \
-          CONTAINER_NAME = $CONTAINER_NAME\n \
-          DEF_FILE_NAME = $DEF_FILE_NAME\n \
-          POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
-          "
+jobs:  
           
   # build:
   #   name: Build
@@ -130,7 +103,7 @@ jobs:
     environment:
       name: production # TODO: change for each user
     env:
-      ECR_REPOSITORY: ${COMMON_NAME,,}-repository
+      ECR_REPOSITORY: "${COMMON_NAME,,}-repository"
       AWS_CLI_SERVICE: ecr
       DOCKER_FOLDER_PATH: ""
       POLICY_FILE_NAME: "temp-file"
@@ -219,11 +192,33 @@ jobs:
     # if: github.ref == 'refs/heads/production'
     # container:
     #   image: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/amazonlinux:latest
-           
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Display variables
+        run: |
+          printf " \
+          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
+          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
+          AWS_REGION = $AWS_REGION\n \
+          CPU = $CPU\n \
+          MEMORY = $MEMORY\n \
+          MEMORY_RESERVATION = $MEMORY_RESERVATION\n \
+          AWS_EXEC_ROLE = $AWS_EXEC_ROLE\n \
+          AWS_TASK_ROLE = $AWS_TASK_ROLE\n \
+          KEEP_IMAGES_AMOUNT = $KEEP_IMAGES_AMOUNT\n \
+          PROJECT_NAME = $PROJECT_NAME\n \
+          SERVICE_NAME = $SERVICE_NAME\n \
+          ENVIRONMENT_NAME = $ENVIRONMENT_NAME\n \
+          COMMON_NAME = $COMMON_NAME\n \
+          ECS_SERVICE = $ECS_SERVICE\n \
+          ECS_CLUSTER = $ECS_CLUSTER\n \
+          CONTAINER_NAME = $CONTAINER_NAME\n \
+          DEF_FILE_NAME = $DEF_FILE_NAME\n \
+          POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
+          "
       
       - name: install AWS CLI
         run: |
