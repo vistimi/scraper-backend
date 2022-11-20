@@ -112,7 +112,7 @@ jobs:
 
       - name: Format variables
         run: |
-          ECR_REPOSITORY: "${COMMON_NAME,,}-repository"
+          export ECR_REPOSITORY: "${COMMON_NAME,,}-repository"
 
       - name: Display variables
         run: |
