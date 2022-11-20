@@ -117,7 +117,7 @@ jobs:
     uses: ./.github/workflows/ecr.yml
     with:
       aws-service: "ecr"
-      aws-account_name: $AWS_ACCOUNT_NAME
+      aws-account-name: $AWS_ACCOUNT_NAME
       aws-account-id: $AWS_ACCOUNT_ID
       aws-region: $AWS_REGION
       # access-key: "${{ secrets.AWS_ACCESS_KEY_ID }}"

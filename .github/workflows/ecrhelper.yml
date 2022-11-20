@@ -1,4 +1,4 @@
-name: ECRHELPER
+name: ECR helper
 
 on:
   workflow_dispatch:
@@ -14,12 +14,10 @@ on:
         description: 'AWS Account name, default github account name'
         required: true
         type: string
-        default: ${{ secrets.AWS_ACCOUNT_NAME }}
       aws-account-id:
         description: 'AWS Account ID'
         required: true
         type: string
-        default: ${{ secrets.AWS_ACCOUNT_ID }}
       aws-region:
         description: 'AWS Region to launch the instance'
         required: true
@@ -65,13 +63,13 @@ jobs:
       - name: Reusable ECR workflow
         uses: KookaS/scraper-backend/.github/workflows/ecr.yml
         with:
-          aws-service: ${{ env.AWS_CLI_SERVICE }}
-          aws-account_name: ${{ env.AWS_ACCOUNT_NAME }}
-          aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
-          aws-region: ${{ env.AWS_REGION }}
-          access-key: ${{ env.AWS_ACCESS_KEY_ID }}
-          secret-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          docker-path: ${{ env.ECR_REPOSITORY }}
-          ecr-repository-name: ${{ env.KEEP_IMAGES_AMOUNT }}
-          keep-images-amount: ${{ env.POLICY_FILE_NAME }}
+          aws-service: $AWS_CLI_SERVICE
+          aws-account_name: $AWS_ACCOUNT_NAME
+          aws-account-id: $AWS_ACCOUNT_ID
+          aws-region: $AWS_REGION
+          # access-key: $AWS_ACCESS_KEY_ID
+          # secret-key: $AWS_SECRET_ACCESS_KEY
+          docker-path: $ECR_REPOSITORY
+          ecr-repository-name: $KEEP_IMAGES_AMOUNT
+          keep-images-amount: $POLICY_FILE_NAME
 
