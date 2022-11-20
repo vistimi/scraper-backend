@@ -3,14 +3,6 @@ name: ECR
 on:
   workflow_call:
     inputs:
-      aws-service:
-        description: 'AWS CLI service, e.g. ecr or ecr-public'
-        required: true
-        type: string
-      aws-account-name:
-        description: 'AWS Account name, default github account name'
-        required: true
-        type: string
       aws-account-id:
         description: 'AWS Account ID'
         required: true
@@ -19,14 +11,14 @@ on:
         description: 'AWS Region to launch the instance'
         required: true
         type: string
-      # access-key:
-      #   description: 'AWS Region to launch the instance'
-      #   required: true
-      #   type: string
-      # secret-key:
-      #   description: 'AWS Region to launch the instance'
-      #   required: true
-      #   type: string
+      aws-service:
+        description: 'AWS CLI service, e.g. ecr or ecr-public'
+        required: true
+        type: string
+      aws-account-name:
+        description: 'AWS Account name, default github account name'
+        required: true
+        type: string
       docker-folder-path:
         description: 'The path to the folder where the file exists'
         required: true
