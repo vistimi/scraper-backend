@@ -64,7 +64,7 @@ env:
   PROJECT_NAME: 'scraper'
   SERVICE_NAME: 'backend'
   ENVIRONMENT_NAME: ${{ inputs.environment-name }}
-  COMMON_NAME: "$AWS_ACCOUNT_NAME-$AWS_REGION-$PROJECT_NAME-$SERVICE_NAME-$ENVIRONMENT_NAME"
+  COMMON_NAME: "${{ ENV.AWS_ACCOUNT_NAME }}-$AWS_REGION-$PROJECT_NAME-$SERVICE_NAME-$ENVIRONMENT_NAME"
   ECR_REPOSITORY: "$COMMON_NAME-repository"
   ECS_SERVICE: "$COMMON_NAME-service"
   ECS_CLUSTER: "$COMMON_NAME-cluster"
@@ -80,25 +80,25 @@ jobs:
       - name: Display variables
         run: |
           printf " \
-          AWS_ACCOUNT_NAME = ${{ env.AWS_ACCOUNT_NAME }}\n \
-          AWS_ACCOUNT_ID = ${AWS_ACCOUNT_ID}\n \
-          AWS_REGION = ${AWS_REGION}\n \
-          CPU = ${CPU}\n \
-          MEMORY = ${MEMORY}\n \
-          MEMORY_RESERVATION = ${MEMORY_RESERVATION}\n \
-          AWS_EXEC_ROLE = ${AWS_EXEC_ROLE}\n \
-          AWS_TASK_ROLE = ${AWS_TASK_ROLE}\n \
-          KEEP_IMAGES_AMOUNT = ${KEEP_IMAGES_AMOUNT}\n \
-          PROJECT_NAME = ${PROJECT_NAME}\n \
-          SERVICE_NAME = ${SERVICE_NAME}\n \
-          ENVIRONMENT_NAME = ${ENVIRONMENT_NAME}\n \
-          COMMON_NAME = ${COMMON_NAME}\n \
-          ECR_REPOSITORY = ${ECR_REPOSITORY}\n \
-          ECS_SERVICE = ${ECS_SERVICE}\n \
-          ECS_CLUSTER = ${ECS_CLUSTER}\n \
-          CONTAINER_NAME = ${CONTAINER_NAME}\n \
-          DEF_FILE_NAME = ${DEF_FILE_NAME}\n \
-          POLICY_FILE_NAME = ${POLICY_FILE_NAME}\n \
+          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
+          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
+          AWS_REGION = $AWS_REGION\n \
+          CPU = $CPU\n \
+          MEMORY = $MEMORY\n \
+          MEMORY_RESERVATION = $MEMORY_RESERVATION\n \
+          AWS_EXEC_ROLE = $AWS_EXEC_ROLE\n \
+          AWS_TASK_ROLE = $AWS_TASK_ROLE\n \
+          KEEP_IMAGES_AMOUNT = $KEEP_IMAGES_AMOUNT\n \
+          PROJECT_NAME = $PROJECT_NAME\n \
+          SERVICE_NAME = $SERVICE_NAME\n \
+          ENVIRONMENT_NAME = $ENVIRONMENT_NAME\n \
+          COMMON_NAME = $COMMON_NAME\n \
+          ECR_REPOSITORY = $ECR_REPOSITORY\n \
+          ECS_SERVICE = $ECS_SERVICE\n \
+          ECS_CLUSTER = $ECS_CLUSTER\n \
+          CONTAINER_NAME = $CONTAINER_NAME\n \
+          DEF_FILE_NAME = $DEF_FILE_NAME\n \
+          POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
           "
           
   # build:
