@@ -116,12 +116,12 @@ jobs:
   ecr:
     uses: ./.github/workflows/ecr.yml
     with:
-      aws-service: ecr
+      aws-service: $AWS_ACCOUNT_NAME
       aws-account-name: $AWS_ACCOUNT_NAME
       aws-account-id: $AWS_ACCOUNT_ID
       aws-region: $AWS_REGION
       docker-folder-path: "" # default file in ./
-      ecr-repository-name: ${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}-repository
+      ecr-repository-name: $AWS_ACCOUNT_NAME
       keep-images-amount: $KEEP_IMAGES_AMOUNT
     secrets:
       access-key: "${{ secrets.AWS_ACCESS_KEY_ID }}"
