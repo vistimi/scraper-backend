@@ -102,7 +102,6 @@ jobs:
     environment:
       name: production # TODO: change for each user
     env:
-      ECR_REPOSITORY: "${COMMON_NAME,,}-repository"
       AWS_CLI_SERVICE: ecr
       DOCKER_FOLDER_PATH: ""
       POLICY_FILE_NAME: "temp-file"
@@ -110,6 +109,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Format variables
+        run: |
+          ECR_REPOSITORY: "${COMMON_NAME,,}-repository"
 
       - name: Display variables
         run: |
