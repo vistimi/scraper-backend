@@ -113,19 +113,85 @@ jobs:
   #     - name: build
   #       run: go build src/main.go
 
+  # ecr:
+  #   uses: ./.github/workflows/ecr.yml
+  #   with:
+  #     yolo: $AWS_REGION
+  #     aws-account-name: $AWS_ACCOUNT_NAME
+  #     aws-account-id: $AWS_ACCOUNT_ID
+  #     aws-region: $AWS_REGION
+  #     docker-folder-path: "" # default file in ./
+  #     registry-name: $AWS_ACCOUNT_NAME
+  #     keep-images-amount: $KEEP_IMAGES_AMOUNT
+  #   secrets:
+  #     access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #     secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
   ecr:
-    uses: ./.github/workflows/ecr.yml
-    with:
-      yolo: $AWS_REGION
-      aws-account-name: $AWS_ACCOUNT_NAME
-      aws-account-id: $AWS_ACCOUNT_ID
-      aws-region: $AWS_REGION
-      docker-folder-path: "" # default file in ./
-      registry-name: $AWS_ACCOUNT_NAME
-      keep-images-amount: $KEEP_IMAGES_AMOUNT
-    secrets:
-      access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    name: ECR
+    runs-on: ubuntu-latest
+    env:
+      AWS_CLI_SERVICE: "ecr"
+      DOCKER_FOLDER_PATH: ""
+      POLICY_FILE_NAME: "temp-file"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: install AWS CLI
+        run: |
+          # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          # unzip -q awscliv2.zip
+          # sudo ./aws/install
+          # echo ""
+          aws --version
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region $AWS_REGION
+          # less is a prerequisite for aws cli in linux 
+          # sudo apt-get update && sudo apt-get -q install -yy less
+          
+      - name: login to ECR
+        run: |
+          if [[ $AWS_CLI_SERVICE == ecr ]]; then
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+          fi
+
+      - name: create registry
+        run: |
+          if [[ $(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryName]") != ${{ env.ECR_REPOSITORY }} ]]; then
+            echo "Creating the repository because it does not exist"
+            if [[ $AWS_CLI_SERVICE == ecr ]]; then
+              aws ${{ env.AWS_CLI_SERVICE }} create-repository \
+                --repository-name ${{ env.ECR_REPOSITORY }} \
+                --region ${AWS_REGION}
+              bash ${GITHUB_WORKSPACE}/.aws/registry_policy.sh FILE_NAME="${POLICY_FILE_NAME}" KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
+              aws ${AWS_CLI_SERVICE} put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text file://${POLICY_FILE_NAME}
+            elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+              bash ${GITHUB_WORKSPACE}/.aws/catalog_data.sh FILE_NAME="$POLICY_FILE_NAME" KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
+              aws ecr-public create-repository \
+                --repository-name $ECR_REPOSITORY \
+                --catalog-data file://$POLICY_FILE_NAME \
+                --region $AWS_REGION
+            fi
+          fi
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          export ECR_URI=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryUri]")
+          echo "$ECR_URI"
+          export ECR_REGISTRY=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
+          # Build a docker container and push it to ECR so that it can be deployed to ECS.
+          docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_URI
+          docker push $ECR_URI
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
 
   deploy:
