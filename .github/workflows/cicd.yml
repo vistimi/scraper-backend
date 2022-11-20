@@ -79,7 +79,7 @@ jobs:
     steps:
       - name: Format
         run: |
-          ECR_REPOSITORY=${$ECR_REPOSITORY,,}
+          ECR_REPOSITORY=${ECR_REPOSITORY,,}
       - name: Display variables
         run: |
           printf " \
