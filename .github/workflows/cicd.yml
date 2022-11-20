@@ -73,10 +73,13 @@ env:
   POLICY_FILE_NAME: "registry_policy.json"
 
 jobs:
-  display:
-    name: Show non-sensitive env variables
+  variables:
+    name: Variables
     runs-on: ubuntu-latest
     steps:
+      - name: Format
+        run: |
+          ECR_REPOSITORY=${$ECR_REPOSITORY,,}
       - name: Display variables
         run: |
           printf " \
@@ -130,6 +133,7 @@ jobs:
   ecr:
     name: ECR
     runs-on: ubuntu-latest
+    needs: [variables]
     env:
       AWS_CLI_SERVICE: "ecr"
       DOCKER_FOLDER_PATH: ""
@@ -138,6 +142,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Display variables
+        run: |
+          printf " \
+          AWS_CLI_SERVICE = $AWS_CLI_SERVICE\n \
+          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
+          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
+          AWS_REGION = $AWS_REGION\n \
+          DOCKER_FOLDER_PATH = $DOCKER_FOLDER_PATH\n \
+          ECR_REPOSITORY = $ECR_REPOSITORY\n \
+          KEEP_IMAGES_AMOUNT = $KEEP_IMAGES_AMOUNT\n \
+          POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
+          "
       
       - name: install AWS CLI
         run: |
