@@ -19,14 +19,14 @@ on:
         description: 'AWS Region to launch the instance'
         required: true
         type: string
-      access-key:
-        description: 'AWS Region to launch the instance'
-        required: true
-        type: string
-      secret-key:
-        description: 'AWS Region to launch the instance'
-        required: true
-        type: string
+      # access-key:
+      #   description: 'AWS Region to launch the instance'
+      #   required: true
+      #   type: string
+      # secret-key:
+      #   description: 'AWS Region to launch the instance'
+      #   required: true
+      #   type: string
       docker-folder-path:
         description: 'The path to the folder where the file exists'
         required: true
@@ -44,8 +44,8 @@ env:
   AWS_ACCOUNT_NAME: ${{ github.event.inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ github.event.inputs.aws-account-id }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
-  AWS_ACCESS_KEY_ID: ${{ github.event.inputs.access-key }}
-  AWS_SECRET_ACCESS_KEY: ${{ github.event.inputs.secret-key }}
+  # AWS_ACCESS_KEY_ID: ${{ github.event.inputs.access-key }}
+  # AWS_SECRET_ACCESS_KEY: ${{ github.event.inputs.secret-key }}
   DOCKER_FOLDER_PATH: ${{ github.event.inputs.docker-folder-path }}
   ECR_REPOSITORY: ${{ github.event.inputs.ecr-repository-name }}
   KEEP_IMAGES_AMOUNT: ${{ github.event.inputs.keep-images-amount }}
@@ -87,8 +87,8 @@ jobs:
           # unzip -q awscliv2.zip
           # ./aws/install
           aws --version
-          aws configure set aws_access_key_id ${{ env.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region $AWS_REGION
           # less is a prerequisite for aws cli in linux 
           # apt-get -qq update && apt-get -q install -yy less
