@@ -38,14 +38,17 @@ on:
       keep-images-amount:
         description: 'The path to the docker file'
         type: string
+    secrets:
+      access-key:
+        required: true
+      secret-key:
+        required: true
 
 env:
   AWS_SERVICE: ${{ github.event.inputs.aws-service }}
   AWS_ACCOUNT_NAME: ${{ github.event.inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ github.event.inputs.aws-account-id }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
-  # AWS_ACCESS_KEY_ID: ${{ github.event.inputs.access-key }}
-  # AWS_SECRET_ACCESS_KEY: ${{ github.event.inputs.secret-key }}
   DOCKER_FOLDER_PATH: ${{ github.event.inputs.docker-folder-path }}
   ECR_REPOSITORY: ${{ github.event.inputs.ecr-repository-name }}
   KEEP_IMAGES_AMOUNT: ${{ github.event.inputs.keep-images-amount }}
@@ -71,8 +74,6 @@ jobs:
   ecr:
     name: Publish image on ECR
     runs-on: ubuntu-latest
-    environment:
-      name: production # TODO: change for each user
 
     steps:
       - name: Checkout
@@ -89,8 +90,8 @@ jobs:
           # unzip -q awscliv2.zip
           # ./aws/install
           aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set aws_access_key_id ${{ secrets.access-key }}
+          aws configure set aws_secret_access_key ${{ secrets.secret-key }}
           aws configure set region $AWS_REGION
           # less is a prerequisite for aws cli in linux 
           # apt-get -qq update && apt-get -q install -yy less
