@@ -79,7 +79,10 @@ jobs:
     steps:
       - name: Format
         run: |
+          COMMON_NAME=${COMMON_NAME,,}
           ECR_REPOSITORY=${ECR_REPOSITORY,,}
+          ECS_SERVICE=${ECS_SERVICE,,}
+          ECS_CLUSTER=${ECS_CLUSTER,,}
       - name: Display variables
         run: |
           printf " \
