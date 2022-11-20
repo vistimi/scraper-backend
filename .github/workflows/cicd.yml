@@ -99,7 +99,6 @@ jobs:
   ecr:
     name: ECR
     runs-on: ubuntu-latest
-    needs: [variables]
     environment:
       name: production # TODO: change for each user
     env:
