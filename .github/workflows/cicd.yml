@@ -12,22 +12,18 @@ on:
         description: 'AWS Account name, default github account name'
         required: true
         type: string
-        default: ${{ secrets.AWS_ACCOUNT_NAME }}
       aws-account-id:
         description: 'AWS Account ID'
         required: true
         type: string
-        default: ${{ secrets.AWS_ACCOUNT_ID }}
       aws-region:
         description: 'AWS Region to launch the instance'
         required: true
         type: string
-        default: ${{ secrets.AWS_REGION }}
       environment-name:
         description: 'The name of the branch or env'
         required: true
         type: string  # check if not environment
-        default: ${{ github.ref_name }}
       # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
       container-cpu:
         description: 'The CPU value used by the container, 1024 == (1 vCPU). Beware that the memory need to scale with cpu.'
@@ -43,7 +39,7 @@ on:
         required: true
         type: string
       aws-exec-role:
-        description: 'The ARN of the task execution role that grants the Amazon ECS container agent permission to make AWS API calls on your behalf'
+        description: 'The name of the task execution role that grants the Amazon ECS container agent permission to make AWS API calls on your behalf'
         required: true
         type: string
       aws-task-role:
