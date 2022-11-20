@@ -37,8 +37,8 @@ on:
         required: true
 
 env:
-  AWS_CLI_SERVICE: ${{ github.event.inputs.yolo }}
-  # AWS_CLI_SERVICE: "ecr"
+  YOLO: ${{ github.event.inputs.yolo }}
+  # YOLO: "ecr"
   AWS_ACCOUNT_NAME: ${{ github.event.inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ github.event.inputs.aws-account-id }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
@@ -56,7 +56,7 @@ jobs:
       - name: Display variables
         run: |
           printf " \
-          AWS_CLI_SERVICE = $AWS_CLI_SERVICE\n \
+          YOLO = $YOLO\n \
           AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
           AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
           AWS_REGION = $AWS_REGION\n \
@@ -76,7 +76,7 @@ jobs:
       - name: Show workspace directory
         run: |
           pwd
-          echo "AWS_CLI_SERVICE = $AWS_CLI_SERVICE"
+          echo "YOLO = $YOLO"
 
       - name: install AWS CLI
         run: |
@@ -92,23 +92,23 @@ jobs:
 
       - name: login to ECR
         run: |
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
+          if [[ $YOLO == ecr ]]; then
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+          elif [[ $YOLO == ecr-public ]]; then
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
           fi
 
       - name: create registry
         run: |
-          if [[ $(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryName]") != ${{ env.ECR_REPOSITORY }} ]]; then
+          if [[ $(aws ${{ env.YOLO }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryName]") != ${{ env.ECR_REPOSITORY }} ]]; then
             echo "Creating the repository because it does not exist"
-            if [[ $AWS_CLI_SERVICE == ecr ]]; then
-              aws ${{ env.AWS_CLI_SERVICE }} create-repository \
+            if [[ $YOLO == ecr ]]; then
+              aws ${{ env.YOLO }} create-repository \
                 --repository-name ${{ env.ECR_REPOSITORY }} \
                 --region ${AWS_REGION}
               bash ${GITHUB_WORKSPACE}/.aws/registry_policy.sh FILE_NAME="${POLICY_FILE_NAME}" KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
-              aws ${AWS_CLI_SERVICE} put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text file://${POLICY_FILE_NAME}
-            elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+              aws ${YOLO} put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text file://${POLICY_FILE_NAME}
+            elif [[ $YOLO == ecr-public ]]; then
               bash ${GITHUB_WORKSPACE}/.aws/catalog_data.sh FILE_NAME="$POLICY_FILE_NAME" KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
               aws ecr-public create-repository \
                 --repository-name $ECR_REPOSITORY \
@@ -122,9 +122,9 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          export ECR_URI=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryUri]")
+          export ECR_URI=$(aws ${{ env.YOLO }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryUri]")
           echo "$ECR_URI"
-          export ECR_REGISTRY=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
+          export ECR_REGISTRY=$(aws ${{ env.YOLO }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
           # Build a docker container and push it to ECR so that it can be deployed to ECS.
           docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_URI
