@@ -64,7 +64,7 @@ env:
   PROJECT_NAME: 'scraper'
   SERVICE_NAME: 'backend'
   ENVIRONMENT_NAME: ${{ inputs.environment-name }}
-  COMMON_NAME: "${{ env.AWS_ACCOUNT_NAME }}-${{env.AWS_REGION}}-${{env.PROJECT_NAME}}-${{env.SERVICE_NAME}}-${{env.ENVIRONMENT_NAME}}"
+  COMMON_NAME: "$AWS_ACCOUNT_NAME-${{env.AWS_REGION}}-${{env.PROJECT_NAME}}-${{env.SERVICE_NAME}}-${{env.ENVIRONMENT_NAME}}"
   ECR_REPOSITORY: "${{env.COMMON_NAME}}-repository"
   ECS_SERVICE: "${{env.COMMON_NAME}}-service"
   ECS_CLUSTER: "${{env.COMMON_NAME}}-cluster"
