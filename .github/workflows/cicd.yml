@@ -64,11 +64,11 @@ env:
   PROJECT_NAME: 'scraper'
   SERVICE_NAME: 'backend'
   ENVIRONMENT_NAME: ${{ inputs.environment-name }}
-  COMMON_NAME: "$AWS_ACCOUNT_NAME-${{env.AWS_REGION}}-${{env.PROJECT_NAME}}-${{env.SERVICE_NAME}}-${{env.ENVIRONMENT_NAME}}"
-  ECR_REPOSITORY: "${{env.COMMON_NAME}}-repository"
-  ECS_SERVICE: "${{env.COMMON_NAME}}-service"
-  ECS_CLUSTER: "${{env.COMMON_NAME}}-cluster"
-  CONTAINER_NAME: "${{env.COMMON_NAME}}-container"
+  COMMON_NAME: "$AWS_ACCOUNT_NAME-$AWS_REGION-$PROJECT_NAME-$SERVICE_NAME-$ENVIRONMENT_NAME"
+  ECR_REPOSITORY: "$COMMON_NAME-repository"
+  ECS_SERVICE: "$COMMON_NAME-service"
+  ECS_CLUSTER: "$COMMON_NAME-cluster"
+  CONTAINER_NAME: "$COMMON_NAME-container"
   DEF_FILE_NAME: "task_definition_override.json"
   POLICY_FILE_NAME: "registry_policy.json"
 
@@ -117,14 +117,14 @@ jobs:
     uses: ./.github/workflows/ecr.yml
     with:
       aws-service: "ecr"
-      aws-account_name: ${{ env.AWS_ACCOUNT_NAME }}
-      aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
-      aws-region: ${{ env.AWS_REGION }}
-      access-key: ${{ env.AWS_ACCESS_KEY_ID }}
-      secret-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-      docker-path: ${{ env.ECR_REPOSITORY }}
-      ecr-repository-name: ${{ env.KEEP_IMAGES_AMOUNT }}
-      keep-images-amount: ${{ env.POLICY_FILE_NAME }}
+      aws-account_name: $AWS_ACCOUNT_NAME
+      aws-account-id: $AWS_ACCOUNT_ID
+      aws-region: $AWS_REGION
+      access-key: $AWS_ACCESS_KEY_ID
+      secret-key: $AWS_SECRET_ACCESS_KEY
+      docker-path: $ECR_REPOSITORY
+      ecr-repository-name: $KEEP_IMAGES_AMOUNT
+      keep-images-amount: $POLICY_FILE_NAME
 
   deploy:
     name: Deploy in container
@@ -140,13 +140,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
       
       - name: install AWS CLI
         run: |
@@ -157,38 +150,9 @@ jobs:
           aws --version
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region $AWS_REGION
           # less is a prerequisite for aws cli in linux 
           # sudo apt-get update && sudo apt-get -q install -yy less
-
-      - name: create registry
-        run: |
-          aws ecr delete-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${AWS_REGION}
-          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${AWS_REGION}
-
-      - name: create json registry policy
-        run: |
-          bash ${GITHUB_WORKSPACE}/.aws/registry_policy.sh FILE_NAME="${POLICY_FILE_NAME}" \
-            KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
-
-      - name: add json policy
-        run: |
-          aws ecr put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text file://${POLICY_FILE_NAME}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          # aws informations
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          # Build a docker container and push it to ECR so that it can be deployed to ECS.
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
       - name: create json task definition
         run: |
@@ -203,14 +167,14 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.DEF_FILE_NAME}}
-          container-name: ${{ env.CONTAINER_NAME }}
+          task-definition: $DEF_FILE_NAME
+          container-name: $CONTAINER_NAME 
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERdeployVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
+          service: $ECS_SERVICE
+          cluster: $ECS_CLUSTER
           wait-for-service-stability: true
