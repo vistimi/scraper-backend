@@ -71,6 +71,8 @@ jobs:
   ecr:
     name: Publish image on ECR
     runs-on: ubuntu-latest
+    environment:
+      name: production # TODO: change for each user
 
     steps:
       - name: Checkout

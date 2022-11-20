@@ -130,7 +130,7 @@ jobs:
     name: Deploy in container
     runs-on: ubuntu-latest
     environment:
-      name: production # production secret env variables
+      name: production # TODO: change for each user
     needs: [ecr]
     # if: github.ref == 'refs/heads/production'
     # container:
