@@ -80,7 +80,7 @@ jobs:
       - name: Display variables
         run: |
           printf " \
-          AWS_ACCOUNT_NAME = ${AWS_ACCOUNT_NAME}\n \
+          AWS_ACCOUNT_NAME = ${{ env.AWS_ACCOUNT_NAME }}\n \
           AWS_ACCOUNT_ID = ${AWS_ACCOUNT_ID}\n \
           AWS_REGION = ${AWS_REGION}\n \
           CPU = ${CPU}\n \
