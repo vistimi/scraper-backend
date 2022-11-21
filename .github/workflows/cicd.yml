@@ -9,45 +9,45 @@ on:
   workflow_dispatch:
     inputs:
       aws-account-name:
-        description: 'AWS Account name, default github account name'
+        description: "AWS Account name, default github account name"
         required: true
         type: string
       aws-account-id:
-        description: 'AWS Account ID'
+        description: "AWS Account ID"
         required: true
         type: string
       aws-region:
-        description: 'AWS Region to launch the instance'
+        description: "AWS Region to launch the instance"
         required: true
         type: string
       environment-name:
-        description: 'The name of the branch or env'
+        description: "The name of the branch or env"
         required: true
-        type: string  # check if not environment
+        type: string # check if not environment
       # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
       container-cpu:
-        description: 'The CPU value used by the container, 1024 == (1 vCPU). Beware that the memory need to scale with cpu.'
+        description: "The CPU value used by the container, 1024 == (1 vCPU). Beware that the memory need to scale with cpu."
         required: true
         type: string
       # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
       container-memory:
-        description: 'The Memory value used by the container, 1024 MiB == 1 GB. Beware that the memory need to scale with cpu.'
+        description: "The Memory value used by the container, 1024 MiB == 1 GB. Beware that the memory need to scale with cpu."
         required: true
         type: string
       container-memory-reservation:
-        description: 'The memory reservation, needs to be inferior to memory allocated.'
+        description: "The memory reservation, needs to be inferior to memory allocated."
         required: true
         type: string
       aws-exec-role:
-        description: 'The name of the task execution role that grants the Amazon ECS container agent permission to make AWS API calls on your behalf'
+        description: "The name of the task execution role that grants the Amazon ECS container agent permission to make AWS API calls on your behalf"
         required: true
         type: string
       aws-task-role:
-        description: 'The IAM role defined for the task to perform, need access to all needed resources'
+        description: "The IAM role defined for the task to perform, need access to all needed resources"
         required: true
         type: string
       keep-images-amount:
-        description: 'Amount of images kept in the registry'
+        description: "Amount of images kept in the registry"
         required: true
         type: string
 
@@ -58,18 +58,17 @@ env:
   CPU: ${{ inputs.container-cpu }}
   MEMORY: ${{ inputs.container-memory }}
   MEMORY_RESERVATION: ${{ inputs.container-memory-reservation }}
-  AWS_EXEC_ROLE : ${{ inputs.aws-exec-role }}
+  AWS_EXEC_ROLE: ${{ inputs.aws-exec-role }}
   AWS_TASK_ROLE: ${{ inputs.aws-task-role }}
   KEEP_IMAGES_AMOUNT: ${{ inputs.keep-images-amount }}
-  PROJECT_NAME: 'scraper'
-  SERVICE_NAME: 'backend'
+  PROJECT_NAME: "scraper"
+  SERVICE_NAME: "backend"
   ENVIRONMENT_NAME: ${{ inputs.environment-name }}
   COMMON_NAME: ${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}
   DEF_FILE_NAME: "task_definition_override.json"
   POLICY_FILE_NAME: "registry_policy.json"
 
-jobs:  
-          
+jobs:
   # build:
   #   name: Build
   #   runs-on: ubuntu-latest
@@ -112,7 +111,7 @@ jobs:
 
       - name: Format variables
         run: |
-          echo "ECR_REPOSITORY="${COMMON_NAME,,}-repository"" >>${GITHUB_ENV}
+          echo "ECR_REPOSITORY="${COMMON_NAME,,}-repository" >>${GITHUB_ENV}
 
       - name: Display variables
         run: |
@@ -126,7 +125,7 @@ jobs:
           KEEP_IMAGES_AMOUNT = $KEEP_IMAGES_AMOUNT\n \
           POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
           "
-      
+
       - name: install AWS CLI
         run: |
           # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -139,7 +138,7 @@ jobs:
           aws configure set region $AWS_REGION
           # less is a prerequisite for aws cli in linux 
           # sudo apt-get update && sudo apt-get -q install -yy less
-          
+
       - name: login to ECR
         run: |
           if [[ $AWS_CLI_SERVICE == ecr ]]; then
@@ -187,10 +186,6 @@ jobs:
     environment:
       name: production # TODO: change for each user
     needs: [ecr]
-    env:
-      ECS_SERVICE: ${COMMON_NAME,,}-service
-      ECS_CLUSTER: ${COMMON_NAME,,}-cluster
-      CONTAINER_NAME: ${COMMON_NAME,,}-container
     # if: github.ref == 'refs/heads/production'
     # container:
     #   image: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/amazonlinux:latest
@@ -198,6 +193,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Format variables
+        run: |
+          echo "ECS_SERVICE= ${COMMON_NAME,,}-service" >>${GITHUB_ENV}
+          echo "ECS_CLUSTER= ${COMMON_NAME,,}-cluster" >>${GITHUB_ENV}
+          echo "CONTAINER_NAME= ${COMMON_NAME,,}-container" >>${GITHUB_ENV}
 
       - name: Display variables
         run: |
@@ -221,7 +222,7 @@ jobs:
           DEF_FILE_NAME = $DEF_FILE_NAME\n \
           POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
           "
-      
+
       - name: install AWS CLI
         run: |
           # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -249,7 +250,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: $DEF_FILE_NAME
-          container-name: $CONTAINER_NAME 
+          container-name: $CONTAINER_NAME
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
