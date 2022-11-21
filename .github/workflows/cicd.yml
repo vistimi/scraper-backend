@@ -174,7 +174,7 @@ jobs:
           export ECR_REGISTRY=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
           # Build a docker container and push it to ECR so that it can be deployed to ECS.
           docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          # # Rename the this image with latest and untag the other ones
+          # # Rename the this image with latest and untag the other ones, beware ECS needs latest image as well
           # docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_URI
           docker push $ECR_URI
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
