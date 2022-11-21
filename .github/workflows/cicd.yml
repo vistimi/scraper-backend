@@ -111,7 +111,7 @@ jobs:
 
       - name: Format variables
         run: |
-          echo "ECR_REPOSITORY="${COMMON_NAME,,}-repository" >>${GITHUB_ENV}
+          echo "ECR_REPOSITORY=${COMMON_NAME,,}-repository" >>${GITHUB_ENV}
 
       - name: Display variables
         run: |
@@ -196,9 +196,9 @@ jobs:
 
       - name: Format variables
         run: |
-          echo "ECS_SERVICE= ${COMMON_NAME,,}-service" >>${GITHUB_ENV}
-          echo "ECS_CLUSTER= ${COMMON_NAME,,}-cluster" >>${GITHUB_ENV}
-          echo "CONTAINER_NAME= ${COMMON_NAME,,}-container" >>${GITHUB_ENV}
+          echo "ECS_SERVICE=${COMMON_NAME,,}-service" >>${GITHUB_ENV}
+          echo "ECS_CLUSTER=${COMMON_NAME,,}-cluster" >>${GITHUB_ENV}
+          echo "CONTAINER_NAME=${COMMON_NAME,,}-container" >>${GITHUB_ENV}
 
       - name: Display variables
         run: |
