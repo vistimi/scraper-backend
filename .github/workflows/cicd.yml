@@ -170,16 +170,17 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           export ECR_URI=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[repositoryUri]")
-          export ECR_REGISTRY=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
+          # export ECR_REGISTRY=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
           echo "ECR_URI= $ECR_URI"
-          echo "ECR_REGISTRY= $ECR_REGISTRY"
+          # echo "ECR_REGISTRY= $ECR_REGISTRY"
           
           # Build a docker container and push it to ECR so that it can be deployed to ECS.
           docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $IMAGE_TAG
           # # Rename the this image with latest and untag the other ones, beware ECS needs latest image as well
-          docker tag $(docker images -q $IMAGE_TAG) $ECR_URI/$ECR_REGISTRY:$IMAGE_TAG
-          docker push $ECR_URI/$ECR_REGISTRY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REGISTRY:$IMAGE_TAG"
+          docker tag $(docker images -q $IMAGE_TAG) $ECR_URI/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_URI/$ECR_REPOSITORY:$IMAGE_TAG
+          # echo "::set-output name=image::$ECR_URI/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
   deploy:
     name: Deploy in container
@@ -222,6 +223,7 @@ jobs:
           CONTAINER_NAME = $CONTAINER_NAME\n \
           DEF_FILE_NAME = $DEF_FILE_NAME\n \
           POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
+          IMAGE_TAG = $IMAGE_TAG\n \
           "
 
       - name: install AWS CLI
@@ -242,7 +244,8 @@ jobs:
             AWS_BUCKET_ENV_NAME="${COMMON_NAME}-secret" AWS_FILE_ENV_NAME="production.env" \
             CPU="${CPU}" MEMORY="${MEMORY}" MEMORY_RESERVATION="${MEMORY_RESERVATION}" \
             AWS_REGION="$AWS_REGION" ECR_NAME="${COMMON_NAME}" NAME="${NAME}-container" \
-            DEFINITION_FAMILY="${COMMON_NAME}-definition" AWS_TASK_ROLE="${AWS_TASK_ROLE}"
+            DEFINITION_FAMILY="${COMMON_NAME}-definition" AWS_TASK_ROLE="${AWS_TASK_ROLE}" \
+            IMAGE_TAG="$IMAGE_TAG"
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def

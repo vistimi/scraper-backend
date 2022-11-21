@@ -66,7 +66,7 @@ cat << EOF > ${FILE_NAME}
       "memoryReservation": ${MEMORY_RESERVATION},
       "volumesFrom": [],
       "stopTimeout": null,
-      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_NAME}:8e7e16a6e89faf1d95514a5afaa1798b7263e3a7",
+      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_NAME}:${IMAGE_TAG}",
       "startTimeout": null,
       "firelensConfiguration": null,
       "dependsOn": null,
