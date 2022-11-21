@@ -13,17 +13,30 @@ done
 cat << EOF > ${FILE_NAME}
 {
    "rules": [
+        {
+            "rulePriority": 1,
+            "description": "Keep last stable images",
+            "selection": {
+                "tagStatus": "tagged",
+                "countType": "imageCountMoreThan",
+                "countNumber": ${KEEP_IMAGES_AMOUNT}
+            },
+            "action": {
+                "type": "expire"
+            }
+        },
        {
-           "rulePriority": 1,
-           "description": "keep last ${KEEP_IMAGES_AMOUNT}",
-           "selection": {
-               "tagStatus": "any",
-               "countType": "imageCountMoreThan",
-               "countNumber": ${KEEP_IMAGES_AMOUNT}
-           },
-           "action": {
-               "type": "expire"
-           }
+           "rulePriority": 2,
+           "description": "Delete untagged images",
+            "selection": {
+                "tagStatus": "untagged",
+                "countType": "sinceImagePushed",
+                "countUnit": "days",
+                "countNumber": ${KEEP_IMAGES_DAYS}
+            },
+            "action": {
+                "type": "expire"
+            }
        }
    ]
 }

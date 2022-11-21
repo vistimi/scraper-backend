@@ -50,6 +50,10 @@ on:
         description: "Amount of images kept in the registry"
         required: true
         type: string
+      keep-images-days:
+        description: "Amount of days in the registry"
+        required: true
+        type: string
 
 env:
   AWS_ACCOUNT_NAME: ${{ inputs.aws-account-name }}
@@ -61,6 +65,7 @@ env:
   AWS_EXEC_ROLE: ${{ inputs.aws-exec-role }}
   AWS_TASK_ROLE: ${{ inputs.aws-task-role }}
   KEEP_IMAGES_AMOUNT: ${{ inputs.keep-images-amount }}
+  KEEP_IMAGES_DAYS: ${{ inputs.keep-images-days }}
   PROJECT_NAME: "scraper"
   SERVICE_NAME: "backend"
   ENVIRONMENT_NAME: ${{ inputs.environment-name }}
@@ -153,7 +158,7 @@ jobs:
               aws ${{ env.AWS_CLI_SERVICE }} create-repository \
                 --repository-name ${{ env.ECR_REPOSITORY }} \
                 --region ${AWS_REGION}
-              bash ${GITHUB_WORKSPACE}/.aws/registry_policy.sh FILE_NAME="${POLICY_FILE_NAME}" KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
+              bash ${GITHUB_WORKSPACE}/.aws/registry_policy.sh FILE_NAME="$POLICY_FILE_NAME" KEEP_IMAGES_AMOUNT="$KEEP_IMAGES_AMOUNT" KEEP_IMAGES_DAYS="$KEEP_IMAGES_DAYS"
               aws ${AWS_CLI_SERVICE} put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text file://${POLICY_FILE_NAME}
             elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
               bash ${GITHUB_WORKSPACE}/.aws/catalog_data.sh FILE_NAME="$POLICY_FILE_NAME" KEEP_IMAGES_AMOUNT="${KEEP_IMAGES_AMOUNT}"
@@ -182,8 +187,8 @@ jobs:
           # echo "::set-output name=image::$ECR_URI:$IMAGE_TAG"
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-  deploy:
-    name: Deploy in container
+  ecs:
+    name: ECS
     runs-on: ubuntu-latest
     environment:
       name: production # TODO: change for each user
