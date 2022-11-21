@@ -25,21 +25,22 @@ cat << EOF > ${FILE_NAME}
                 "type": "expire"
             }
         },
-       {
-           "rulePriority": 2,
-           "description": "Delete untagged images",
-            "selection": {
-                "tagStatus": "untagged",
-                "countType": "sinceImagePushed",
-                "countUnit": "days",
-                "countNumber": ${KEEP_IMAGES_DAYS}
-            },
-            "action": {
-                "type": "expire"
-            }
-       }
    ]
 }
 EOF
+
+    #    {
+    #        "rulePriority": 2,
+    #        "description": "Delete untagged images",
+    #         "selection": {
+    #             "tagStatus": "untagged",
+    #             "countType": "sinceImagePushed",
+    #             "countUnit": "days",
+    #             "countNumber": ${KEEP_IMAGES_DAYS}
+    #         },
+    #         "action": {
+    #             "type": "expire"
+    #         }
+    #    }
 
 cat ${FILE_NAME}

@@ -9,8 +9,8 @@ gh workflow run cicd.yml --repo KookaS/scraper-backend --ref production\
     -f container-memory-reservation="500" \
     -f aws-exec-role="Role_ECS_S3" \
     -f aws-task-role="Role_ECS_S3" \
-    -f keep-images-amount="1" \
-    -f keep-images-days="1"
+    -f keep-images-amount="1" 
+    # -f keep-images-days="1"
 
 echo "Sleep 10 seconds for spawning action"
 sleep 10s
