@@ -105,7 +105,6 @@ jobs:
       AWS_CLI_SERVICE: ecr
       DOCKER_FOLDER_PATH: ""
       POLICY_FILE_NAME: "temp-file"
-      ECR_REPOSITORY:  $COMMON_NAME-repository
 
     steps:
       - name: Checkout
@@ -113,7 +112,7 @@ jobs:
 
       - name: Format variables
         run: |
-          export ECR_REPOSITORY="${COMMON_NAME,,}-repository"
+          echo "ECR_REPOSITORY="${COMMON_NAME,,}-repository"" >>${GITHUB_ENV}
 
       - name: Display variables
         run: |
