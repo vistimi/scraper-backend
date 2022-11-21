@@ -2,10 +2,10 @@ name: CI/CD
 
 # only on trunk branch use secrets
 on:
-  push:
-    branches: [production, staging, dev]
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
+  # push:
+  #   branches: [production, staging, dev]
+  # pull_request:
+  #   types: [opened, edited, synchronize, reopened]
   workflow_dispatch:
     inputs:
       aws-account-name:
@@ -131,13 +131,11 @@ jobs:
           # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           # unzip -q awscliv2.zip
           # sudo ./aws/install
-          # echo ""
+          # sudo apt-get update && sudo apt-get -q install -yy less
           aws --version
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region $AWS_REGION
-          # less is a prerequisite for aws cli in linux 
-          # sudo apt-get update && sudo apt-get -q install -yy less
 
       - name: login to ECR
         run: |
@@ -176,7 +174,8 @@ jobs:
           export ECR_REGISTRY=$(aws ${{ env.AWS_CLI_SERVICE }} describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text --query "repositories[].[registryId]")
           # Build a docker container and push it to ECR so that it can be deployed to ECS.
           docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_URI
+          # # Rename the this image with latest and untag the other ones
+          # docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_URI
           docker push $ECR_URI
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
@@ -228,13 +227,11 @@ jobs:
           # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           # unzip -q awscliv2.zip
           # sudo ./aws/install
-          # echo ""
+          # sudo apt-get update && sudo apt-get -q install -yy less
           aws --version
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region $AWS_REGION
-          # less is a prerequisite for aws cli in linux 
-          # sudo apt-get update && sudo apt-get -q install -yy less
 
       - name: create json task definition
         run: |
