@@ -102,6 +102,8 @@ jobs:
       DOCKER_FOLDER_PATH: ""
       ECR_REPOSITORY: ${{ inputs.common-name }}
     # needs: [build]
+    outputs:
+      IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
 
     steps:
       - name: Checkout
@@ -146,7 +148,7 @@ jobs:
           docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $IMAGE_TAG
           docker tag $(docker images -q $IMAGE_TAG) $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
   ecs:
     name: ECS
@@ -159,6 +161,7 @@ jobs:
       ECS_SERVICE: ${{ inputs.common-name }}
       ECS_CLUSTER: ${{ inputs.common-name }}
       CONTAINER_NAME: ${{ inputs.common-name }}
+      IMAGE_TAG: ${{ needs.ecr.outputs.IMAGE_TAG }}
 
     steps:
       - name: Checkout
