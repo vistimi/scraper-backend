@@ -76,7 +76,15 @@ jobs:
           ENV_FILE_NAME = $ENV_FILE_NAME\n \
           MONGODB_URI = $MONGODB_URI\n \
           IMAGES_BUCKET = $BUCKET_ENV\n \
+          AWS_REGION = $AWS_REGION\n \
           "
+      
+      - name: setup AWS CLI
+        run: |
+          aws --version
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region $AWS_REGION
 
       - name: Upload env file
         run: |
@@ -128,12 +136,8 @@ jobs:
           ECR_REPOSITORY = $ECR_REPOSITORY\n \
           "
 
-      - name: install AWS CLI
+      - name: setup AWS CLI
         run: |
-          # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          # unzip -q awscliv2.zip
-          # sudo ./aws/install
-          # sudo apt-get update && sudo apt-get -q install -yy less
           aws --version
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -186,7 +190,7 @@ jobs:
           IMAGE_TAG = $IMAGE_TAG\n \
           "
 
-      - name: install AWS CLI
+      - name: setup AWS CLI
         run: |
           # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           # unzip -q awscliv2.zip
