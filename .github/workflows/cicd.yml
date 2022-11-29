@@ -38,7 +38,7 @@ env:
   AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
   AWS_REGION: ${{ inputs.aws-region }}
 
-  TASK_DEFINITION_FAMILY_NAME: ${{ inputs.task-definition-family-name }}
+  TASK_DEFINITION_NAME: ${{ inputs.task-definition-family-name }}
   ENV_FILE_NAME: "production.env"
   BUCKET_ENV: ${{ inputs.bucket-env-name }}
 
@@ -80,7 +80,7 @@ jobs:
 
       - name: Upload env file
         run: |
-          cat << EOF > $ENV_FILE_NAME
+          cat <<EOF > ${ENV_FILE_NAME}
           MONGODB_URI=$MONGODB_URI
           SCRAPER_DB=scraper
           TAGS_UNDESIRED_COLLECTION=tagsUndesired
@@ -199,7 +199,7 @@ jobs:
 
       - name: create json task definition
         run: |
-          export TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_FAMILY_NAME --output json)
+          export TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_NAME --output json)
           cat << EOF > task_definition.json \
           $TASK_DEFINITION
           EOF
