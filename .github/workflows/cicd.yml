@@ -80,23 +80,23 @@ jobs:
 
       - name: Upload env file
         run: |
-          cat << EOF > $ENV_FILE_NAME \
-          MONGODB_URI=$MONGODB_URI \
-          SCRAPER_DB=scraper \
-          TAGS_UNDESIRED_COLLECTION=tagsUndesired \
-          TAGS_DESIRED_COLLECTION=tagsDesired \
-          PRODUCTION=imagesProduction \
-          PENDING=imagesPending \
-          UNDESIRED=imagesUndesired \
-          VALIDATION=imagesValidation \
-          USERS_UNDESIRED_COLLECTION=usersUndesired \
-          IMAGES_BUCKET=$BUCKET_ENV \
-          FLICKR_PRIVATE_KEY=${{ secrets.FLICKR_PRIVATE_KEY }} \
-          FLICKR_PUBLIC_KEY=${{ secrets.FLICKR_PUBLIC_KEY }} \
-          UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }} \
-          UNSPLASH_PUBLIC_KEY=${{ secrets.UNSPLASH_PUBLIC_KEY }} \
-          PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }} \
-          ENV=production \
+          cat << EOF > $ENV_FILE_NAME
+          MONGODB_URI=$MONGODB_URI
+          SCRAPER_DB=scraper
+          TAGS_UNDESIRED_COLLECTION=tagsUndesired
+          TAGS_DESIRED_COLLECTION=tagsDesired
+          PRODUCTION=imagesProduction
+          PENDING=imagesPending
+          UNDESIRED=imagesUndesired
+          VALIDATION=imagesValidation
+          USERS_UNDESIRED_COLLECTION=usersUndesired
+          IMAGES_BUCKET=$BUCKET_ENV
+          FLICKR_PRIVATE_KEY=${{ secrets.FLICKR_PRIVATE_KEY }}
+          FLICKR_PUBLIC_KEY=${{ secrets.FLICKR_PUBLIC_KEY }}
+          UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }}
+          UNSPLASH_PUBLIC_KEY=${{ secrets.UNSPLASH_PUBLIC_KEY }}
+          PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }}
+          ENV=production
           EOF
           aws s3 cp .env.production s3://$BUCKET_ENV/$ENV_FILE_NAME
 
