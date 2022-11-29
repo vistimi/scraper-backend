@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       common-name:
-        description: "The name of the branch usually"
+        description: "The name used acrross many resources, usually account-region-project-repo-branch"
         required: true
         type: string
       mongodb-adress:
@@ -47,7 +47,7 @@ jobs:
     # needs: [build]
     env:
       MONGODB_URI: mongodb://${{ inputs.mongodb-adress }}:27017
-      BUCKET_ENV: ${{ inputs.bucket-env-name }}-env
+      BUCKET_ENV: ${{ env.COMMON_NAME }}-env
       ENV_FILE_NAME: "production.env"
 
     steps:
