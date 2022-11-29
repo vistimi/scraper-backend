@@ -47,7 +47,7 @@ jobs:
     # needs: [build]
     env:
       MONGODB_URI: mongodb://${{ inputs.mongodb-adress }}:27017
-      BUCKET_ENV: ${{ env.COMMON_NAME }}-env
+      BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
 
     steps:
