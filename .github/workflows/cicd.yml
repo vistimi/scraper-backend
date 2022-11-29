@@ -100,7 +100,7 @@ jobs:
     env:
       AWS_CLI_SERVICE: ecr
       DOCKER_FOLDER_PATH: ""
-      ECR_REPOSITORY: ${{ env.COMMON_NAME }}
+      ECR_REPOSITORY: ${{ inputs.common-name }}
     # needs: [build]
 
     steps:
@@ -155,10 +155,10 @@ jobs:
       name: ${{ inputs.aws-account-name }}
     needs: [ecr, s3-env]
     env:
-      TASK_DEFINITION_NAME: ${{ env.COMMON_NAME}}
-      ECS_SERVICE: ${{ env.COMMON_NAME}}
-      ECS_CLUSTER: ${{ env.COMMON_NAME}}
-      CONTAINER_NAME: ${{ env.COMMON_NAME}}
+      TASK_DEFINITION_NAME: ${{ inputs.common-name }}
+      ECS_SERVICE: ${{ inputs.common-name }}
+      ECS_CLUSTER: ${{ inputs.common-name }}
+      CONTAINER_NAME: ${{ inputs.common-name }}
 
     steps:
       - name: Checkout
