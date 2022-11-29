@@ -39,7 +39,7 @@ env:
   AWS_REGION: ${{ inputs.aws-region }}
 
   TASK_DEFINITION_NAME: ${{ inputs.task-definition-family-name }}
-  ENV_FILE_NAME: production.env
+  ENV_FILE_NAME: "production.env"
   BUCKET_ENV: ${{ inputs.bucket-env-name }}
 
   COMMON_NAME: ${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}
@@ -58,7 +58,7 @@ jobs:
   #       run: go build src/main.go
 
   s3-env:
-    name: ECR
+    name: S3 env
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.aws-account-name }}
@@ -73,29 +73,30 @@ jobs:
       - name: Display non-sensitive variables
         run: |
           printf " \
-          MONGODB_URI = $MONGODB_URI \
+          ENV_FILE_NAME = $ENV_FILE_NAME\n \
+          MONGODB_URI = $MONGODB_URI\n \
           IMAGES_BUCKET = $BUCKET_ENV\n \
           "
 
       - name: Upload env file
         run: |
           cat << EOF > $ENV_FILE_NAME \
-          MONGODB_URI=$MONGODB_URI
-          SCRAPER_DB=scraper
-          TAGS_UNDESIRED_COLLECTION=tagsUndesired
-          TAGS_DESIRED_COLLECTION=tagsDesired
-          PRODUCTION=imagesProduction
-          PENDING=imagesPending
-          UNDESIRED=imagesUndesired
-          VALIDATION=imagesValidation
-          USERS_UNDESIRED_COLLECTION=usersUndesired
-          IMAGES_BUCKET=$BUCKET_ENV
-          FLICKR_PRIVATE_KEY=${{ secrets.FLICKR_PRIVATE_KEY }}
-          FLICKR_PUBLIC_KEY=${{ secrets.FLICKR_PUBLIC_KEY }}
-          UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }}
-          UNSPLASH_PUBLIC_KEY=${{ secrets.UNSPLASH_PUBLIC_KEY }}
-          PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }}
-          ENV=production
+          MONGODB_URI=$MONGODB_URI \
+          SCRAPER_DB=scraper \
+          TAGS_UNDESIRED_COLLECTION=tagsUndesired \
+          TAGS_DESIRED_COLLECTION=tagsDesired \
+          PRODUCTION=imagesProduction \
+          PENDING=imagesPending \
+          UNDESIRED=imagesUndesired \
+          VALIDATION=imagesValidation \
+          USERS_UNDESIRED_COLLECTION=usersUndesired \
+          IMAGES_BUCKET=$BUCKET_ENV \
+          FLICKR_PRIVATE_KEY=${{ secrets.FLICKR_PRIVATE_KEY }} \
+          FLICKR_PUBLIC_KEY=${{ secrets.FLICKR_PUBLIC_KEY }} \
+          UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }} \
+          UNSPLASH_PUBLIC_KEY=${{ secrets.UNSPLASH_PUBLIC_KEY }} \
+          PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }} \
+          ENV=production \
           EOF
           aws s3 cp .env.production s3://$BUCKET_ENV/$ENV_FILE_NAME
 
