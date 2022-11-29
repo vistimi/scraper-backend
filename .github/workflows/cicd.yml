@@ -16,12 +16,12 @@ on:
         description: "AWS Region to launch the instance"
         required: true
         type: string
-      task-definition-family-name:
-        description: "The name of the task definition"
-        required: true
-        type: string
       environment-name:
         description: "The name of the branch usually"
+        required: true
+        type: string
+      task-definition-family-name:
+        description: "The name of the task definition"
         required: true
         type: string
       bucket-env-name:
@@ -39,8 +39,7 @@ env:
   AWS_REGION: ${{ inputs.aws-region }}
 
   TASK_DEFINITION_NAME: ${{ inputs.task-definition-family-name }}
-  ENV_FILE_NAME: ${{ inputs.ecr-repository-name }}
-  ECR_REPOSITORY: ${{ inputs.ecr-repository-name }}
+  ENV_FILE_NAME: production.env
   BUCKET_ENV: ${{ inputs.bucket-env-name }}
 
   COMMON_NAME: ${{ inputs.aws-account-name }}-${{ inputs.aws-region }}-scraper-backend-${{ inputs.environment-name }}
@@ -64,6 +63,8 @@ jobs:
     environment:
       name: ${{ inputs.aws-account-name }}
     # needs: [build]
+    env:
+      MONGODB_URI: mongodb://${{ inputs.mongodb_adress }}:27017
 
     steps:
       - name: Checkout
@@ -72,14 +73,14 @@ jobs:
       - name: Display non-sensitive variables
         run: |
           printf " \
-          MONGODB_URI = mongodb://${{ inputs.mongodb_adress }}:27017 \
+          MONGODB_URI = $MONGODB_URI \
           IMAGES_BUCKET = $BUCKET_ENV\n \
           "
 
       - name: Upload env file
         run: |
           cat << EOF > $ENV_FILE_NAME \
-          MONGODB_URI=mongodb://${{ inputs.mongodb_adress }}:27017
+          MONGODB_URI=$MONGODB_URI
           SCRAPER_DB=scraper
           TAGS_UNDESIRED_COLLECTION=tagsUndesired
           TAGS_DESIRED_COLLECTION=tagsDesired
@@ -111,6 +112,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      
+      - name: Format variables
+        run: |
+          echo "ECR_REPOSITORY=${COMMON_NAME,,}" >>${GITHUB_ENV}
 
       - name: Display non-sensitive variables
         run: |
@@ -120,7 +125,6 @@ jobs:
           AWS_REGION = $AWS_REGION\n \
           DOCKER_FOLDER_PATH = $DOCKER_FOLDER_PATH\n \
           ECR_REPOSITORY = $ECR_REPOSITORY\n \
-          KEEP_IMAGES_AMOUNT = $KEEP_IMAGES_AMOUNT\n \
           "
 
       - name: install AWS CLI
@@ -167,22 +171,17 @@ jobs:
 
       - name: Format variables
         run: |
-          echo "ECS_SERVICE=${COMMON_NAME,,}-service" >>${GITHUB_ENV}
-          echo "ECS_CLUSTER=${COMMON_NAME,,}-cluster" >>${GITHUB_ENV}
-          echo "CONTAINER_NAME=${COMMON_NAME,,}-container" >>${GITHUB_ENV}
+          echo "ECS_SERVICE=${COMMON_NAME,,}" >>${GITHUB_ENV}
+          echo "ECS_CLUSTER=${COMMON_NAME,,}" >>${GITHUB_ENV}
+          echo "CONTAINER_NAME=${COMMON_NAME,,}" >>${GITHUB_ENV}
 
       - name: Display variables
         run: |
           printf " \
-          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
-          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
           AWS_REGION = $AWS_REGION\n \
-          COMMON_NAME = $COMMON_NAME\n \
           ECS_SERVICE = $ECS_SERVICE\n \
           ECS_CLUSTER = $ECS_CLUSTER\n \
           CONTAINER_NAME = $CONTAINER_NAME\n \
-          DEF_FILE_NAME = $DEF_FILE_NAME\n \
-          POLICY_FILE_NAME = $POLICY_FILE_NAME\n \
           IMAGE_TAG = $IMAGE_TAG\n \
           "
 
