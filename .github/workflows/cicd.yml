@@ -44,7 +44,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.aws-account-name }}
-    # needs: [build]
     env:
       MONGODB_URI: mongodb://${{ inputs.mongodb-adress }}:27017
       BUCKET_ENV: ${{ inputs.common-name }}-env
@@ -109,10 +108,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # - name: Format variables
-      #   run: |
-      #     echo "ECR_REPOSITORY=${COMMON_NAME,,}" >>${GITHUB_ENV}
-
       - name: Display non-sensitive variables
         run: |
           printf " \
@@ -167,12 +162,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # - name: Format variables
-      #   run: |
-      #     echo "ECS_SERVICE=${COMMON_NAME,,}" >>${GITHUB_ENV}
-      #     echo "ECS_CLUSTER=${COMMON_NAME,,}" >>${GITHUB_ENV}
-      #     echo "CONTAINER_NAME=${COMMON_NAME,,}" >>${GITHUB_ENV}
-
       - name: Display variables
         run: |
           printf " \
@@ -185,10 +174,6 @@ jobs:
 
       - name: setup AWS CLI
         run: |
-          # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          # unzip -q awscliv2.zip
-          # sudo ./aws/install
-          # sudo apt-get update && sudo apt-get -q install -yy less
           aws --version
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -197,10 +182,11 @@ jobs:
       - name: create json task definition
         run: |
           export TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_NAME --output json)
+          echo $TASK_DEFINITION
+          if [[ $TASK_DEFINITION =~ "error" ]]; exit 1; fi
           cat << EOF > task_definition.json \
           $TASK_DEFINITION
           EOF
-          echo $TASK_DEFINITION
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
