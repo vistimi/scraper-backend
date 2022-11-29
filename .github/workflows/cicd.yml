@@ -183,7 +183,7 @@ jobs:
         run: |
           export TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_NAME --output json)
           echo $TASK_DEFINITION
-          if [[ $TASK_DEFINITION =~ "error" ]]; exit 1; fi
+          if [[ $TASK_DEFINITION == "" ]]; then exit 1; fi
           cat << EOF > task_definition.json \
           $TASK_DEFINITION
           EOF
