@@ -181,12 +181,8 @@ jobs:
 
       - name: create json task definition
         run: |
-          export TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_NAME --output json)
-          echo $TASK_DEFINITION
-          if [[ $TASK_DEFINITION == "" ]]; then exit 1; fi
-          cat << EOF > task_definition.json \
-          $TASK_DEFINITION
-          EOF
+          aws ecs describe-task-definition --task-definition $TASK_DEFINITION_NAME --output json > task_definition.json
+          cat task_definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
