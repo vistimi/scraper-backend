@@ -1,0 +1,95 @@
+name: ECR
+
+# only on trunk branch use secrets
+on:
+  workflow_dispatch:
+    inputs:
+      aws-account-name:
+        description: "AWS Account name"
+        required: true
+        type: string
+      aws-account-id:
+        description: "AWS Account ID"
+        required: true
+        type: string
+      aws-region:
+        description: "AWS Region to launch the instance"
+        required: true
+        type: string
+      common-name:
+        description: "The name used acrross many resources, usually account-region-project-repo-branch"
+        required: true
+        type: string
+
+env:
+  AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
+  AWS_REGION: ${{ inputs.aws-region }}
+  COMMON_NAME: ${{ inputs.common-name }}
+
+jobs:
+  # build:
+  #   name: Build
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-go@v3
+  #       with:
+  #         go-version: "1.18.3" # The Go version to download (if necessary) and use.
+  #     - name: build
+  #       run: go build src/main.go
+
+  ecr:
+    name: ECR
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.aws-account-name }}
+    env:
+      AWS_CLI_SERVICE: ecr
+      DOCKER_FOLDER_PATH: ""
+      ECR_REPOSITORY: ${{ inputs.common-name }}
+    # needs: [build]
+    # outputs:
+    #   IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Display non-sensitive variables
+        run: |
+          printf " \
+          AWS_CLI_SERVICE = $AWS_CLI_SERVICE\n \
+          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
+          AWS_REGION = $AWS_REGION\n \
+          DOCKER_FOLDER_PATH = $DOCKER_FOLDER_PATH\n \
+          ECR_REPOSITORY = $ECR_REPOSITORY\n \
+          "
+
+      - name: setup AWS CLI
+        run: |
+          aws --version
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region $AWS_REGION
+
+      - name: login to ECR
+        run: |
+          if [[ $AWS_CLI_SERVICE == ecr ]]; then
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+          fi
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          # IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: "latest"
+        run: |
+          export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
+          echo "ECR_URI= $ECR_URI"
+          docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $IMAGE_TAG
+          docker tag $(docker images -q $IMAGE_TAG) $ECR_URI:$IMAGE_TAG
+          docker push $ECR_URI:$IMAGE_TAG
+          # echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT

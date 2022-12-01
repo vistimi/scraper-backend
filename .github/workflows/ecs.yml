@@ -1,0 +1,86 @@
+name: ECS
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws-account-name:
+        description: "AWS Account name"
+        required: true
+        type: string
+      aws-region:
+        description: "AWS Region to launch the instance"
+        required: true
+        type: string
+      common-name:
+        description: "The name used acrross many resources, usually account-region-project-repo-branch"
+        required: true
+        type: string
+      # image-tag:
+      #   description: "The SHA of the built image, tag of the ECR image"
+      #   required: true
+      #   type: string
+
+env:
+  AWS_REGION: ${{ inputs.aws-region }}
+  COMMON_NAME: ${{ inputs.common-name }}
+
+jobs:
+  ecs:
+    name: ECS
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.aws-account-name }}
+    needs: [ecr, s3-env]
+    env:
+      TASK_DEFINITION_NAME: ${{ inputs.common-name }}
+      ECS_SERVICE: ${{ inputs.common-name }}
+      ECS_CLUSTER: ${{ inputs.common-name }}
+      CONTAINER_NAME: ${{ inputs.common-name }}
+      # IMAGE_TAG: ${{ inputs.image-tag }}
+      IMAGE_TAG: "latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Display variables
+        run: |
+          printf " \
+          AWS_REGION = $AWS_REGION\n \
+          ECS_SERVICE = $ECS_SERVICE\n \
+          ECS_CLUSTER = $ECS_CLUSTER\n \
+          CONTAINER_NAME = $CONTAINER_NAME\n \
+          IMAGE_TAG = $IMAGE_TAG\n \
+          "
+
+      - name: setup AWS CLI
+        run: |
+          aws --version
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region $AWS_REGION
+
+      - name: create json task definition
+        run: |
+          # no need to give latest tag in "image" field
+          aws ecs describe-task-definition \
+            --task-definition $TASK_DEFINITION_NAME \
+            --query 'taskDefinition' \
+            --output json > task_definition.json
+          cat task_definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task_definition.json
+          container-name: $CONTAINER_NAME
+          image: ${{ needs.ecr.outputs.IMAGE_TAG }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: $ECS_SERVICE
+          cluster: $ECS_CLUSTER
+          wait-for-service-stability: true
