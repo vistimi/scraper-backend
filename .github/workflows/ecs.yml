@@ -30,7 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.aws-account-name }}
-    needs: [ecr, s3-env]
     env:
       TASK_DEFINITION_NAME: ${{ inputs.common-name }}
       ECS_SERVICE: ${{ inputs.common-name }}
