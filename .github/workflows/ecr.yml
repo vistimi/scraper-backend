@@ -84,7 +84,7 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
-          # IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}
           # IMAGE_TAG: "latest"
         run: |
           export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
