@@ -202,3 +202,20 @@ jobs:
           service: $ECS_SERVICE
           cluster: $ECS_CLUSTER
           wait-for-service-stability: true
+
+      - run: |
+          export LATEST_TASK_ARN=$(aws ecs list-task-definitions \
+            --region $AWS_REGION \
+            --family-prefix $COMMON_NAME \
+            --sort DESC \
+            --query 'taskDefinitionArns[0]' \
+            --output text)
+          DESIRED_COUNT=$(aws ecs update-service \
+            --cluster $COMMON_NAME \
+            --service $COMMON_NAME \
+            --force-new-deployment \
+            --region $AWS_REGION \
+            --task-definition $LATEST_TASK_ARN \
+            --query 'service.[desiredCount]' \
+            --output text)
+          echo "DESIRED_COUNT = $DESIRED_COUNT"
