@@ -90,6 +90,7 @@ jobs:
           export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
           echo "ECR_URI= $ECR_URI"
           docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $IMAGE_TAG
-          # docker tag $(docker images -q $IMAGE_TAG) $ECR_URI:$IMAGE_TAG
-          docker push $ECR_URI:$IMAGE_TAG
+          docker tag $(docker images -q $IMAGE_TAG) $ECR_URI:$IMAGE_TAG
+          # docker push $ECR_URI:$IMAGE_TAG
+          docker push $ECR_URI
           # echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
