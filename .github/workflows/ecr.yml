@@ -94,5 +94,6 @@ jobs:
           # docker push $ECR_URI:$IMAGE_TAG
           # docker push $ECR_URI
           # echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          docker build . -t $ECR_URI/$IMAGE_TAG
+          docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_URI/$IMAGE_TAG
+          docker tag $(docker images -q $IMAGE_TAG) $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
