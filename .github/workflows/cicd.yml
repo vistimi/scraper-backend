@@ -20,6 +20,10 @@ on:
         description: "The adress of the mongodb instance"
         required: true
         type: string
+      task-desired-count:
+        description: "The number of tasks to run in the service"
+        required: true
+        type: string
 
 env:
   AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
@@ -154,6 +158,7 @@ jobs:
     needs: [ecr, s3-env]
     env:
       IMAGE_TAG: ${{ needs.ecr.outputs.IMAGE_TAG }}
+      DESIRED_COUNT: ${{ inputs.task-desired-count }}
 
     steps:
       - name: Checkout
@@ -200,13 +205,13 @@ jobs:
           container-name: ${{ inputs.common-name }}
           image: ${{ needs.ecr.outputs.IMAGE_TAG }}
 
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ inputs.common-name }}
-          cluster: ${{ inputs.common-name }}
-          wait-for-service-stability: true
+      # - name: Deploy Amazon ECS task definition
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def.outputs.task-definition }}
+      #     service: ${{ inputs.common-name }}
+      #     cluster: ${{ inputs.common-name }}
+      #     wait-for-service-stability: true
 
       - name: Update service
         run: |
@@ -216,12 +221,12 @@ jobs:
             --sort DESC \
             --query 'taskDefinitionArns[0]' \
             --output text)
-          DESIRED_COUNT=$(aws ecs update-service \
+          UPDATE_SERVICE=$(aws ecs update-service \
             --cluster $COMMON_NAME \
             --service $COMMON_NAME \
             --force-new-deployment \
             --region $AWS_REGION \
             --task-definition $LATEST_TASK_ARN \
-            --query 'service.[desiredCount]' \
-            --output text)
-          echo "DESIRED_COUNT = $DESIRED_COUNT"
+            --desired-count $DESIRED_COUNT \
+            --output json)
+          echo $UPDATE_SERVICE
