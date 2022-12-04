@@ -73,7 +73,7 @@ jobs:
             "family": $(jq  '.family' <<< $CONTAINER_DEFINITION),
             "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $CONTAINER_DEFINITION),
             "memory": $(jq  '.memory' <<< $CONTAINER_DEFINITION),
-            "cpu": $(jq  '.cpu' <<< $CONTAINER_DEFINITION),
+            "cpu": $(jq  '.cpu' <<< $CONTAINER_DEFINITION)
           }
           EOF
           cat task_definition.json
@@ -84,7 +84,7 @@ jobs:
         with:
           task-definition: task_definition.json
           container-name: $CONTAINER_NAME
-          image: ${{ needs.ecr.outputs.IMAGE_TAG }}
+          image: ${{ needs.ecr.outputs.IMAGE_TAG }} # TODO: image from ecr latest image
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1

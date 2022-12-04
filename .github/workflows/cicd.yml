@@ -152,10 +152,6 @@ jobs:
       name: ${{ inputs.aws-account-name }}
     needs: [ecr, s3-env]
     env:
-      TASK_DEFINITION_NAME: ${{ inputs.common-name }}
-      ECS_SERVICE: ${{ inputs.common-name }}
-      ECS_CLUSTER: ${{ inputs.common-name }}
-      CONTAINER_NAME: ${{ inputs.common-name }}
       IMAGE_TAG: ${{ needs.ecr.outputs.IMAGE_TAG }}
 
     steps:
@@ -166,9 +162,6 @@ jobs:
         run: |
           printf " \
           AWS_REGION = $AWS_REGION\n \
-          ECS_SERVICE = $ECS_SERVICE\n \
-          ECS_CLUSTER = $ECS_CLUSTER\n \
-          CONTAINER_NAME = $CONTAINER_NAME\n \
           IMAGE_TAG = $IMAGE_TAG\n \
           "
 
@@ -181,10 +174,21 @@ jobs:
 
       - name: create json task definition
         run: |
-          aws ecs describe-task-definition \
-            --task-definition $TASK_DEFINITION_NAME \
+          TASK_DEFINITION=$(aws ecs describe-task-definition \
+            --task-definition $COMMON_NAME \
             --query 'taskDefinition' \
-            --output json > task_definition.json
+            --output json)
+          cat << EOF > task_definition.json
+          {
+            "containerDefinitions": $(jq  '.containerDefinitions' <<< $TASK_DEFINITION),
+            "executionRoleArn": $(jq  '.executionRoleArn' <<< $TASK_DEFINITION),
+            "taskRoleArn": $(jq  '.taskRoleArn' <<< $TASK_DEFINITION),
+            "family": $(jq  '.family' <<< $TASK_DEFINITION),
+            "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $TASK_DEFINITION),
+            "memory": $(jq  '.memory' <<< $TASK_DEFINITION),
+            "cpu": $(jq  '.cpu' <<< $TASK_DEFINITION)
+          }
+          EOF
           cat task_definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
@@ -192,19 +196,20 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task_definition.json
-          container-name: $CONTAINER_NAME
+          container-name: ${{ inputs.common-name }}
           image: ${{ needs.ecr.outputs.IMAGE_TAG }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: $ECS_SERVICE
-          cluster: $ECS_CLUSTER
+          service: ${{ inputs.common-name }}
+          cluster: ${{ inputs.common-name }}
           wait-for-service-stability: true
 
-      - run: |
-          export LATEST_TASK_ARN=$(aws ecs list-task-definitions \
+      - name: Update service
+        run: |
+          LATEST_TASK_ARN=$(aws ecs list-task-definitions \
             --region $AWS_REGION \
             --family-prefix $COMMON_NAME \
             --sort DESC \
