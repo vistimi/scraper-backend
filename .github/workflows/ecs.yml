@@ -61,11 +61,21 @@ jobs:
 
       - name: create json task definition
         run: |
-          # no need to give latest tag in "image" field
-          aws ecs describe-task-definition \
+          CONTAINER_DEFINITION=$(aws ecs describe-task-definition \
             --task-definition $TASK_DEFINITION_NAME \
             --query 'taskDefinition' \
-            --output json > task_definition.json
+            --output json)
+          cat << EOF > task_definition.json
+          {
+            "containerDefinitions": $(jq  '.containerDefinitions' <<< $CONTAINER_DEFINITION),
+            "executionRoleArn": $(jq  '.executionRoleArn' <<< $CONTAINER_DEFINITION),
+            "taskRoleArn": $(jq  '.taskRoleArn' <<< $CONTAINER_DEFINITION),
+            "family": $(jq  '.family' <<< $CONTAINER_DEFINITION),
+            "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $CONTAINER_DEFINITION),
+            "memory": $(jq  '.memory' <<< $CONTAINER_DEFINITION),
+            "cpu": $(jq  '.cpu' <<< $CONTAINER_DEFINITION),
+          }
+          EOF
           cat task_definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
