@@ -93,7 +93,7 @@ jobs:
           PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }}
           ENV=production
           EOF
-          aws s3 cp .env s3://$BUCKET_ENV/$ENV_FILE_NAME/$ENV_FILE_NAME
+          aws s3 cp .env s3://$BUCKET_ENV/$ENV_FILE_NAME
 
   ecr:
     name: ECR
@@ -221,12 +221,11 @@ jobs:
             --sort DESC \
             --query 'taskDefinitionArns[0]' \
             --output text)
-          UPDATE_SERVICE=$(aws ecs update-service \
+          aws ecs update-service \
             --cluster $COMMON_NAME \
             --service $COMMON_NAME \
             --force-new-deployment \
             --region $AWS_REGION \
             --task-definition $LATEST_TASK_ARN \
             --desired-count $DESIRED_COUNT \
-            --output json)
-          echo $UPDATE_SERVICE
+            --output json
