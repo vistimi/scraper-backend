@@ -31,17 +31,17 @@ env:
   COMMON_NAME: ${{ inputs.common-name }}
 
 jobs:
-  # build:
-  #   name: Build
-  #   runs-on: ubuntu-latest
+  build:
+    name: Build
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-go@v3
-  #       with:
-  #         go-version: "1.18.3" # The Go version to download (if necessary) and use.
-  #     - name: build
-  #       run: go build src/main.go
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.18.3" # The Go version to download (if necessary) and use.
+      - name: build
+        run: go build src/main.go
 
   s3-env:
     name: S3 env
@@ -104,7 +104,7 @@ jobs:
       AWS_CLI_SERVICE: ecr
       DOCKER_FOLDER_PATH: ""
       ECR_REPOSITORY: ${{ inputs.common-name }}
-    # needs: [build]
+    needs: [build]
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
 
@@ -140,7 +140,6 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
-          # IMAGE_TAG: ${{ github.sha }}
           IMAGE_TAG: "latest"
         run: |
           export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
@@ -204,14 +203,6 @@ jobs:
           task-definition: task_definition.json
           container-name: ${{ inputs.common-name }}
           image: ${{ needs.ecr.outputs.IMAGE_TAG }}
-
-      # - name: Deploy Amazon ECS task definition
-      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      #   with:
-      #     task-definition: ${{ steps.task-def.outputs.task-definition }}
-      #     service: ${{ inputs.common-name }}
-      #     cluster: ${{ inputs.common-name }}
-      #     wait-for-service-stability: true
 
       - name: Update service
         run: |

@@ -12,34 +12,6 @@ If pbm with package `<package>: command not found`:
     export GOPATH="$HOME/go"
     PATH="$GOPATH/bin:$PATH"
 
-## workflow
-
-https://github.com/nektos/act
-
-    sudo wget https://github.com/nektos/act/releases/download/v0.2.33/act_Linux_x86_64.tar.gz \
-    && sudo mv cloud-nuke_linux_amd64 /usr/local/bin/act \
-    && sudo chmod +rx /usr/local/bin/act
-
-`.devcontainer/act-workflow-helper.json`:
-```json
-{
-    "inputs": {
-        "access-key": "***",
-        "secret-key": "***",
-        "aws-service": "ecr-public",
-        "aws-account_name": "KookaS",
-        "aws-account-id": "401582117818",
-        "aws-region": "us-east-1",
-        "docker-path": ".github/workflows/",
-        "ecr-repository-name": "workflow-helper",
-        "keep-images-amount": "1"
-    }
-}
-```
-```shell
-act workflow_dispatch -j <jobName> -e .devcontainer/<fileName>.act.json
-```
-
 ## Localstack
 
 https://docs.localstack.cloud/get-started/#localstack-cli
@@ -100,9 +72,4 @@ https://github.com/mgechev/revive
 ## Dependencies
 
     go mod tidy
-
-## AWS Bash scripts
-
-    sudo chmod +x <script-file>
-    ./<script-file>
 
