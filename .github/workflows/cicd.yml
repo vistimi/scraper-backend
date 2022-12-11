@@ -230,15 +230,24 @@ jobs:
           --query 'taskArns[]' \
           --output text)
           echo $TASKS
+          LATEST_TASK_DEFINITION_ARN=$(aws ecs list-task-definitions \
+          --region $AWS_REGION \
+          --family-prefix $COMMON_NAME \
+          --sort DESC \
+          --query 'taskDefinitionArns[0]' \
+          --output text)
           for task in $TASKS; do
-              taskStatus=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[].[lastStatus]' --output text)
-              echo "Waiting for task $task to be RUNNING, currently $taskStatus"
-              while [ $taskStatus != "RUNNING" ]
+              tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
+              if [[ $tasksDescription  =~ "error" ]]; then exit 1; fi
+              latestStatus= $(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
+              taskDefinitionArn= $(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
+              while [ $latestStatus != "RUNNING" && taskDefinitionArn!= $LATEST_TASK_DEFINITION_ARN ]
                do
+                tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
+                latestStatus= $(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
+                taskDefinitionArn= $(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
                 echo "Waiting for task $task to be RUNNING, currently $taskStatus"
+                echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
                 sleep 5s
-                taskStatus=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[].[lastStatus]' --output text)
-                echo $taskStatus
-                if [[ $taskStatus  =~ "error" ]]; then exit 1; fi
               done
           done
