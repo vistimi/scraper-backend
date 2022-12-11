@@ -238,6 +238,7 @@ jobs:
           --cluster $COMMON_NAME \
           --query 'taskArns[]' \
           --output text)
+          echo $TASKS
           for task in $TASKS; do
               taskStatus=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[].[lastStatus]' --output text)
               while [ $taskStatus != "RUNNING" ]
