@@ -229,3 +229,23 @@ jobs:
             --task-definition $LATEST_TASK_ARN \
             --desired-count $DESIRED_COUNT \
             --output json
+
+      - name: Wait for tasks
+        run: |
+          sleep 30
+          TASKS=$(aws ecs list-tasks \
+          --region $AWS_REGION \
+          --cluster $COMMON_NAME \
+          --query 'taskArns[]' \
+          --output text)
+          for task in $TASKS; do
+              taskStatus=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[].[lastStatus]' --output text)
+              while [ $taskStatus != "RUNNING" ]
+               do
+                echo "Waiting for task $task to be RUNNING, currently $taskStatus"
+                sleep 5s
+                taskStatus=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[].[lastStatus]' --output text)
+                echo $taskStatus
+                if [[ $taskStatus  =~ "error" ]]; then exit 1; fi
+              done
+          done
