@@ -232,6 +232,7 @@ jobs:
           echo $TASKS
           for task in $TASKS; do
               taskStatus=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[].[lastStatus]' --output text)
+              echo "Waiting for task $task to be RUNNING, currently $taskStatus"
               while [ $taskStatus != "RUNNING" ]
                do
                 echo "Waiting for task $task to be RUNNING, currently $taskStatus"
