@@ -1,6 +1,5 @@
 name: CI/CD
 
-# only on trunk branch use secrets
 on:
   workflow_dispatch:
     inputs:
@@ -69,8 +68,8 @@ jobs:
       - name: setup AWS CLI
         run: |
           aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
       - name: Upload env file
@@ -125,8 +124,8 @@ jobs:
       - name: setup AWS CLI
         run: |
           aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
       - name: login to ECR
@@ -173,8 +172,8 @@ jobs:
       - name: setup AWS CLI
         run: |
           aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
       - name: create json task definition
