@@ -34,19 +34,6 @@ env:
   COMMON_NAME: ${{ inputs.common-name }}
 
 jobs:
-  secrets:
-    name: Secrets
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Display secret list 
-        run: |
-          gh secret list
-
-      - name: Display env secret list 
-        run: |
-          gh secret list -e ${{ inputs.aws-account-name }} 
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -253,8 +240,7 @@ jobs:
           --query 'taskDefinitionArns[0]' \
           --output text)
           for task in $TASKS; do
-              tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
-              if [[ $tasksDescription  =~ "error" ]]; then exit 1; fi
+              tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json) || exit 1
               latestStatus= $(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
               taskDefinitionArn= $(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
               while [ $latestStatus != "RUNNING" && taskDefinitionArn!= $LATEST_TASK_DEFINITION_ARN ]
