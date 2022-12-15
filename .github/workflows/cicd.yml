@@ -7,6 +7,10 @@ on:
         description: "AWS Account ID"
         required: true
         type: string
+      aws-account-name:
+        description: "AWS Account Name"
+        required: true
+        type: string
       aws-region:
         description: "AWS Region to launch the instance"
         required: true
@@ -30,6 +34,19 @@ env:
   COMMON_NAME: ${{ inputs.common-name }}
 
 jobs:
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Display secret list 
+        run: |
+          gh secret list
+
+      - name: Display env secret list 
+        run: |
+          gh secret list -e ${{ inputs.aws-account-name }} 
+
   build:
     name: Build
     runs-on: ubuntu-latest
