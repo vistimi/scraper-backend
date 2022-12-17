@@ -247,8 +247,8 @@ jobs:
               echo "Waiting for task $task to be RUNNING, currently $taskStatus"
               echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
               
-              while [ $latestStatus != "RUNNING" && taskDefinitionArn!= $LATEST_TASK_DEFINITION_ARN ]
-               do
+              while [[ $latestStatus != "RUNNING" && taskDefinitionArn != $LATEST_TASK_DEFINITION_ARN ]]
+              do
                 tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
                 latestStatus=$(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
                 taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
