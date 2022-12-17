@@ -23,9 +23,13 @@ or with docker:
 ## Docker
 
     sudo docker build -t scraper-img .
-    sudo docker run -it -p 8080:8080 -p 27017:27017 --rm --name scraper-run --env-file <state>.env scraper-img
+    sudo docker run -it -p 8080:8080 -p 27017:27017 -p 4566:4566 --rm --name scraper-run --env-file <state>.env scraper-img
 
 ## Run
+
+- MongoDB
+- Localstack
+- Backend
 
 ### Run without docker
 

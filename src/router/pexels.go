@@ -59,7 +59,7 @@ func SearchPhotosPexels(s3Client *s3.Client, mongoClient *mongo.Client, params P
 			if err != nil {
 				return nil, fmt.Errorf("searchPhotosPerPagePexels has failed: %v", err)
 			}
-
+			
 			for _, photo := range searchPerPage.Photos {
 				// look for existing image
 				query := bson.M{"originID": fmt.Sprint(photo.ID)}
