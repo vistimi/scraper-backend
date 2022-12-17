@@ -3,7 +3,7 @@
 {
 	"name": "Alpine",
 	"build": {
-		"dockerfile": "Dockerfile",
+		"dockerfile": "../Dockerfile",
 		"args": { "VARIANT": "mcr.microsoft.com/devcontainers/base:alpine-3.16", "RUNNER": "devcontainer" },
 		"target": "runner"
 	},
@@ -28,11 +28,11 @@
 				"shakram02.bash-beautify",
 				"shd101wyy.markdown-preview-enhanced",
 				"premparihar.gotestexplorer"
-			],
-			"settings": {
-				"go.toolsManagement.checkForUpdates": "local",
-				"go.useLanguageServer": true
-			}
+			]
+			// "settings": {
+			// 	"go.toolsManagement.checkForUpdates": "local",
+			// 	"go.useLanguageServer": true
+			// }
 		}
 	}
 }

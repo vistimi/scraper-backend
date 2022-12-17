@@ -12,6 +12,10 @@ If pbm with package `<package>: command not found`:
     export GOPATH="$HOME/go"
     PATH="$GOPATH/bin:$PATH"
 
+## Mongodb
+    
+    docker run -d --rm --name scraper-mongodb -p 27017:27017 mongo:6.0.1
+
 ## Localstack
 
 https://docs.localstack.cloud/get-started/#localstack-cli
