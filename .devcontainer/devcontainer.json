@@ -4,7 +4,10 @@
 	"name": "Alpine",
 	"build": {
 		"dockerfile": "../Dockerfile",
-		"args": { "VARIANT": "mcr.microsoft.com/devcontainers/base:alpine-3.16", "RUNNER": "devcontainer" },
+		"args": {
+			"VARIANT": "mcr.microsoft.com/devcontainers/go:0-1-bullseye",
+			"RUNNER": "devcontainer"
+		},
 		"target": "runner"
 	},
 	// Mount the docker daemon on the container, must run outside the container as well
@@ -17,8 +20,8 @@
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postStartCommand": "",
-	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-	"remoteUser": "vscode",
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
 	"features": {},
 	"customizations": {
 		"vscode": {
