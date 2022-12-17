@@ -14,7 +14,7 @@ If pbm with package `<package>: command not found`:
 
 ## Mongodb
     
-    docker run -d --rm --name scraper-mongodb -p 27017:27017 mongo:6.0.1
+    docker run --rm --name scraper-mongodb -p 27017:27017 mongo:6.0.1
 
 ## Localstack
 
@@ -35,6 +35,15 @@ or with docker:
 - Localstack
 - Backend
 
+```shell
+docker network create scraper-net
+docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
+docker run --rm --net scraper-net --name scraper-mongodb mongo:6.0.1
+
+curl --connect-timeout 10 --silent --show-error scraper-mongodb:27017
+curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
+```
+
 ### Run without docker
 
     ENV=local go run src/main.go
@@ -52,7 +61,9 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
 Create a local.env file:
 
-    MONGODB_URI=mongodb://localhost:27017
+    ENV=local
+    MONGODB_URI=mongodb://scraper-mongodb:27017
+    LOCALSTACK_URI=http://scraper-localstack:4566
     SCRAPER_DB=scraper
     TAGS_UNDESIRED_COLLECTION=tagsUndesired
     TAGS_DESIRED_COLLECTION=tagsDesired
@@ -67,7 +78,6 @@ Create a local.env file:
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
-    ENV=local
 
 ENV is either `production`, `staging`, `development` or `local`
 

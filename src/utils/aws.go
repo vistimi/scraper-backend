@@ -16,7 +16,8 @@ import (
 )
 
 func LocalS3() *s3.Client{
-	awsEndpoint := "http://localhost:4566"
+	
+	awsEndpoint := GetEnvVariable("LOCALSTACK_URI")
 	awsRegion := "us-east-1"
 
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {

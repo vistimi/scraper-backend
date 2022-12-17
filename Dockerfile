@@ -12,11 +12,6 @@ FROM ${GO_ALPINE_VARIANT} as builder-alpine-go
 #-------------------------
 FROM ${VARIANT} as builder-final
 
-# RUN apk update
-# RUN rc-service docker start
-# # RUN sudo usermod -aG docker $USER && newgrp docker
-# RUN docker ps
-
 #-------------------------
 #    RUNNER
 #-------------------------
@@ -42,18 +37,18 @@ RUN go build -o scraper src/main.go
 
 FROM builder-final AS runner-workflow
 
-ARG USERNAME=user
+ARG USER_NAME=user
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 RUN apk update && apk add --update sudo
 
-RUN addgroup --gid $USER_GID $USERNAME \
-    && adduser --uid $USER_UID -D -G $USERNAME $USERNAME \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
+RUN addgroup --gid $USER_GID $USER_NAME \
+    && adduser --uid $USER_UID -D -G $USER_NAME $USER_NAME \
+    && echo $USER_NAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USER_NAME \
+    && chmod 0440 /etc/sudoers.d/$USER_NAME
 
-USER $USERNAME
+USER $USER_NAME
 
 COPY --from=builder-workflow /usr/tmp/scraper /usr/app/scraper
 

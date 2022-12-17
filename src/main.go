@@ -15,7 +15,6 @@ func main() {
 	case "production":
 		s3Client = utils.AwsS3()
 	case "local":
-		utils.LoadEnvVariables("local.env")
 		s3Client = utils.LocalS3()
 	default:
 		log.Fatal("ENV variable is not defined")
