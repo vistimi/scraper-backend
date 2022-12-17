@@ -2,7 +2,6 @@
 
 Online scraper for building a dataset for ML.
 
-
 ## installation
 
 Install Golang and MongoDB
@@ -11,6 +10,22 @@ If pbm with package `<package>: command not found`:
 
     export GOPATH="$HOME/go"
     PATH="$GOPATH/bin:$PATH"
+
+## Run
+
+- MongoDB
+- Localstack
+- Backend
+
+```shell
+docker network create scraper-net
+docker network ls
+docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
+docker run --rm --net scraper-net --name scraper-mongodb mongo:6.0.1
+
+curl --connect-timeout 10 --silent --show-error scraper-mongodb:27017
+curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
+```
 
 ## Mongodb
     
@@ -24,25 +39,11 @@ https://github.com/localstack/localstack
 or with docker:
 
     docker run --rm -it -p 4566:4566 localstack/localstack
+
 ## Docker
 
     sudo docker build -t scraper-img .
     sudo docker run -it -p 8080:8080 -p 27017:27017 -p 4566:4566 --rm --name scraper-run --env-file <state>.env scraper-img
-
-## Run
-
-- MongoDB
-- Localstack
-- Backend
-
-```shell
-docker network create scraper-net
-docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
-docker run --rm --net scraper-net --name scraper-mongodb mongo:6.0.1
-
-curl --connect-timeout 10 --silent --show-error scraper-mongodb:27017
-curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
-```
 
 ### Run without docker
 

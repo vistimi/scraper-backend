@@ -1,8 +1,13 @@
 {
   "go.testTimeout": "30s",
   "editor.tabSize": 4,
+  "terminal.integrated.scrollback": 1000,
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "go.buildOnSave": "off",
   "go.coverOnSave": false,
   "go.coverOnSingleTest": false,
-  "go.coverOnSingleTestFile": false,
-  "terminal.integrated.scrollback": 1000
+  "go.coverOnSingleTestFile": false
 }
