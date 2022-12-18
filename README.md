@@ -4,55 +4,44 @@ Online scraper for building a dataset for ML.
 
 ## installation
 
-Install Golang and MongoDB
-
-If pbm with package `<package>: command not found`:
-
-    export GOPATH="$HOME/go"
-    PATH="$GOPATH/bin:$PATH"
+VSCode and Docker
 
 ## Run
 
+Run in devcontainer the backend and spawn in other terminals the localstack and mongodb.
+
+- ***Create network for docker*** (otherwise it will fail)
 - MongoDB
 - Localstack
 - Backend
 
 ```shell
+# network
 docker network create scraper-net
 docker network ls
-docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
-docker run --rm --net scraper-net --name scraper-mongodb mongo:6.0.1
 
+# docker images
+docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
+docker run --rm -it --net scraper-net --name scraper-mongodb mongo:6.0.1
+
+# To test the connection, should not throw an error
 curl --connect-timeout 10 --silent --show-error scraper-mongodb:27017
 curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
 ```
 
-## Mongodb
-    
-    docker run --rm --name scraper-mongodb -p 27017:27017 mongo:6.0.1
+#### Backend with Docker
+```shell
+sudo docker build -t scraper-img .
+sudo docker run --rm -it --net scraper-net --name scraper-run --env-file <state>.env scraper-img
+```
 
-## Localstack
+#### Backend without docker
+    go run src/main.go
 
-https://docs.localstack.cloud/get-started/#localstack-cli
-https://github.com/localstack/localstack
-
-or with docker:
-
-    docker run --rm -it -p 4566:4566 localstack/localstack
-
-## Docker
-
-    sudo docker build -t scraper-img .
-    sudo docker run -it -p 8080:8080 -p 27017:27017 -p 4566:4566 --rm --name scraper-run --env-file <state>.env scraper-img
-
-### Run without docker
-
-    ENV=local go run src/main.go
-
-### Build without docker
+## Build
 
     go build -o scraper src/main.go
-    ENV=local ./scraper
+    ./scraper
 
 ## License
 
