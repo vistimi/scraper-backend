@@ -62,7 +62,7 @@ Create a local.env file:
     UNDESIRED=imagesUndesired
     VALIDATION=imagesValidation
     USERS_UNDESIRED_COLLECTION=usersUndesired
-    IMAGES_BUCKET=<s3_bucket_name>
+    IMAGES_BUCKET=scraper-backend-test-env
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
     UNSPLASH_PRIVATE_KEY=***
