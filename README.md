@@ -47,12 +47,12 @@ or with docker:
 
 ### Run without docker
 
-    ENV=local go run src/main.go
+    go run src/main.go
 
 ### Build without docker
 
     go build -o scraper src/main.go
-    ENV=local ./scraper
+    ./scraper
 
 ## License
 
