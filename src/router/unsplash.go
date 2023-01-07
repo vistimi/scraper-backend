@@ -26,11 +26,20 @@ import (
 )
 
 type ParamsSearchPhotoUnsplash struct {
-	Quality string `uri:"quality" binding:"required"`
+	Quality    string `uri:"quality" binding:"required"`
+	ImageStart int    `uri:"start_image"`
+	ImageEnd   int    `uri:"end_image"`
 }
+
+// func New(Quality string, ImageStart int, ImageEnd int) ParamsSearchPhotoUnsplash {
+// 	return ParamsSearchPhotoUnsplash{"Nonel", 10, 100} // enforce the default value here
+// }
 
 func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoUnsplash) ([]primitive.ObjectID, error) {
 	quality := params.Quality
+	imageStart := params.ImageStart
+	imageEnd := params.ImageStart
+	fmt.Printf("imageStart = %v and imageEnd = %v", imageStart, imageEnd)
 	qualitiesAvailable := []string{"raw", "full", "regular", "small", "thumb"}
 	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
 	if idx == -1 {
