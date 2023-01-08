@@ -2,23 +2,16 @@ package main
 
 import (
 	"log"
-	"scraper/src/mongodb"
-	"scraper/src/router"
-	"scraper/src/utils"
-
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"scraper-backend/src/mongodb"
+	"scraper-backend/src/router"
 )
 
 func main() {
-	var s3Client *s3.Client
-	switch utils.GetEnvVariable("ENV") {
-	case "production":
-		s3Client = utils.AwsS3()
-	case "local":
-		s3Client = utils.LocalS3()
-	default:
-		log.Fatal("ENV variable is not defined")
+	config, err := NewConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
-	mongoClient := mongodb.ConnectMongoDB()
+
+	// mongoClient := mongodb.ConnectMongoDB()
 	_ = router.Router(mongoClient, s3Client)
 }

@@ -51,9 +51,9 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
 Create a local.env file:
 
-    ENV=local
-    MONGODB_URI=mongodb://scraper-mongodb:27017
-    LOCALSTACK_URI=http://scraper-localstack:4566
+    CLOUD_HOST=local
+    URL_DATABASE=mongodb://scraper-mongodb:27017
+    URL_LOCALSTACK=http://scraper-localstack:4566
     SCRAPER_DB=scraper
     TAGS_UNDESIRED_COLLECTION=tagsUndesired
     TAGS_DESIRED_COLLECTION=tagsDesired
@@ -81,3 +81,46 @@ https://github.com/mgechev/revive
 
     go mod tidy
 
+## Architecture levels
+
+Usecases are applications-specific business rules, here the detector.
+Adapters converts data from usecase to drivers.
+Drivers are glue code that communicates to the next level.
+
+https://mermaid-js.github.io/mermaid/#/
+
+```mermaid
+requirementDiagram
+
+element usecase {
+type: component
+docref: src/usecase
+}
+
+element adapter {
+type: component
+docref: src/adapter
+}
+
+element driver {
+type: component
+docref: src/driver
+}
+
+usecase - derives -> adapter
+adapter - derives -> driver
+```
+
+In a typical request:
+
+```mermaid
+sequenceDiagram
+    driver_api ->>adapter_api: request
+    adapter_api->>usecase: transfer
+    usecase->>adapter_db: transfer
+    adapter_db->>driver_db: fetch
+    driver_db-->>adapter_db: transfer
+    adapter_db-->>usecase: process
+    usecase-->>adapter_api: transfer
+    adapter_api-->>driver_api: response
+```
