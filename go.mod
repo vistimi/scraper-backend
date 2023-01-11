@@ -12,7 +12,6 @@ require (
 	github.com/gin-gonic/gin v1.8.1
 	github.com/hbagdi/go-unsplash v0.0.0-20220613222243-60c9f0e63c12
 	github.com/jinzhu/copier v0.3.5
-	github.com/joho/godotenv v1.4.0
 	go.mongodb.org/mongo-driver v1.9.1
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
 )
@@ -25,7 +24,6 @@ require (
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.175
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.17 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.9

@@ -1,4 +1,4 @@
-package localstack
+package client
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-func newConfig(url string) (aws.Config, error) {
+func NewConfigLocalstack(url string) (aws.Config, error) {
 	awsRegion := "us-east-1"
 
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
@@ -29,16 +29,6 @@ func newConfig(url string) (aws.Config, error) {
 		config.WithRegion(awsRegion),
 		config.WithEndpointResolverWithOptions(customResolver),
 	)
-}
-
-func DynamodbClient(url string) (*dynamodb.Client, error) {
-	cfg, err := newConfig(url)
-	if err != nil {
-		return nil, err
-	}
-
-	client := dynamodb.NewFromConfig(cfg)
-	return client, nil
 }
 
 // not global table with primary and secondary keys
@@ -62,33 +52,6 @@ func DynamodbCreateTableStandardPkSk(client *dynamodb.Client, tableName, primary
 			{
 				AttributeName: aws.String(sortKey),
 				KeyType:       types.KeyTypeRange,
-			},
-		},
-		ProvisionedThroughput: &types.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(5),
-			WriteCapacityUnits: aws.Int64(5),
-		},
-		TableName: aws.String(tableName),
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// not global table with primary key
-func DynamodbCreateTablePk(client *dynamodb.Client, tableName, primaryKey string) error {
-	if _, err := client.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: aws.String(primaryKey),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: aws.String(primaryKey),
-				KeyType:       types.KeyTypeHash,
 			},
 		},
 		ProvisionedThroughput: &types.ProvisionedThroughput{

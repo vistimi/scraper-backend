@@ -2,16 +2,15 @@ package main
 
 import (
 	"log"
-	"scraper-backend/src/mongodb"
-	"scraper-backend/src/router"
+	"scraper-backend/src/driver/server"
+	"scraper-backend/src/util"
 )
 
 func main() {
-	config, err := NewConfig()
+	config, err := util.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// mongoClient := mongodb.ConnectMongoDB()
-	_ = router.Router(mongoClient, s3Client)
+	_ = server.Constructor(mongoClient, s3Client)
 }

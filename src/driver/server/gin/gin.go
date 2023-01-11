@@ -1,9 +1,10 @@
-package router
+package gin
 
 import (
 	"fmt"
 	"net/http"
 	"scraper-backend/src/mongodb"
+	"scraper-backend/src/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-contrib/cors"
@@ -11,12 +12,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
+func Router(cfg util.Config) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
 	// health check
-	router.Any("/", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
+	router.Any("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 
 	// routes for one image pending or wanted
 	// router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))

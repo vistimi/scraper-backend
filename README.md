@@ -51,25 +51,27 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
 Create a local.env file:
 
-    CLOUD_HOST=local
-    URL_DATABASE=mongodb://scraper-mongodb:27017
+    CLOUD_HOST=localstack
     URL_LOCALSTACK=http://scraper-localstack:4566
-    SCRAPER_DB=scraper
-    TAGS_UNDESIRED_COLLECTION=tagsUndesired
-    TAGS_DESIRED_COLLECTION=tagsDesired
-    PRODUCTION=imagesProduction
-    PENDING=imagesPending
-    UNDESIRED=imagesUndesired
-    VALIDATION=imagesValidation
-    USERS_UNDESIRED_COLLECTION=usersUndesired
-    IMAGES_BUCKET=scraper-backend-test-env
+    IMAGES_BUCKET=scraper-backend-local-env
+
+    TABLE_PICTURE_NAME=***
+    TABLE_PICTURE_PK=origin
+    TABLE_PICTURE_SK=name
+    TABLE_TAG_NAME=***
+    TABLE_TAG_PK=type
+    TABLE_TAG_SK=name
+    TABLE_USER_NAME=***
+    TABLE_USER_PK=origin
+    TABLE_USER_SK=name
+
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
 
-ENV is either `production`, `staging`, `development` or `local`
+CLOUD_HOST is either `aws`, `localstack`
 
 ## linter
 

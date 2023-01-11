@@ -20,7 +20,8 @@
 	],
 	// "forwardPorts": [],
 	// "appPort": [],
-	"postStartCommand": "",
+	"initializeCommand": "if [ ! \"$(docker network ls | grep scraper-net)\" ]; then docker network create scraper-net; fi",
+	"postStartCommand": "go install github.com/davidrjenni/reftools/cmd/fillstruct@latest",
 	"features": {},
 	"customizations": {
 		"vscode": {
