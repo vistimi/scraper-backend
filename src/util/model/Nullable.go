@@ -31,6 +31,6 @@ func (nt *Nullable[T]) Scan(value interface{}) error {
 	return nil
 }
 
-func (nt Nullable[T]) Value() (driver.Value) {
-	return nt.Body
+func (nt Nullable[T]) Value() (driver.Value, error) {
+	return nt.Body, nil
 }

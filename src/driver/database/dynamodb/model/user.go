@@ -6,20 +6,20 @@ import (
 )
 
 type User struct {
-	Origin       string    `dynamodbav:"origin" json:"origin,omitempty"`     // PK original website
-	Name         string    `dynamodbav:"name" json:"name,omitempty"`         // SK userName
-	OriginID     string    `dynamodbav:"originID" json:"originID,omitempty"` // ID from the original website
-	CreationDate time.Time `dynamodbav:"creationDate" json:"creationDate,omitempty"`
+	Origin       string // PK original website
+	Name         string // SK userName
+	OriginID     string // ID from the original website
+	CreationDate time.Time
 }
 
-func (u *User) ToDriverModel(value controllerModel.User) {
+func (u *User) DriverMarshal(value controllerModel.User) {
 	u.Origin = value.Origin
 	u.Name = value.Name
 	u.OriginID = value.OriginID
 	u.CreationDate = value.CreationDate
 }
 
-func (u User) FromDriverModel() controllerModel.User {
+func (u User) DriverUnmarshal() controllerModel.User {
 	return controllerModel.User{
 		Origin:       u.Origin,
 		Name:         u.Name,

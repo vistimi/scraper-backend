@@ -2,57 +2,29 @@ package dynamodb
 
 import (
 	"database/sql"
-	"scraper-backend/src/util"
-	utilModel "scraper-backend/src/util/model"
 	"time"
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
+	utilModel "scraper-backend/src/util/model"
 
 	"github.com/google/uuid"
 )
 
 type Picture struct {
-	Origin       string                    `dynamodbav:"origin" json:"origin,omitempty"`     // PK original werbsite
-	OriginID     string                    `dynamodbav:"originID" json:"originID,omitempty"` // id from original website
-	Name         string                    `dynamodbav:"name" json:"name,omitempty"`         // SK name <originID>.<extension> extension is for copies
-	User         User                      `dynamodbav:"user" json:"user,omitempty"`
-	Extension    string                    `dynamodbav:"extension" json:"extension,omitempty"` // type of file
-	Size         map[uuid.UUID]PictureSize `dynamodbav:"size" json:"size,omitempty"`           // size cropping history
-	Title        string                    `dynamodbav:"title" json:"title,omitempty"`
-	Description  string                    `dynamodbav:"description" json:"description,omitempty"` // decription of picture
-	License      string                    `dynamodbav:"license" json:"license,omitempty"`         // type of public license
-	CreationDate time.Time                 `dynamodbav:"creationDate" json:"creationDate,omitempty"`
-	Tags         map[uuid.UUID]PictureTag  `dynamodbav:"tags" json:"tags,omitempty"`
+	Origin       string `dynamodbav:"origin" json:"origin"` // PK original werbsite
+	Name         string `dynamodbav:"name" json:"name"`     // SK name <originID>_time
+	OriginID     string // id from original website
+	User         User
+	Extension    string                    // type of file
+	Sizes        map[uuid.UUID]PictureSize // size cropping history
+	Title        string
+	Description  string // decription of picture
+	License      string // type of public license
+	CreationDate time.Time
+	Tags         map[uuid.UUID]PictureTag
 }
 
-type PictureSize struct {
-	CreationDate time.Time `dynamodbav:"creationDate" json:"creationDate,omitempty"`
-	Box          Box       `dynamodbav:"box" json:"box,omitempty"` // absolut reference of the top left of new box based on the original sizes
-}
-
-type Box struct {
-	Tlx    int `dynamodbav:"tlx" json:"tlx,omitempty"`       // top left x coordinate (pointer because 0 is a possible value)
-	Tly    int `dynamodbav:"tly" json:"tly,omitempty"`       // top left y coordinate (pointer because 0 is a possible value)
-	Width  int `dynamodbav:"width" json:"width,omitempty"`   // width (pointer because 0 is a possible value)
-	Height int `dynamodbav:"height" json:"height,omitempty"` // height (pointer because 0 is a possible value)
-}
-
-type PictureTag struct {
-	Name           string                             `dynamodbav:"name" json:"name,omitempty"`
-	CreationDate   time.Time                          `dynamodbav:"creationDate" json:"creationDate,omitempty"`
-	OriginName     string                             `dynamodbav:"originName" json:"originName,omitempty"`
-	BoxInformation utilModel.Nullable[BoxInformation] `dynamodbav:"boxInformation" json:"boxInformation,omitempty"` // origin informations
-}
-
-type BoxInformation struct {
-	Model       sql.NullString  `dynamodbav:"model" json:"model,omitempty"`             // name of the model used for the detector
-	Weights     sql.NullString  `dynamodbav:"weights" json:"weights,omitempty"`         // weights of the model used for the detector
-	ImageSizeID uuid.UUID       `dynamodbav:"imageSizeID" json:"imageSizeID,omitempty"` // reference to the anchor point
-	Box         Box             `dynamodbav:"box" json:"box,omitempty"`                 // reference of the bounding box relative to the anchor
-	Confidence  sql.NullFloat64 `dynamodbav:"confidence" json:"confidence,omitempty"`   // accuracy of the model
-}
-
-func (p *Picture) ToDriverModel(value controllerModel.Picture) error {
+func (p *Picture) DriverMarshal(value controllerModel.Picture) error {
 	p.Origin = value.Origin
 	p.OriginID = value.OriginID
 	p.Name = value.Name
@@ -63,44 +35,188 @@ func (p *Picture) ToDriverModel(value controllerModel.Picture) error {
 	p.CreationDate = value.CreationDate
 
 	var user User
-	user.ToDriverModel(value.User)
+	user.DriverMarshal(value.User)
 	p.User = user
 
-	size, err := util.ConvertMap[uuid.UUID, controllerModel.PictureSize, PictureSize](value.Size)
-	if err != nil {
-		return err
+	// size, err := ConvertMap[uuid.UUID, controllerModel.PictureSize, PictureSize](value.Size)
+	// if err != nil {
+	// 	return err
+	// }
+	sizes := make(map[uuid.UUID]PictureSize, len(value.Sizes))
+	for sizeID, controllerSize := range value.Sizes {
+		var driverSize PictureSize
+		driverSize.DriverMarshal(controllerSize)
+		sizes[sizeID] = driverSize
 	}
-	p.Size = size
+	p.Sizes = sizes
 
-	tags, err := util.ConvertMap[uuid.UUID, controllerModel.PictureTag, PictureTag](value.Tags)
-	if err != nil {
-		return err
+	// tags, err := ConvertMap[uuid.UUID, controllerModel.PictureTag, PictureTag](value.Tags)
+	// if err != nil {
+	// 	return err
+	// }
+	tags := make(map[uuid.UUID]PictureTag, len(value.Tags))
+	for tagID, controllerTag := range value.Tags {
+		var driverTag PictureTag
+		driverTag.DriverMarshal(controllerTag)
+		tags[tagID] = driverTag
 	}
 	p.Tags = tags
 
 	return nil
 }
 
-func (p Picture) FromDriverModel() (*controllerModel.Picture, error) {
-	size, err := util.ConvertMap[uuid.UUID, PictureSize, controllerModel.PictureSize](p.Size)
-	if err != nil {
-		return nil, err
+func (p Picture) DriverUnmarshal() (*controllerModel.Picture, error) {
+	sizes := make(map[uuid.UUID]controllerModel.PictureSize, len(p.Sizes))
+	for sizeID, pictureSize := range p.Sizes {
+		sizes[sizeID] = PictureSize.DriverUnmarshal(pictureSize)
 	}
-	tags, err := util.ConvertMap[uuid.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
-	if err != nil {
-		return nil, err
+	// size, err := ConvertMap[uuid.UUID, PictureSize, controllerModel.PictureSize](p.Size)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	tags := make(map[uuid.UUID]controllerModel.PictureTag, len(p.Tags))
+	for tagID, pictureTag := range p.Tags {
+		tags[tagID] = PictureTag.DriverUnmarshal(pictureTag)
 	}
+	// tags, err := ConvertMap[uuid.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	return &controllerModel.Picture{
 		Origin:       p.Origin,
 		OriginID:     p.OriginID,
 		Name:         p.Name,
-		User:         User.FromDriverModel(p.User),
+		User:         User.DriverUnmarshal(p.User),
 		Extension:    p.Extension,
-		Size:         size,
+		Sizes:        sizes,
 		Title:        p.Title,
 		Description:  p.Description,
 		License:      p.License,
 		CreationDate: p.CreationDate,
 		Tags:         tags,
 	}, nil
+}
+
+type PictureSize struct {
+	CreationDate time.Time
+	Box          Box // absolut reference of the top left of new box based on the original sizes
+}
+
+func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
+	ps.CreationDate = value.CreationDate
+
+	var box Box
+	box.DriverMarshal(value.Box)
+	ps.Box = box
+}
+
+func (ps PictureSize) DriverUnmarshal() controllerModel.PictureSize {
+	return controllerModel.PictureSize{
+		CreationDate: ps.CreationDate,
+		Box:          Box.DriverUnmarshal(ps.Box),
+	}
+}
+
+type Box struct {
+	Tlx    int // top left x coordinate (pointer because 0 is a possible value)
+	Tly    int // top left y coordinate (pointer because 0 is a possible value)
+	Width  int // width (pointer because 0 is a possible value)
+	Height int // height (pointer because 0 is a possible value)
+}
+
+func (b *Box) DriverMarshal(value controllerModel.Box) {
+	b.Tlx = value.Tlx
+	b.Tly = value.Tly
+	b.Width = value.Width
+	b.Height = value.Height
+}
+
+func (b Box) DriverUnmarshal() controllerModel.Box {
+	return controllerModel.Box{
+		Tlx:    b.Tlx,
+		Tly:    b.Tly,
+		Width:  b.Width,
+		Height: b.Height,
+	}
+}
+
+type PictureTag struct {
+	Name           string
+	CreationDate   time.Time
+	OriginName     string
+	BoxInformation utilModel.Nullable[BoxInformation] // origin informations
+}
+
+func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
+	pt.Name = value.Name
+	pt.CreationDate = value.CreationDate
+	pt.OriginName = value.OriginName
+
+	if value.BoxInformation.Valid {
+		var boxInformation BoxInformation
+		boxInformation.DriverMarshal(value.BoxInformation.Body)
+		pt.BoxInformation = utilModel.Nullable[BoxInformation]{
+			Valid: true,
+			Body:  boxInformation,
+		}
+	} else {
+		pt.BoxInformation = utilModel.Nullable[BoxInformation]{
+			Valid: false,
+			Body:  BoxInformation{},
+		}
+	}
+}
+
+func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
+	var boxInformation utilModel.Nullable[controllerModel.BoxInformation]
+	if pt.BoxInformation.Valid {
+		boxInformation = utilModel.Nullable[controllerModel.BoxInformation]{
+			Valid: true,
+			Body:  BoxInformation.DriverUnmarshal(pt.BoxInformation.Body),
+		}
+	} else {
+		boxInformation = utilModel.Nullable[controllerModel.BoxInformation]{
+			Valid: false,
+			Body:  controllerModel.BoxInformation{},
+		}
+	}
+
+	return controllerModel.PictureTag{
+		Name:           pt.Name,
+		CreationDate:   pt.CreationDate,
+		OriginName:     pt.OriginName,
+		BoxInformation: boxInformation,
+	}
+}
+
+type BoxInformation struct {
+	Model       sql.NullString  // name of the model used for the detector
+	Weights     sql.NullString  // weights of the model used for the detector
+	ImageSizeID uuid.UUID       // reference to the anchor point
+	Box         Box             // reference of the bounding box relative to the anchor
+	Confidence  sql.NullFloat64 // accuracy of the model
+}
+
+func (bi *BoxInformation) DriverMarshal(value controllerModel.BoxInformation) {
+	bi.Model = value.Model
+	bi.Weights = value.Weights
+	bi.ImageSizeID = value.ImageSizeID
+
+	var box Box
+	box.DriverMarshal(value.Box)
+	bi.Box = box
+
+	bi.Confidence = value.Confidence
+}
+
+func (bi BoxInformation) DriverUnmarshal() controllerModel.BoxInformation {
+	return controllerModel.BoxInformation{
+		Model:       bi.Model,
+		Weights:     bi.Weights,
+		ImageSizeID: bi.ImageSizeID,
+		Box:         Box.DriverUnmarshal(bi.Box),
+		Confidence:  bi.Confidence,
+	}
 }

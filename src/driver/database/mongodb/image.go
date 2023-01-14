@@ -1,36 +1,36 @@
 package mongodb
 
-import (
-	"bytes"
-	"errors"
-	"os"
-	"strings"
+// import (
+// 	"bytes"
+// 	"errors"
+// 	"os"
+// 	"strings"
 
-	"scraper-backend/src/types"
+// 	"scraper-backend/src/types"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"go.mongodb.org/mongo-driver/bson"
+// 	"github.com/aws/aws-sdk-go-v2/aws"
+// 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+// 	"github.com/aws/aws-sdk-go-v2/service/s3"
+// 	"go.mongodb.org/mongo-driver/bson"
 
-	"go.mongodb.org/mongo-driver/mongo"
+// 	"go.mongodb.org/mongo-driver/mongo"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+// 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"context"
+// 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+// 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"fmt"
+// 	"fmt"
 
-	"time"
+// 	"time"
 
-	"path/filepath"
+// 	"path/filepath"
 
-	"image"
-	"image/jpeg"
-	"image/png"
-)
+// 	"image"
+// 	"image/jpeg"
+// 	"image/png"
+// )
 
 // // RemoveImage remove an image based on its mongodb id
 // func RemoveImage(collection *mongo.Collection, id primitive.ObjectID) (*int64, error) {
@@ -374,20 +374,20 @@ import (
 // 	return &res.ModifiedCount, nil
 // }
 
-// InsertImageUnwanted insert an unwanted image
-func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface{}, error) {
-	now := time.Now()
-	body.CreationDate = &now
-	body.Origin = strings.ToLower(body.Origin)
+// // InsertImageUnwanted insert an unwanted image
+// func InsertImageUnwanted(mongoClient *mongo.Client, body types.Image) (interface{}, error) {
+// 	now := time.Now()
+// 	body.CreationDate = &now
+// 	body.Origin = strings.ToLower(body.Origin)
 
-	// insert the unwanted image
-	collectionImagesUnwanted := mongoClient.Database(os.Getenv("SCRAPER_DB")).Collection(os.Getenv("UNDESIRED"))
-	res, err := collectionImagesUnwanted.InsertOne(context.TODO(), body)
-	if err != nil {
-		return nil, fmt.Errorf("InsertOne has failed: %v", err)
-	}
-	return res.InsertedID, nil
-}
+// 	// insert the unwanted image
+// 	collectionImagesUnwanted := mongoClient.Database(os.Getenv("SCRAPER_DB")).Collection(os.Getenv("UNDESIRED"))
+// 	res, err := collectionImagesUnwanted.InsertOne(context.TODO(), body)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("InsertOne has failed: %v", err)
+// 	}
+// 	return res.InsertedID, nil
+// }
 
 // func TransferImage(mongoClient *mongo.Client, body types.BodyTransferImage) (interface{}, error) {
 // 	collectionImagesFrom, err := utils.ImagesCollection(mongoClient, body.From)

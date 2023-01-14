@@ -59,10 +59,10 @@ func Router(cfg util.Config) *gin.Engine {
 	// routes for multiple users unwanted
 	router.GET("/users/unwanted", wrapperJSONHandler(mongoClient, mongodb.UsersUnwanted))
 
-	// routes for scraping the internet
-	router.POST("/search/flickr/:quality", wrapperJSONHandlerURIS3(s3Client, mongoClient, SearchPhotosFlickr))
-	router.POST("/search/unsplash/:quality", wrapperJSONHandlerURIS3(s3Client, mongoClient, SearchPhotosUnsplash))
-	router.POST("/search/pexels/:quality", wrapperJSONHandlerURIS3(s3Client, mongoClient, SearchPhotosPexels))
+	// // routes for scraping the internet
+	// router.POST("/search/flickr/:quality", wrapperJSONHandlerURIS3(s3Client, mongoClient, SearchPhotosFlickr))
+	// router.POST("/search/unsplash/:quality", wrapperJSONHandlerURIS3(s3Client, mongoClient, SearchPhotosUnsplash))
+	// router.POST("/search/pexels/:quality", wrapperJSONHandlerURIS3(s3Client, mongoClient, SearchPhotosPexels))
 
 	// start the backend
 	router.Run("0.0.0.0:8080")
