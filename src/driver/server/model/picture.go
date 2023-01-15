@@ -1,44 +1,50 @@
-package dynamodb
+package controller
 
 import (
 	"database/sql"
 	"time"
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
-	utilModel "scraper-backend/src/util/model"
 
 	"github.com/google/uuid"
 )
 
 type Picture struct {
-	Origin       string                    `dynamodbav:"Origin"`   // PK original werbsite
-	ID           uuid.UUID                 `dynamodbav:"ID"`       // SK
-	Name         string                    `dynamodbav:"Name"`     // name <originID>_time
-	OriginID     string                    `dynamodbav:"OriginID"` // id from original website
-	User         User                      `dynamodbav:"User"`
-	Extension    string                    `dynamodbav:"Extension"` // type of file
-	Sizes        map[uuid.UUID]PictureSize `dynamodbav:"Sizes"`     // size cropping history
-	Title        string                    `dynamodbav:"Title"`
-	Description  string                    `dynamodbav:"Description"` // decription of picture
-	License      string                    `dynamodbav:"License"`     // type of public license
-	CreationDate time.Time                 `dynamodbav:"CreationDate"`
-	Tags         map[uuid.UUID]PictureTag  `dynamodbav:"Tags"`
+	Origin       *string                    `json:"origin,omitempty"`
+	ID           *uuid.UUID                 `json:"id,omitempty"`
+	Name         *string                    `json:"name,omitempty"`
+	OriginID     *string                    `json:"originID,omitempty"`
+	User         *User                      `json:"user,omitempty"`
+	Extension    *string                    `json:"extension,omitempty"`
+	Sizes        *map[uuid.UUID]PictureSize `json:"sizes,omitempty"`
+	Title        *string                    `json:"title,omitempty"`
+	Description  *string                    `json:"description,omitempty"`
+	License      *string                    `json:"license,omitempty"`
+	CreationDate *time.Time                 `json:"creationDate,omitempty"`
+	Tags         *map[uuid.UUID]PictureTag  `json:"tags,omitempty"`
 }
 
 func (p *Picture) DriverMarshal(value controllerModel.Picture) error {
-	p.Origin = value.Origin
-	p.ID = value.ID
-	p.OriginID = value.OriginID
-	p.Name = value.Name
-	p.Extension = value.Extension
-	p.Title = value.Title
-	p.Description = value.Description
-	p.License = value.License
-	p.CreationDate = value.CreationDate
+	if value.Origin != "" {
+		p.Origin = &value.Origin
+	}
+	if value.ID != uuid.Nil {
+		p.ID = &value.ID
+	}
+	if value.OriginID != "" {
+		p.OriginID = &value.OriginID
+	}
+	// TODO:
+	p.Name = &value.Name
+	p.Extension = &value.Extension
+	p.Title = &value.Title
+	p.Description = &value.Description
+	p.License = &value.License
+	p.CreationDate = &value.CreationDate
 
 	var user User
 	user.DriverMarshal(value.User)
-	p.User = user
+	p.User = &user
 
 	// size, err := ConvertMap[uuid.UUID, controllerModel.PictureSize, PictureSize](value.Size)
 	// if err != nil {
@@ -50,7 +56,7 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) error {
 		driverSize.DriverMarshal(controllerSize)
 		sizes[sizeID] = driverSize
 	}
-	p.Sizes = sizes
+	p.Sizes = &sizes
 
 	// tags, err := ConvertMap[uuid.UUID, controllerModel.PictureTag, PictureTag](value.Tags)
 	// if err != nil {
@@ -62,49 +68,65 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) error {
 		driverTag.DriverMarshal(controllerTag)
 		tags[tagID] = driverTag
 	}
-	p.Tags = tags
+	p.Tags = &tags
 
 	return nil
 }
 
 func (p Picture) DriverUnmarshal() (*controllerModel.Picture, error) {
-	sizes := make(map[uuid.UUID]controllerModel.PictureSize, len(p.Sizes))
-	for sizeID, pictureSize := range p.Sizes {
-		sizes[sizeID] = PictureSize.DriverUnmarshal(pictureSize)
+	picture := controllerModel.Picture{}
+
+	var length int
+	if p.Sizes != nil {
+		length = len(*p.Sizes)
+	}
+	sizes := make(map[uuid.UUID]controllerModel.PictureSize, length)
+	if p.Sizes != nil {
+		for sizeID, pictureSize := range *p.Sizes {
+			sizes[sizeID] = PictureSize.DriverUnmarshal(pictureSize)
+		}
+		picture.Sizes = sizes
 	}
 	// size, err := ConvertMap[uuid.UUID, PictureSize, controllerModel.PictureSize](p.Size)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	tags := make(map[uuid.UUID]controllerModel.PictureTag, len(p.Tags))
-	for tagID, pictureTag := range p.Tags {
-		tags[tagID] = PictureTag.DriverUnmarshal(pictureTag)
+	length = 0
+	if p.Tags != nil {
+		length = len(*p.Tags)
 	}
+	tags := make(map[uuid.UUID]controllerModel.PictureTag, length)
+	if p.Tags != nil {
+		for tagID, pictureTag := range *p.Tags {
+			tags[tagID] = PictureTag.DriverUnmarshal(pictureTag)
+		}
+		picture.Tags = tags
+	}
+
 	// tags, err := ConvertMap[uuid.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	return &controllerModel.Picture{
-		Origin:       p.Origin,
-		ID:           p.ID,
-		OriginID:     p.OriginID,
-		Name:         p.Name,
-		User:         User.DriverUnmarshal(p.User),
-		Extension:    p.Extension,
-		Sizes:        sizes,
-		Title:        p.Title,
-		Description:  p.Description,
-		License:      p.License,
-		CreationDate: p.CreationDate,
-		Tags:         tags,
-	}, nil
+	// Origin:       p.Origin,
+	// ID:           p.ID,
+	// OriginID:     p.OriginID,
+	// Name:         p.Name,
+	// User:         User.DriverUnmarshal(p.User),
+	// Extension:    p.Extension,
+
+	// Title:        p.Title,
+	// Description:  p.Description,
+	// License:      p.License,
+	// CreationDate: p.CreationDate,
+	// Tags:         tags,
+	return &picture, nil
 }
 
 type PictureSize struct {
-	CreationDate time.Time
-	Box          Box // absolut reference of the top left of new box based on the original sizes
+	CreationDate time.Time `json:"creationDate,omitempty"`
+	Box          Box       `json:"box,omitempty"` // absolut reference of the top left of new box based on the original sizes
 }
 
 func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
@@ -123,10 +145,10 @@ func (ps PictureSize) DriverUnmarshal() controllerModel.PictureSize {
 }
 
 type Box struct {
-	Tlx    int // top left x coordinate (pointer because 0 is a possible value)
-	Tly    int // top left y coordinate (pointer because 0 is a possible value)
-	Width  int // width (pointer because 0 is a possible value)
-	Height int // height (pointer because 0 is a possible value)
+	Tlx    int `json:"tlx,omitempty"`    // top left x coordinate (pointer because 0 is a possible value)
+	Tly    int `json:"tly,omitempty"`    // top left y coordinate (pointer because 0 is a possible value)
+	Width  int `json:"width,omitempty"`  // width (pointer because 0 is a possible value)
+	Height int `json:"height,omitempty"` // height (pointer because 0 is a possible value)
 }
 
 func (b *Box) DriverMarshal(value controllerModel.Box) {
@@ -146,10 +168,10 @@ func (b Box) DriverUnmarshal() controllerModel.Box {
 }
 
 type PictureTag struct {
-	Name           string
-	CreationDate   time.Time
-	OriginName     string
-	BoxInformation utilModel.Nullable[BoxInformation] // origin informations
+	Name           string          `json:"name,omitempty"`
+	CreationDate   time.Time       `json:"creationDate,omitempty"`
+	OriginName     string          `json:"originName,omitempty"`
+	BoxInformation *BoxInformation `json:"boxInformation,omitempty"`
 }
 
 func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
@@ -195,11 +217,11 @@ func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 }
 
 type BoxInformation struct {
-	Model       sql.NullString  // name of the model used for the detector
-	Weights     sql.NullString  // weights of the model used for the detector
-	ImageSizeID uuid.UUID       // reference to the anchor point
-	Box         Box             // reference of the bounding box relative to the anchor
-	Confidence  sql.NullFloat64 // accuracy of the model
+	Model       sql.NullString  `json:"model,omitempty"`       // name of the model used for the detector
+	Weights     sql.NullString  `json:"weights,omitempty"`     // weights of the model used for the detector
+	ImageSizeID uuid.UUID       `json:"imageSizeID,omitempty"` // reference to the anchor point
+	Box         Box             `json:"box,omitempty"`         // reference of the bounding box relative to the anchor
+	Confidence  sql.NullFloat64 `json:"confidence,omitempty"`  // accuracy of the model
 }
 
 func (bi *BoxInformation) DriverMarshal(value controllerModel.BoxInformation) {

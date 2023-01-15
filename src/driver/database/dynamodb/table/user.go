@@ -11,13 +11,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/google/uuid"
 )
 
 type TableUser struct {
 	DynamoDbClient *dynamodb.Client
 	TableName      string
-	PrimaryKey     string
-	SortKey        string
+	PrimaryKey     string	// Origin
+	SortKey        string	// ID
 }
 
 func (table TableUser) CreateUser(ctx context.Context, user controllerModel.User) error {
@@ -40,15 +41,15 @@ func (table TableUser) CreateUser(ctx context.Context, user controllerModel.User
 	return nil
 }
 
-func (table TableUser) DeleteUser(ctx context.Context, primaryKey, sortKey string) error {
+func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
 			table.PrimaryKey: types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberS{
-				Value: sortKey,
+			table.SortKey: types.AttributeValueMemberB{
+				Value: sortKey[:],
 			},
 		},
 	})

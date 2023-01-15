@@ -1,10 +1,15 @@
 package controller
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
-	Origin       string
-	Name         string
-	OriginID     string    `json:",omitempty"`
-	CreationDate time.Time `json:",omitempty"`
+	Origin       string    
+	ID           uuid.UUID 
+	Name         string    
+	OriginID     string    
+	CreationDate time.Time 
 }

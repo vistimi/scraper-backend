@@ -18,19 +18,19 @@ import (
 type TablePicture struct {
 	DynamoDbClient *awsDynamodb.Client
 	TableName      string
-	PrimaryKey     string
-	SortKey        string
+	PrimaryKey     string // Origin
+	SortKey        string // ID
 }
 
-func (table TablePicture) ReadPicture(ctx context.Context, primaryKey, sortKey string) (*controllerModel.Picture, error) {
+func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.Picture, error) {
 	input := &awsDynamodb.GetItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
 			table.PrimaryKey: types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberS{
-				Value: sortKey,
+			table.SortKey: types.AttributeValueMemberB{
+				Value: sortKey[:],
 			},
 		},
 	}
@@ -54,14 +54,14 @@ func (table TablePicture) ReadPicture(ctx context.Context, primaryKey, sortKey s
 	return pictureModel, nil
 }
 
-func (table TablePicture) ReadPictures(ctx context.Context, primaryKey string, projection *expression.ProjectionBuilder, filter *expression.ConditionBuilder) ([]controllerModel.Picture, error) {
+func (table TablePicture) ReadPictures(ctx context.Context, projection *expression.ProjectionBuilder, filter *expression.ConditionBuilder) ([]controllerModel.Picture, error) {
 	var err error
 	var response *awsDynamodb.QueryOutput
 	var pictures []dynamodbModel.Picture
 	builder := expression.NewBuilder()
-	
-	keyEx := expression.Key(table.PrimaryKey).Equal(expression.Value(primaryKey))
-	builder = builder.WithKeyCondition(keyEx)
+
+	// keyEx := expression.Key(table.PrimaryKey).Equal(expression.Value(primaryKey))
+	// builder = builder.WithKeyCondition(keyEx)
 
 	if projection != nil {
 		builder = builder.WithProjection(*projection)
@@ -123,15 +123,15 @@ func (table TablePicture) CreatePicture(ctx context.Context, picture controllerM
 	return nil
 }
 
-func (table TablePicture) DeletePicture(ctx context.Context, primaryKey, sortKey string) error {
+func (table TablePicture) DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &awsDynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
 			table.PrimaryKey: types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberS{
-				Value: sortKey,
+			table.SortKey: types.AttributeValueMemberB{
+				Value: sortKey[:],
 			},
 		},
 	})
@@ -141,7 +141,7 @@ func (table TablePicture) DeletePicture(ctx context.Context, primaryKey, sortKey
 	return err
 }
 
-func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey, sortKey string, tagID uuid.UUID) error {
+func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID) error {
 	// Build the update expression
 	updateExpr, err := expression.NewBuilder().
 		WithUpdate(expression.Delete(expression.Name("tags"), expression.Value(tagID.String()))).
@@ -155,8 +155,8 @@ func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey, sort
 		table.PrimaryKey: types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberS{
-			Value: sortKey,
+		table.SortKey: types.AttributeValueMemberB{
+			Value: sortKey[:],
 		},
 	}
 
@@ -173,7 +173,7 @@ func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey, sort
 	return nil
 }
 
-func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey, sortKey string, tag controllerModel.PictureTag) error {
+func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tag controllerModel.PictureTag) error {
 	var driverTag dynamodbModel.PictureTag
 	driverTag.DriverMarshal(tag)
 
@@ -191,8 +191,8 @@ func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey, sort
 		table.PrimaryKey: types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberS{
-			Value: sortKey,
+		table.SortKey: types.AttributeValueMemberB{
+			Value: sortKey[:],
 		},
 	}
 
@@ -209,7 +209,7 @@ func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey, sort
 	return nil
 }
 
-func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey, sortKey string, tagID uuid.UUID, tag controllerModel.PictureTag) error {
+func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error {
 	var driverTag dynamodbModel.PictureTag
 	driverTag.DriverMarshal(tag)
 
@@ -226,8 +226,8 @@ func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey, sort
 		table.PrimaryKey: types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberS{
-			Value: sortKey,
+		table.SortKey: types.AttributeValueMemberB{
+			Value: sortKey[:],
 		},
 	}
 
@@ -244,7 +244,7 @@ func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey, sort
 	return nil
 }
 
-func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey, sortKey string, size controllerModel.PictureSize) error {
+func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey string, sortKey uuid.UUID, size controllerModel.PictureSize) error {
 	var driverSize dynamodbModel.PictureSize
 	driverSize.DriverMarshal(size)
 
@@ -262,8 +262,8 @@ func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey, sor
 		table.PrimaryKey: types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberS{
-			Value: sortKey,
+		table.SortKey: types.AttributeValueMemberB{
+			Value: sortKey[:],
 		},
 	}
 

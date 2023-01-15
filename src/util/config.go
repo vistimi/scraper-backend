@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"scraper-backend/src/driver/client"
-	dynamodbTable "scraper-backend/src/driver/database/dynamodb/table"
 	"scraper-backend/src/driver/database/dynamodb"
 	"scraper-backend/src/driver/storage/bucket"
 
@@ -11,12 +10,28 @@ import (
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
+type AwsDynamodbTable struct {
+	TableName  string
+	PrimaryKey string
+	SortKey    string
+}
+
 type Config struct {
-	AwsS3Client          *awsS3.Client
-	S3BucketNamePictures string
-	TablePicture         dynamodbTable.TablePicture
-	TableTag             dynamodbTable.TableTag
-	TableUser            dynamodbTable.TableTag
+	AwsS3Client                *awsS3.Client
+	S3BucketNamePictures       string
+	AwsDynamoDbClient          *awsDynamodb.Client
+	TablePictureProcessName    string
+	TablePictureValidationName string
+	TablePictureProductionName string
+	TablePictureBlockedName    string
+	TablePicturePrimaryKey     string
+	TablePictureSortKey        string
+	TableTagName               string
+	TableTagPrimaryKey         string
+	TableTagSortKey            string
+	TableUserName              string
+	TableUserPrimaryKey        string
+	TableUserSortKey           string
 }
 
 func NewConfig() (*Config, error) {
@@ -25,24 +40,21 @@ func NewConfig() (*Config, error) {
 
 	var AwsS3Client *awsS3.Client
 	var AwsDynamodbClient *awsDynamodb.Client
-	TablePicture := dynamodbTable.TablePicture{
-		DynamoDbClient: nil,
-		TableName:      GetEnvVariable("TABLE_PICTURE_NAME"),
-		PrimaryKey:     GetEnvVariable("TABLE_PICTURE_PK"),
-		SortKey:        GetEnvVariable("TABLE_PICTURE_SK"),
-	}
-	TableTag := dynamodbTable.TableTag{
-		DynamoDbClient: nil,
-		TableName:      GetEnvVariable("TABLE_TAG_NAME"),
-		PrimaryKey:     GetEnvVariable("TABLE_TAG_PK"),
-		SortKey:        GetEnvVariable("TABLE_TAG_SK"),
-	}
-	TableUser := dynamodbTable.TableTag{
-		DynamoDbClient: nil,
-		TableName:      GetEnvVariable("TABLE_USER_NAME"),
-		PrimaryKey:     GetEnvVariable("TABLE_USER_PK"),
-		SortKey:        GetEnvVariable("TABLE_USER_SK"),
-	}
+
+	TablePictureProcessName := GetEnvVariable("TABLE_PICTURE_PROCESS_NAME")
+	TablePictureValidationName := GetEnvVariable("TABLE_PICTURE_VALIDATION_NAME")
+	TablePictureProductionName := GetEnvVariable("TABLE_PICTURE_PRODUCTION_NAME")
+	TablePictureBlockedName := GetEnvVariable("TABLE_PICTURE_BLOCKED_NAME")
+	TablePicturePrimaryKey := GetEnvVariable("TABLE_PICTURE_PK")
+	TablePictureSortKey := GetEnvVariable("TABLE_PICTURE_SK")
+
+	TableTagName := GetEnvVariable("TABLE_TAG_NAME")
+	TableTagPrimaryKey := GetEnvVariable("TABLE_TAG_PK")
+	TableTagSortKey := GetEnvVariable("TABLE_TAG_SK")
+
+	TableUserName := GetEnvVariable("TABLE_USER_NAME")
+	TableUserPrimaryKey := GetEnvVariable("TABLE_USER_PK")
+	TableUserSortKey := GetEnvVariable("TABLE_USER_SK")
 
 	switch env {
 	case "aws":
@@ -68,22 +80,61 @@ func NewConfig() (*Config, error) {
 			return nil, err
 		}
 
-		client.DynamodbCreateTableStandardPkSk(AwsDynamodbClient, TablePicture.TableName, TablePicture.PrimaryKey, TablePicture.SortKey)
-		client.DynamodbCreateTableStandardPkSk(AwsDynamodbClient, TableTag.TableName, TableTag.PrimaryKey, TableTag.SortKey)
-		client.DynamodbCreateTableStandardPkSk(AwsDynamodbClient, TableUser.TableName, TableUser.PrimaryKey, TableUser.SortKey)
+		client.DynamodbCreateTableStandardPkSk(
+			AwsDynamodbClient,
+			TablePictureProcessName,
+			TablePicturePrimaryKey,
+			TablePictureSortKey,
+		)
+		client.DynamodbCreateTableStandardPkSk(
+			AwsDynamodbClient,
+			TablePictureValidationName,
+			TablePicturePrimaryKey,
+			TablePictureSortKey,
+		)
+		client.DynamodbCreateTableStandardPkSk(
+			AwsDynamodbClient,
+			TablePictureProductionName,
+			TablePicturePrimaryKey,
+			TablePictureSortKey,
+		)
+		client.DynamodbCreateTableStandardPkSk(
+			AwsDynamodbClient,
+			TablePictureBlockedName,
+			TablePicturePrimaryKey,
+			TablePictureSortKey,
+		)
+		client.DynamodbCreateTableStandardPkSk(
+			AwsDynamodbClient,
+			TableTagName,
+			TableTagPrimaryKey,
+			TableTagSortKey,
+		)
+		client.DynamodbCreateTableStandardPkSk(
+			AwsDynamodbClient,
+			TableUserName,
+			TableUserPrimaryKey,
+			TableUserSortKey,
+		)
 	default:
 		return nil, fmt.Errorf("env variable not valid: %s", env)
 	}
 
-	TablePicture.DynamoDbClient = AwsDynamodbClient
-	TableTag.DynamoDbClient = AwsDynamodbClient
-	TableUser.DynamoDbClient = AwsDynamodbClient
-
 	return &Config{
-		AwsS3Client:          AwsS3Client,
-		S3BucketNamePictures: s3BucketNamePictures,
-		TablePicture:         TablePicture,
-		TableTag:             TableTag,
-		TableUser:            TableUser,
+		AwsS3Client:                AwsS3Client,
+		S3BucketNamePictures:       s3BucketNamePictures,
+		AwsDynamoDbClient:          AwsDynamodbClient,
+		TablePictureProcessName:    TablePictureProcessName,
+		TablePictureValidationName: TablePictureValidationName,
+		TablePictureProductionName: TablePictureProductionName,
+		TablePictureBlockedName:    TablePictureBlockedName,
+		TablePicturePrimaryKey:     TablePicturePrimaryKey,
+		TablePictureSortKey:        TablePictureSortKey,
+		TableTagName:               TableTagName,
+		TableTagPrimaryKey:         TableTagPrimaryKey,
+		TableTagSortKey:            TableTagSortKey,
+		TableUserName:              TableUserName,
+		TableUserPrimaryKey:        TableUserPrimaryKey,
+		TableUserSortKey:           TableUserSortKey,
 	}, nil
 }

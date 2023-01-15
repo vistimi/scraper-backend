@@ -3,27 +3,26 @@ package bucket
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	interfaceStorage "scraper-backend/src/adapter/interface/storage"
+	interfaceStorage "scraper-backend/src/driver/interface/storage"
 )
 
 type S3 struct {
 	Client *s3.Client
 }
 
-func (s *S3) Constructor(client *s3.Client) interfaceStorage.DriverS3 {
+func Constructor(client *s3.Client) interfaceStorage.DriverS3 {
 	return &S3{
 		Client: client,
 	}
 }
 
-func (s *S3) ItemCreate(ctx context.Context, buffer io.Reader, bucketName, path string) (error) {
+func (s *S3) ItemCreate(ctx context.Context, buffer io.Reader, bucketName, path string) error {
 	uploader := manager.NewUploader(s.Client)
 	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
@@ -46,14 +45,14 @@ func (s *S3) ItemRead(ctx context.Context, bucketName, path string) ([]byte, err
 	}
 	defer res.Body.Close()
 
-	buffer, err := ioutil.ReadAll(res.Body)
+	buffer, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 	return buffer, nil
 }
 
-func (s *S3) ItemCopy(ctx context.Context, bucketName, sourcePath, destinationPath string) (error) {
+func (s *S3) ItemCopy(ctx context.Context, bucketName, sourcePath, destinationPath string) error {
 	sourceUrl := filepath.Join(bucketName, sourcePath)
 	_, err := s.Client.CopyObject(ctx, &s3.CopyObjectInput{
 		Bucket:     aws.String(bucketName),
@@ -66,13 +65,13 @@ func (s *S3) ItemCopy(ctx context.Context, bucketName, sourcePath, destinationPa
 	return nil
 }
 
-func (s *S3) ItemDelete(ctx context.Context, bucketName, destinationPath string) (error) {
+func (s *S3) ItemDelete(ctx context.Context, bucketName, destinationPath string) error {
 	_, err := s.Client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket:     aws.String(bucketName),
-		Key:        aws.String(destinationPath),
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(destinationPath),
 	})
 	if err != nil {
 		return err
 	}
-	return  nil
+	return nil
 }

@@ -1,4 +1,4 @@
-package usecase
+package gin
 
 import (
 	"scraper-backend/src/mongodb"

@@ -1,13 +1,13 @@
-package usecase
+package entity
 
-type ControllerScraperUnsplash interface{
-	
+type UsecaseScraperFlickr interface{
+	SearchPhotos(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error)
 }
 
-type ControllerScraperPexels interface{
-	
+type UsecaseScraperPexels interface{
+	SearchPhotos(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoFlickr) ([]primitive.ObjectID, error)
 }
 
-type ControllerScraperFlickr interface{
-	
+type UsecaseScraperUnsplash interface {
+	SearchPhotos(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoUnsplash) ([]primitive.ObjectID, error)
 }

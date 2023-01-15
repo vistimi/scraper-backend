@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/google/uuid"
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	dynamodbModel "scraper-backend/src/driver/database/dynamodb/model"
@@ -17,8 +18,8 @@ import (
 type TableTag struct {
 	DynamoDbClient *dynamodb.Client
 	TableName      string
-	PrimaryKey     string
-	SortKey        string
+	PrimaryKey     string	// Type
+	SortKey        string	// ID
 }
 
 func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) error {
@@ -41,15 +42,15 @@ func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) er
 	return nil
 }
 
-func (table TableTag) DeleteTag(ctx context.Context, primaryKey, sortKey string) error {
+func (table TableTag) DeleteTag(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
 			table.PrimaryKey: types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberS{
-				Value: sortKey,
+			table.SortKey: types.AttributeValueMemberB{
+				Value: sortKey[:],
 			},
 		},
 	})
@@ -98,7 +99,7 @@ func (table TableTag) ScanTags(ctx context.Context) ([]controllerModel.Tag, erro
 	var tags []dynamodbModel.Tag
 
 	response, err = table.DynamoDbClient.Scan(ctx, &awsDynamodb.ScanInput{
-		TableName:                 aws.String(table.TableName),
+		TableName: aws.String(table.TableName),
 	})
 	if err != nil {
 		return nil, err

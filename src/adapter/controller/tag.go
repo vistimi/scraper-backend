@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"regexp"
 	controllerModel "scraper-backend/src/adapter/controller/model"
-	databaseInterface "scraper-backend/src/adapter/interface/database"
+	interfaceDatabase "scraper-backend/src/driver/interface/database"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
 )
 
 type ControllerTag struct {
-	Dynamodb          databaseInterface.DriverDynamodbTag
+	Dynamodb          interfaceDatabase.DriverDynamodbTag
 	ControllerPicture ControllerPicture
 }
 
@@ -49,7 +50,7 @@ func (c ControllerTag) CreateTagBlocked(ctx context.Context, tag controllerModel
 
 	projEx := expression.NamesList(expression.Name("Origin"), expression.Name("Name"), expression.Name("Tags"))
 	filtEx := expression.Name("Tags.#Name").Contains(tag.Name)
-	pictures, err := c.ControllerPicture.readPictures(ctx, &projEx, &filtEx)
+	pictures, err := c.ControllerPicture.ReadPictures(ctx, "process", &projEx, &filtEx)
 	if err != nil {
 		return err
 	}
@@ -57,16 +58,16 @@ func (c ControllerTag) CreateTagBlocked(ctx context.Context, tag controllerModel
 	return c.ControllerPicture.DeletePicturesAndFiles(ctx, pictures)
 }
 
-func (c ControllerTag) DeleteTag(ctx context.Context, tag controllerModel.Tag) error {
-	return c.Dynamodb.DeleteTag(ctx, tag.Type, tag.Name)
+func (c ControllerTag) DeleteTag(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+	return c.Dynamodb.DeleteTag(ctx, primaryKey, sortKey)
 }
 
-func (c ControllerTag) ReadTag(ctx context.Context, tag controllerModel.Tag) (*controllerModel.Tag, error) {
-	return c.Dynamodb.ReadTag(ctx, tag.Type, tag.Name)
-}
+// func (c ControllerTag) ReadTag(ctx context.Context, tag controllerModel.Tag) (*controllerModel.Tag, error) {
+// 	return c.Dynamodb.ReadTag(ctx, tag.Type, tag.Name)
+// }
 
-func (c ControllerTag) ReadTags(ctx context.Context, tag controllerModel.Tag) ([]controllerModel.Tag, error) {
-	return c.Dynamodb.ReadTags(ctx, tag.Type)
+func (c ControllerTag) ReadTags(ctx context.Context, primaryKey string) ([]controllerModel.Tag, error) {
+	return c.Dynamodb.ReadTags(ctx, primaryKey)
 }
 
 // // TagsWanted find all the names of wanted tags

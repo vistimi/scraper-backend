@@ -9,17 +9,18 @@ import (
 )
 
 type Picture struct {
-	Origin       string
-	Name         string
-	OriginID     string                    `json:",omitempty"`
-	User         User                      `json:",omitempty"`
-	Extension    string                    `json:",omitempty"`
-	Sizes        map[uuid.UUID]PictureSize `json:",omitempty"`
-	Title        string                    `json:",omitempty"`
-	Description  string                    `json:",omitempty"`
-	License      string                    `json:",omitempty"`
-	CreationDate time.Time                 `json:",omitempty"`
-	Tags         map[uuid.UUID]PictureTag  `json:",omitempty"`
+	Origin       string                    
+	ID           uuid.UUID                 
+	Name         string                    
+	OriginID     string                    
+	User         User                      
+	Extension    string                    
+	Sizes        map[uuid.UUID]PictureSize 
+	Title        string                    
+	Description  string                    
+	License      string                    
+	CreationDate time.Time                 
+	Tags         map[uuid.UUID]PictureTag  
 }
 
 type PictureSize struct {

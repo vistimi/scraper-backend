@@ -55,15 +55,24 @@ Create a local.env file:
     URL_LOCALSTACK=http://scraper-localstack:4566
     IMAGES_BUCKET=scraper-backend-local-env
 
-    TABLE_PICTURE_NAME=***
-    TABLE_PICTURE_PK=origin
-    TABLE_PICTURE_SK=name
-    TABLE_TAG_NAME=***
-    TABLE_TAG_PK=type
-    TABLE_TAG_SK=name
-    TABLE_USER_NAME=***
-    TABLE_USER_PK=origin
-    TABLE_USER_SK=name
+    TABLE_PICTURE_PROCESS_NAME=localPictureProcess
+    TABLE_PICTURE_PROCESS_PK=Origin
+    TABLE_PICTURE_PROCESS_SK=Name
+    TABLE_PICTURE_VALIDATION_NAME=localPictureValidation
+    TABLE_PICTURE_VALIDATION_PK=Origin
+    TABLE_PICTURE_VALIDATION_SK=Name
+    TABLE_PICTURE_PRODUCTION_NAME=localPictureProduction
+    TABLE_PICTURE_PRODUCTION_PK=Origin
+    TABLE_PICTURE_PRODUCTION_SK=Name
+    TABLE_PICTURE_BLOCKED_NAME=localPictureBlocked
+    TABLE_PICTURE_BLOCKED_PK=Origin
+    TABLE_PICTURE_BLOCKED_SK=Name
+    TABLE_TAG_NAME=localTag
+    TABLE_TAG_PK=Type
+    TABLE_TAG_SK=Name
+    TABLE_USER_NAME=localUser
+    TABLE_USER_PK=Origin
+    TABLE_USER_SK=Name
 
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***

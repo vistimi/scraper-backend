@@ -3,21 +3,23 @@ package controller
 import (
 	"context"
 	controllerModel "scraper-backend/src/adapter/controller/model"
-	databaseInterface "scraper-backend/src/adapter/interface/database"
+	databaseInterface "scraper-backend/src/driver/interface/database"
+
+	"github.com/google/uuid"
 )
 
-type controllerUser struct {
+type ControllerUser struct {
 	Dynamodb databaseInterface.DriverDynamodbUser
 }
 
-func (c controllerUser) CreateUser(ctx context.Context, user controllerModel.User) error {
+func (c ControllerUser) CreateUser(ctx context.Context, user controllerModel.User) error {
 	return c.Dynamodb.CreateUser(ctx, user)
 }
 
-func (c controllerUser) DeleteUser(ctx context.Context, user controllerModel.User) error {
-	return c.Dynamodb.DeleteUser(ctx, user.Origin, user.Name)
+func (c ControllerUser) DeleteUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+	return c.Dynamodb.DeleteUser(ctx, primaryKey, sortKey)
 }
 
-func (c controllerUser) ReadUsers(ctx context.Context, user controllerModel.User) ([]controllerModel.User, error) {
-	return c.Dynamodb.ReadUsers(ctx, user.Origin)
+func (c ControllerUser) ReadUsers(ctx context.Context, primaryKey string) ([]controllerModel.User, error) {
+	return c.Dynamodb.ReadUsers(ctx, primaryKey)
 }
