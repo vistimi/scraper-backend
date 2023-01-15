@@ -32,12 +32,12 @@ type ParamsSearchPhotoUnsplash struct {
 	ImageEnd   int    `uri:"image_end" binding:"required"`
 }
 
-type OutputPage struct {
+type OutputImage struct {
 	ObjectID primitive.ObjectID
 	Error    error
 }
 
-type InputPage struct {
+type InputImage struct {
 	Photo                    typeUnsplash.Photo
 	Origin                   string
 	Quality                  string
@@ -49,9 +49,22 @@ type InputPage struct {
 	CollectionUsersUnwanted  *mongo.Collection
 }
 
-// func New(Quality string, ImageStart int, ImageEnd int) ParamsSearchPhotoUnsplash {
-// 	return ParamsSearchPhotoUnsplash{"Nonel", 10, 100} // enforce the default value here
-// }
+type OutputPage struct {
+	insertedIDs	[]primitive.ObjectID
+	Error	error
+}
+
+type InputPage struct {
+	SearchPerPage	*typeUnsplash.PhotoSearchResult
+	Origin                   string
+	Quality                  string
+	UnwantedTags             []string
+	S3Client                 *s3.Client
+	CollectionImagesPending  *mongo.Collection
+	CollectionImagesWanted   *mongo.Collection
+	CollectionImagesUnwanted *mongo.Collection
+	CollectionUsersUnwanted  *mongo.Collection
+}
 
 func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params ParamsSearchPhotoUnsplash) ([]primitive.ObjectID, error) {
 	quality := params.Quality
@@ -89,59 +102,45 @@ func SearchPhotosUnsplash(s3Client *s3.Client, mongoClient *mongo.Client, params
 			return nil, fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
 		}
 
-		for page := page; page <= int(*searchPerPage.TotalPages); page++ {
-			searchPerPage, err = searchPhotosPerPageUnsplash(wantedTag, page)
-			if err != nil {
-				return nil, fmt.Errorf("searchPhotosPerPageUnsplash has failed: %v", err)
-			}
+		// Parameters
+		var wgPage sync.WaitGroup
+		wgPage.Add(int(*searchPerPage.TotalPages)) 
 
-			// Init waitgroup variables
-			var wgPage sync.WaitGroup               // synchronize all channels
-			wgPage.Add(len(*searchPerPage.Results))
+		// Set up the input and output channels
+		inputsPage := make(chan InputPage)
+		outputsPage := make(chan OutputPage)
 
-			// Set up the input and output channels
-			inputsPage := make(chan InputPage)
-			outputsPage := make(chan OutputPage)
-
-			// Start the worker goroutines
-			for i := 0; i < len(*searchPerPage.Results); i++{
-
-				go func() {
-					for inputPage := range inputsPage {
-						fetchImage(inputPage, outputsPage, &wgPage)
-					}
-				}()
-
-			}
-
-			// Send the inputs to the worker goroutines
-			for _, photo := range *searchPerPage.Results {
-				inputsPage <- InputPage{Photo: photo, Origin: origin, Quality: quality, UnwantedTags: unwantedTags, S3Client: s3Client,	CollectionImagesPending: collectionImagesPending, CollectionImagesWanted: collectionImagesWanted, CollectionImagesUnwanted: collectionImagesUnwanted, CollectionUsersUnwanted: collectionUsersUnwanted}
-			}
-			close(inputsPage)
-
-
-			// Read the results from the output channel
-			for i := 0; i < len(*searchPerPage.Results); i++{
-				outputPage := <- outputsPage
-
-				if outputPage.Error != nil {
-					return nil, outputPage.Error
+		// Start the worker goroutines
+		for page := 0; page < int(*searchPerPage.TotalPages); page++ {
+			go func() {
+				for inputPage := range inputsPage {
+					fetchPage(inputPage, outputsPage, &wgPage)
 				}
-
-				insertedIDs = append(insertedIDs, outputPage.ObjectID)
-			}
-			wgPage.Wait()
-
+			}()
 		}
 
+		// Send the inputs to the worker goroutines
+		for page := 0; page < int(*searchPerPage.TotalPages); page++ {
+			inputsPage <- InputPage{SearchPerPage: searchPerPage, Origin: origin, Quality: quality, UnwantedTags: unwantedTags, S3Client: s3Client,	CollectionImagesPending: collectionImagesPending, CollectionImagesWanted: collectionImagesWanted, CollectionImagesUnwanted: collectionImagesUnwanted, CollectionUsersUnwanted: collectionUsersUnwanted}
+		}
+		close(inputsPage)
+
+		// Read the outputs from the output channel
+		for page := 0; page < int(*searchPerPage.TotalPages); page++ {
+			outputPage := <- outputsPage
+			if outputPage.Error != nil {
+				return nil, outputPage.Error
+			} else if len(outputPage.insertedIDs) > 0{
+				insertedIDs = append(insertedIDs, outputPage.insertedIDs...)
+			}
+		}
+		wgPage.Wait()
 	}
 	return insertedIDs, nil
 }
 
-func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.WaitGroup) {
-
-	photo := inputPage.Photo
+func fetchPage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.WaitGroup){
+	searchPerPage := inputPage.SearchPerPage
 	origin := inputPage.Origin
 	quality := inputPage.Quality
 	unwantedTags := inputPage.UnwantedTags
@@ -150,6 +149,63 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 	collectionImagesWanted := inputPage.CollectionImagesWanted
 	collectionImagesUnwanted := inputPage.CollectionImagesUnwanted
 	collectionUsersUnwanted := inputPage.CollectionUsersUnwanted
+
+	// Init waitgroup variables
+	var wgImage sync.WaitGroup               // synchronize all channels
+	wgImage.Add(len(*searchPerPage.Results))
+
+	// Set up the input and output channels
+	inputsImage := make(chan InputImage)
+	outputsImage := make(chan OutputImage)
+
+	// Start the worker goroutines
+	for i := 0; i < len(*searchPerPage.Results); i++{
+
+		go func() {
+			for inputImage := range inputsImage {
+				fetchImage(inputImage, outputsImage, &wgImage)
+			}
+		}()
+
+	}
+
+	// Send the inputs to the worker goroutines
+	for _, photo := range *searchPerPage.Results {
+		inputsImage <- InputImage{Photo: photo, Origin: origin, Quality: quality, UnwantedTags: unwantedTags, S3Client: s3Client,	CollectionImagesPending: collectionImagesPending, CollectionImagesWanted: collectionImagesWanted, CollectionImagesUnwanted: collectionImagesUnwanted, CollectionUsersUnwanted: collectionUsersUnwanted}
+	}
+	close(inputsImage)
+
+	outputPageTemp := new(OutputPage)
+
+	// Read the results from the output channel
+	for i := 0; i < len(*searchPerPage.Results); i++{
+		outputImage := <- outputsImage
+
+		if outputImage.Error != nil {
+			outputPage <- OutputPage{insertedIDs: nil, Error: outputImage.Error} 
+			return
+		} else if outputImage.ObjectID != primitive.NilObjectID {
+			outputPageTemp.insertedIDs = append(outputPageTemp.insertedIDs, outputImage.ObjectID)
+		}
+		outputPageTemp.Error = nil
+	}
+	wgImage.Wait()
+
+	outputPage <- *outputPageTemp 
+	wgPage.Done()
+}
+
+func fetchImage(inputImage InputImage, outputImage chan OutputImage, wgImage *sync.WaitGroup) {
+
+	photo := inputImage.Photo
+	origin := inputImage.Origin
+	quality := inputImage.Quality
+	unwantedTags := inputImage.UnwantedTags
+	s3Client := inputImage.S3Client
+	collectionImagesPending := inputImage.CollectionImagesPending
+	collectionImagesWanted := inputImage.CollectionImagesWanted
+	collectionImagesUnwanted := inputImage.CollectionImagesUnwanted
+	collectionUsersUnwanted := inputImage.CollectionUsersUnwanted
 
 	// look for existing image
 	var originID string
@@ -160,53 +216,53 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 	options := options.FindOne().SetProjection(bson.M{"_id": 1})
 	imagePendingFound, err := mongodb.FindOne[types.Image](collectionImagesPending, query, options)
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("FindOne[Image] pending existing image has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	if imagePendingFound != nil { // skip existing wanted image
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    nil,
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	imageWantedFound, err := mongodb.FindOne[types.Image](collectionImagesWanted, query, options)
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("FindOne[Image] wanted existing image has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	if imageWantedFound != nil { // skip existing pending image
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    nil,
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	imageUnwantedFound, err := mongodb.FindOne[types.Image](collectionImagesUnwanted, query, options)
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("FindOne[Image] unwanted existing image has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	if imageUnwantedFound != nil { // skip image unwanted
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    nil,
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 
@@ -227,19 +283,19 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 	}
 	userFound, err := mongodb.FindOne[types.User](collectionUsersUnwanted, query)
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("FindOne[User] has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	if userFound != nil { // skip the image with unwanted user
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    nil,
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 
@@ -252,11 +308,11 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 	// skip image if one of its tag is unwanted
 	idx := utils.FindIndexRegExp(unwantedTags, photoTags) // skip image with unwated tag
 	if idx != -1 {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    nil,
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 
@@ -286,21 +342,21 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 	// get buffer of image
 	buffer, err := utils.GetFile(link.String())
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("GetFile has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 
 	_, err = utils.UploadItemS3(s3Client, bytes.NewReader(buffer), path)
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("UploadItemS3 has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 
@@ -334,11 +390,11 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 	}
 	width, err := strconv.Atoi(link.Query().Get("w"))
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    err,
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
 	var height int
@@ -381,18 +437,18 @@ func fetchImage(inputPage InputPage, outputPage chan OutputPage, wgPage *sync.Wa
 
 	insertedID, err := mongodb.InsertImage(collectionImagesPending, document)
 	if err != nil {
-		outputPage <- OutputPage{
+		outputImage <- OutputImage{
 			ObjectID: primitive.NilObjectID,
 			Error:    fmt.Errorf("InsertImage has failed: %v", err),
 		}
-		wgPage.Done()
+		wgImage.Done()
 		return
 	}
-	outputPage <- OutputPage{
+	outputImage <- OutputImage{
 		ObjectID: insertedID,
 		Error:    nil,
 	}
-	wgPage.Done()
+	wgImage.Done()
 }
 
 func searchPhotosPerPageUnsplash(tag string, page int) (*typeUnsplash.PhotoSearchResult, error) {
