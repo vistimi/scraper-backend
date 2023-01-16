@@ -9,20 +9,19 @@ import (
 )
 
 type User struct {
-	Origin       *string    `json:"origin,omitempty"`
-	ID           *uuid.UUID `json:"id,omitempty"`
-	Name         *string    `json:"name,omitempty"`
-	OriginID     *string    `json:"originID,omitempty"`
-	CreationDate *time.Time `json:"creationDate,omitempty"`
+	Origin       string    `json:"origin,omitempty"`
+	ID           uuid.UUID `json:"id,omitempty"`
+	Name         string    `json:"name,omitempty"`
+	OriginID     string    `json:"originID,omitempty"`
+	CreationDate time.Time `json:"creationDate,omitempty"`
 }
 
 func (u *User) DriverMarshal(value controllerModel.User) {
-	// TODO:
-	u.Origin = &value.Origin
-	u.ID = &value.ID
-	u.Name = &value.Name
-	u.OriginID = &value.OriginID
-	u.CreationDate = &value.CreationDate
+	u.Origin = value.Origin
+	u.ID = value.ID
+	u.Name = value.Name
+	u.OriginID = value.OriginID
+	u.CreationDate = value.CreationDate
 }
 
 func (u User) DriverUnmarshal() controllerModel.User {

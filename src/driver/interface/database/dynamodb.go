@@ -11,7 +11,7 @@ import (
 type DriverDynamodbPicture interface {
 	ReadPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.Picture, error)
 	ReadPictures(ctx context.Context, projection *expression.ProjectionBuilder, filter *expression.ConditionBuilder) ([]controllerModel.Picture, error)
-	CreatePicture(ctx context.Context, picture controllerModel.Picture) error
+	CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error
 	DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
 	DeletePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID) error
 	CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tag controllerModel.PictureTag) error

@@ -9,20 +9,19 @@ import (
 )
 
 type Tag struct {
-	Type         *string    `json:",omitempty"`
-	ID           *uuid.UUID `json:",omitempty"`
-	Name         *string    `json:",omitempty"`
-	CreationDate *time.Time `json:",omitempty"`
-	OriginName   *string    `json:",omitempty"`
+	Type         string    `json:",omitempty"`
+	ID           uuid.UUID `json:",omitempty"`
+	Name         string    `json:",omitempty"`
+	CreationDate time.Time `json:",omitempty"`
+	OriginName   string    `json:",omitempty"`
 }
 
 func (t *Tag) DriverMarshal(value controllerModel.Tag) {
-	// TODO:
-	t.Type = &value.Type
-	t.ID = &value.ID
-	t.Name = &value.Name
-	t.CreationDate = &value.CreationDate
-	t.OriginName = &value.OriginName
+	t.Type = value.Type
+	t.ID = value.ID
+	t.Name = value.Name
+	t.CreationDate = value.CreationDate
+	t.OriginName = value.OriginName
 }
 
 func (t Tag) DriverUnmarshal() controllerModel.Tag {

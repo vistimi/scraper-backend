@@ -25,7 +25,7 @@ type Picture struct {
 	Tags         map[uuid.UUID]PictureTag  `dynamodbav:"Tags"`
 }
 
-func (p *Picture) DriverMarshal(value controllerModel.Picture) error {
+func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	p.Origin = value.Origin
 	p.ID = value.ID
 	p.OriginID = value.OriginID
@@ -63,14 +63,12 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) error {
 		tags[tagID] = driverTag
 	}
 	p.Tags = tags
-
-	return nil
 }
 
-func (p Picture) DriverUnmarshal() (*controllerModel.Picture, error) {
+func (p Picture) DriverUnmarshal() (*controllerModel.Picture) {
 	sizes := make(map[uuid.UUID]controllerModel.PictureSize, len(p.Sizes))
 	for sizeID, pictureSize := range p.Sizes {
-		sizes[sizeID] = PictureSize.DriverUnmarshal(pictureSize)
+		sizes[sizeID] = pictureSize.DriverUnmarshal()
 	}
 	// size, err := ConvertMap[uuid.UUID, PictureSize, controllerModel.PictureSize](p.Size)
 	// if err != nil {
@@ -79,7 +77,7 @@ func (p Picture) DriverUnmarshal() (*controllerModel.Picture, error) {
 
 	tags := make(map[uuid.UUID]controllerModel.PictureTag, len(p.Tags))
 	for tagID, pictureTag := range p.Tags {
-		tags[tagID] = PictureTag.DriverUnmarshal(pictureTag)
+		tags[tagID] = pictureTag.DriverUnmarshal()
 	}
 	// tags, err := ConvertMap[uuid.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
 	// if err != nil {
@@ -91,7 +89,7 @@ func (p Picture) DriverUnmarshal() (*controllerModel.Picture, error) {
 		ID:           p.ID,
 		OriginID:     p.OriginID,
 		Name:         p.Name,
-		User:         User.DriverUnmarshal(p.User),
+		User:         p.User.DriverUnmarshal(),
 		Extension:    p.Extension,
 		Sizes:        sizes,
 		Title:        p.Title,
@@ -99,7 +97,7 @@ func (p Picture) DriverUnmarshal() (*controllerModel.Picture, error) {
 		License:      p.License,
 		CreationDate: p.CreationDate,
 		Tags:         tags,
-	}, nil
+	}
 }
 
 type PictureSize struct {
@@ -118,7 +116,7 @@ func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
 func (ps PictureSize) DriverUnmarshal() controllerModel.PictureSize {
 	return controllerModel.PictureSize{
 		CreationDate: ps.CreationDate,
-		Box:          Box.DriverUnmarshal(ps.Box),
+		Box:          ps.Box.DriverUnmarshal(),
 	}
 }
 
@@ -177,7 +175,7 @@ func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 	if pt.BoxInformation.Valid {
 		boxInformation = utilModel.Nullable[controllerModel.BoxInformation]{
 			Valid: true,
-			Body:  BoxInformation.DriverUnmarshal(pt.BoxInformation.Body),
+			Body:  pt.BoxInformation.Body.DriverUnmarshal(),
 		}
 	} else {
 		boxInformation = utilModel.Nullable[controllerModel.BoxInformation]{
@@ -219,7 +217,7 @@ func (bi BoxInformation) DriverUnmarshal() controllerModel.BoxInformation {
 		Model:       bi.Model,
 		Weights:     bi.Weights,
 		ImageSizeID: bi.ImageSizeID,
-		Box:         Box.DriverUnmarshal(bi.Box),
+		Box:         bi.Box.DriverUnmarshal(),
 		Confidence:  bi.Confidence,
 	}
 }

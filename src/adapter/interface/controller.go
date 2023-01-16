@@ -12,17 +12,18 @@ type ControllerPicture interface {
 	ReadPictures(ctx context.Context, state string, projection *expression.ProjectionBuilder, filter *expression.ConditionBuilder) ([]controllerModel.Picture, error)
 	ReadPicture(ctx context.Context, state string, primaryKey string, sortKey uuid.UUID) (*controllerModel.Picture, error)
 	ReadPictureFile(ctx context.Context, origin, name, extension string) ([]byte, error)
-	CreatePicture(ctx context.Context, picture controllerModel.Picture) error
+	CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error
 	DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
 	DeletePictureAndFile(ctx context.Context, primaryKey string, sortKey uuid.UUID, name string) error
 	DeletePicturesAndFiles(ctx context.Context, pictures []controllerModel.Picture) error
-	CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tag controllerModel.PictureTag) error
+	CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error
 	UpdatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error
 	DeletePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID) error
-	UpdatePictureSize(ctx context.Context, box controllerModel.Box, primaryKey string, sortKey uuid.UUID, name string, imageSizeID uuid.UUID) error
-	CopyPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
-	TransferPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID, from, to string) error
-	CreatePictureBlocked(ctx context.Context, picture controllerModel.Picture) error
+	UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey uuid.UUID, name string, imageSizeID uuid.UUID, box controllerModel.Box) error
+	CreatePictureCrop(ctx context.Context, primaryKey string, sortKey uuid.UUID, id uuid.UUID, imageSizeID uuid.UUID, box controllerModel.Box) error
+	CreatePictureCopy(ctx context.Context, primaryKey string, sortKey uuid.UUID, id uuid.UUID) error
+	UpdatePictureTransfer(ctx context.Context, primaryKey string, sortKey uuid.UUID, from, to string) error
+	CreatePictureBlocked(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
 	DeletePictureBlocked(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
 }
 

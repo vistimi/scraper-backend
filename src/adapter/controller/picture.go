@@ -68,8 +68,8 @@ func (c ControllerPicture) ReadPictureFile(ctx context.Context, origin, name, ex
 	return buffer, nil
 }
 
-func (c ControllerPicture) CreatePicture(ctx context.Context, picture controllerModel.Picture) error {
-	return c.DynamodbProcess.CreatePicture(ctx, picture)
+func (c ControllerPicture) CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error {
+	return c.DynamodbProcess.CreatePicture(ctx, id, picture)
 }
 
 func (c ControllerPicture) DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
@@ -118,7 +118,7 @@ func (c ControllerPicture) DeletePictureTag(ctx context.Context, primaryKey stri
 	return nil
 }
 
-func (c ControllerPicture) UpdatePictureSize(ctx context.Context, box controllerModel.Box, primaryKey string, sortKey uuid.UUID, name string, imageSizeID uuid.UUID) error {
+func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey uuid.UUID, name string, imageSizeID uuid.UUID, box controllerModel.Box) error {
 	newPicture, err := c.cropPicture(ctx, box, primaryKey, sortKey, imageSizeID)
 	if err != nil {
 		return err
@@ -138,13 +138,48 @@ func (c ControllerPicture) UpdatePictureSize(ctx context.Context, box controller
 		return err
 	}
 
-	if err := c.DynamodbProcess.CreatePicture(ctx, *newPicture); err != nil {
+	// update current image
+	if err := c.DynamodbProcess.CreatePicture(ctx, newPicture.ID, *newPicture); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c ControllerPicture) CopyPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey string, sortKey uuid.UUID, id uuid.UUID, imageSizeID uuid.UUID, box controllerModel.Box) error {
+	newPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
+	if err != nil {
+		return err
+	}
+	name := fmt.Sprintf("%s_%s", newPicture.OriginID, time.Now().Format(time.RFC3339))
+	newPicture.Name = name
+	newPicture.CreationDate = time.Now()
+
+	newPicture, err = c.cropPicture(ctx, box, primaryKey, sortKey, imageSizeID)
+	if err != nil {
+		return err
+	}
+
+	newFile, err := c.cropFile(ctx, box, primaryKey, name)
+	if err != nil {
+		return err
+	}
+
+	destinationPath := fmt.Sprintf("%s/%s.%s", newPicture.Origin, name, newPicture.Extension)
+	buffer, err := fileToBuffer(*newPicture, newFile)
+	if err != nil {
+		return err
+	}
+	if err := c.S3.ItemCreate(ctx, buffer, c.BucketName, destinationPath); err != nil {
+		return err
+	}
+
+	if err := c.DynamodbProcess.CreatePicture(ctx, id, *newPicture); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c ControllerPicture) CreatePictureCopy(ctx context.Context, primaryKey string, sortKey uuid.UUID, id uuid.UUID) error {
 	newPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return err
@@ -159,13 +194,13 @@ func (c ControllerPicture) CopyPicture(ctx context.Context, primaryKey string, s
 		return err
 	}
 
-	if err := c.DynamodbProcess.CreatePicture(ctx, *newPicture); err != nil {
+	if err := c.DynamodbProcess.CreatePicture(ctx, id, *newPicture); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c ControllerPicture) TransferPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID, from, to string) error {
+func (c ControllerPicture) UpdatePictureTransfer(ctx context.Context, primaryKey string, sortKey uuid.UUID, from, to string) error {
 	fromDynamodb, err := c.driverDynamodbMap(from)
 	if err != nil {
 		return err
@@ -181,7 +216,7 @@ func (c ControllerPicture) TransferPicture(ctx context.Context, primaryKey strin
 		return err
 	}
 
-	if err := toDynamodb.CreatePicture(ctx, *oldPicture); err != nil {
+	if err := toDynamodb.CreatePicture(ctx, oldPicture.ID, *oldPicture); err != nil {
 		return err
 	}
 
@@ -192,14 +227,19 @@ func (c ControllerPicture) TransferPicture(ctx context.Context, primaryKey strin
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureBlocked(ctx context.Context, picture controllerModel.Picture) error {
+func (c ControllerPicture) CreatePictureBlocked(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+	picture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
+	if err != nil {
+		return err
+	}
+
 	sourcePath := fmt.Sprintf("%s/%s.%s", picture.Origin, picture.Name, picture.Extension)
 	if err := c.S3.ItemDelete(ctx, c.BucketName, sourcePath); err != nil {
 		return err
 	}
 
 	picture.CreationDate = time.Now()
-	if err := c.DynamodbBlocked.CreatePicture(ctx, picture); err != nil {
+	if err := c.DynamodbBlocked.CreatePicture(ctx, picture.ID, *picture); err != nil {
 		return err
 	}
 

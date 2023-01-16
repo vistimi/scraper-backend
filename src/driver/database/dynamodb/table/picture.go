@@ -46,12 +46,7 @@ func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, so
 		return nil, err
 	}
 
-	pictureModel, err := picture.DriverUnmarshal()
-	if err != nil {
-		return nil, err
-	}
-
-	return pictureModel, nil
+	return picture.DriverUnmarshal(), nil
 }
 
 func (table TablePicture) ReadPictures(ctx context.Context, projection *expression.ProjectionBuilder, filter *expression.ConditionBuilder) ([]controllerModel.Picture, error) {
@@ -95,19 +90,17 @@ func (table TablePicture) ReadPictures(ctx context.Context, projection *expressi
 
 	var controllerPictures []controllerModel.Picture
 	for _, picture := range pictures {
-		pictureModel, err := picture.DriverUnmarshal()
-		if err != nil {
-			return nil, err
-		}
+		pictureModel := picture.DriverUnmarshal()
 		controllerPictures = append(controllerPictures, *pictureModel)
 	}
 
 	return controllerPictures, nil
 }
 
-func (table TablePicture) CreatePicture(ctx context.Context, picture controllerModel.Picture) error {
+func (table TablePicture) CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error {
 	var driverPicture dynamodbModel.Picture
 	driverPicture.DriverMarshal(picture)
+	driverPicture.ID = id
 
 	item, err := attributevalue.MarshalMap(picture)
 	if err != nil {
@@ -173,12 +166,12 @@ func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey strin
 	return nil
 }
 
-func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tag controllerModel.PictureTag) error {
+func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error {
 	var driverTag dynamodbModel.PictureTag
 	driverTag.DriverMarshal(tag)
 
 	// Build the update expression
-	tagMap := map[uuid.UUID]dynamodbModel.PictureTag{uuid.New(): driverTag}
+	tagMap := map[uuid.UUID]dynamodbModel.PictureTag{tagID: driverTag}
 	updateExpr, err := expression.NewBuilder().
 		WithUpdate(expression.Add(expression.Name("tags"), expression.Value(tagMap))).
 		Build()

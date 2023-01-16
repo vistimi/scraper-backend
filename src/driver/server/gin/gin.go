@@ -27,23 +27,23 @@ func (d DriverServerGin) Router() *gin.Engine {
 
 	router.GET("/image/file/:origin/:name/:extension", wrapperDataHandlerURI(d.ReadPictureFile))
 	router.GET("/image/:id/:collection", wrapperJSONHandlerURI(d.ReadPicture))
-	router.PUT("/image/tags/push", wrapperJSONHandlerBody(UpdateImageTagsPush))
-	router.PUT("/image/tags/pull", wrapperJSONHandlerBody(UpdateImageTagsPull))
-	router.PUT("/image/crop", wrapperJSONHandlerBody(UpdateImageCrop))
-	router.POST("/image/crop", wrapperJSONHandlerBody(CreateImageCrop))
-	router.POST("/image/copy", wrapperJSONHandlerBody(CopyImage))
-	router.POST("/image/transfer", wrapperJSONHandlerBody(TransferImage))
+	router.PUT("/image/tag", wrapperJSONHandlerBody(d.UpdatePictureTag))    // TODO: changed URI
+	router.DELETE("/image/tag", wrapperJSONHandlerBody(d.DeletePictureTag)) // TODO: changed URI
+	router.PUT("/image/crop", wrapperJSONHandlerBody(d.UpdatePictureCrop))
+	router.POST("/image/crop", wrapperJSONHandlerBody(d.CreatePictureCrop))
+	router.POST("/image/copy", wrapperJSONHandlerBody(d.CreatePictureCopy))
+	router.POST("/image/transfer", wrapperJSONHandlerBody(d.UpdatePictureTransfer))
 	router.DELETE("/image/:id", wrapperJSONHandlerURI(d.DeletePictureAndFile))
 
 	// routes for multiple images
 	router.GET("/images/id/:origin/:collection", wrapperJSONHandlerURI(d.ReadPicturesID))
 
 	// routes for one image unwanted
-	router.POST("/image/unwanted", wrapperJSONHandlerBody(InsertImageUnwanted))
-	router.DELETE("/image/unwanted/:id", wrapperJSONHandlerURI(RemoveImage))
+	router.POST("/image/unwanted", wrapperJSONHandlerBody(d.CreatePictureBlocked))
+	router.DELETE("/image/unwanted", wrapperJSONHandlerURI(d.DeletePictureBlocked))
 
 	// routes for multiple images unwanted
-	router.GET("/images/unwanted", wrapperJSONHandler(d.FindPicturesBlocked))
+	router.GET("/images/unwanted", wrapperJSONHandler(d.ReadPicturesBlocked))
 
 	// routes for one tag
 	router.POST("/tag/wanted", wrapperJSONHandlerBody(InsertTagWanted))
