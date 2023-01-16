@@ -16,7 +16,7 @@ func Router(mongoClient *mongo.Client, s3Client *s3.Client) *gin.Engine {
 	router.Use(cors.Default())
 
 	// health check
-	router.Any("/", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
+	router.Any("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 
 	// routes for one image pending or wanted
 	// router.Static("/image/file", utils.DotEnvVariable("IMAGE_PATH"))
