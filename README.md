@@ -31,8 +31,8 @@ curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
 
 #### Backend with Docker
 ```shell
-sudo docker build -t scraper-img .
-sudo docker run --rm -it --net scraper-net --name scraper-run --env-file <state>.env scraper-img
+sudo docker build -t scraper-backend .
+sudo docker run --rm -it --net scraper-net --name scraper-backend --env-file <state>.env scraper-backend
 ```
 
 #### Backend without docker
