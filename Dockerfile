@@ -52,7 +52,6 @@ COPY --from=builder-workflow /usr/tmp/scraper /usr/app/scraper
 WORKDIR /usr/app
 
 EXPOSE 8080
-EXPOSE 27017
 
 CMD ["./scraper"]
 
