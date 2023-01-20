@@ -8,7 +8,7 @@ import (
 	driverBucket "scraper-backend/src/driver/storage/bucket"
 )
 
-func ContructorPicture(cfg util.Config) interfaceAdapter.ControllerPicture {
+func ConstructorPicture(cfg util.Config) interfaceAdapter.ControllerPicture {
 	return &ControllerPicture{
 		S3:         driverBucket.Constructor(cfg.AwsS3Client),
 		BucketName: cfg.S3BucketNamePictures,
@@ -39,7 +39,7 @@ func ContructorPicture(cfg util.Config) interfaceAdapter.ControllerPicture {
 	}
 }
 
-func ContructorTag(cfg util.Config, controllerPicture ControllerPicture) interfaceAdapter.ControllerTag {
+func ConstructorTag(cfg util.Config, controllerPicture interfaceAdapter.ControllerPicture) interfaceAdapter.ControllerTag {
 	return &ControllerTag{
 		Dynamodb: driverDynamodb.ConstructorTag(
 			cfg.AwsDynamoDbClient,
@@ -51,7 +51,7 @@ func ContructorTag(cfg util.Config, controllerPicture ControllerPicture) interfa
 	}
 }
 
-func ContructorUser(cfg util.Config, controllerPicture ControllerPicture) interfaceAdapter.ControllerUser {
+func ConstructorUser(cfg util.Config) interfaceAdapter.ControllerUser {
 	return &ControllerUser{
 		Dynamodb: driverDynamodb.ConstructorUser(
 			cfg.AwsDynamoDbClient,

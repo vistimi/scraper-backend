@@ -6,6 +6,7 @@ import (
 	"regexp"
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceDatabase "scraper-backend/src/driver/interface/database"
+	interfaceAdapter "scraper-backend/src/adapter/interface"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 
 type ControllerTag struct {
 	Dynamodb          interfaceDatabase.DriverDynamodbTag
-	ControllerPicture ControllerPicture
+	ControllerPicture interfaceAdapter.ControllerPicture
 }
 
 func (c ControllerTag) CreateTag(ctx context.Context, tag controllerModel.Tag) error {
@@ -37,6 +38,7 @@ func (c ControllerTag) CreateTag(ctx context.Context, tag controllerModel.Tag) e
 		return fmt.Errorf("tag `%s` is too closely related to `%+#v`", tag.Name, existingTags[idx])
 	}
 
+	tag.ID = uuid.New()
 	tag.CreationDate = time.Now()
 	tag.Name = strings.ToLower(tag.Name)
 	tag.OriginName = strings.ToLower(tag.OriginName)
@@ -62,59 +64,6 @@ func (c ControllerTag) DeleteTag(ctx context.Context, primaryKey string, sortKey
 	return c.Dynamodb.DeleteTag(ctx, primaryKey, sortKey)
 }
 
-// func (c ControllerTag) ReadTag(ctx context.Context, tag controllerModel.Tag) (*controllerModel.Tag, error) {
-// 	return c.Dynamodb.ReadTag(ctx, tag.Type, tag.Name)
-// }
-
 func (c ControllerTag) ReadTags(ctx context.Context, primaryKey string) ([]controllerModel.Tag, error) {
 	return c.Dynamodb.ReadTags(ctx, primaryKey)
 }
-
-// // TagsWanted find all the names of wanted tags
-// func TagsWantedNames(mongoClient *mongo.Client) ([]string, error) {
-// 	collectionTagsWanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_DESIRED_COLLECTION"))
-// 	res, err := FindMany[types.Tag](collectionTagsWanted, bson.M{})
-// 	if err != nil {
-// 		return nil, fmt.Errorf("FindTags Wanted has failed: \n%v", err)
-// 	}
-// 	var wantedTags []string
-// 	for _, tag := range res {
-// 		wantedTags = append(wantedTags, strings.ToLower(tag.Name))
-// 	}
-// 	return wantedTags, nil
-// }
-
-// // TagsUnwantednames find all the names of wanted tags
-// func TagsUnwantedNames(mongoClient *mongo.Client) ([]string, error) {
-// 	collectionTagsUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("TAGS_UNDESIRED_COLLECTION"))
-// 	res, err := FindMany[types.Tag](collectionTagsUnwanted, bson.M{})
-// 	if err != nil {
-// 		return nil, fmt.Errorf("FindTags Unwated has failed: \n%v", err)
-// 	}
-// 	var unwantedTags []string
-// 	for _, tag := range res {
-// 		unwantedTags = append(unwantedTags, strings.ToLower(tag.Name))
-// 	}
-// 	return unwantedTags, nil
-// }
-
-// func TagsNames(mongoClient *mongo.Client) ([]string, []string, error) {
-// 	unwantedTags, err := TagsUnwantedNames(mongoClient)
-// 	if err != nil {
-// 		return nil, nil, err
-// 	}
-// 	if (unwantedTags == nil) || (len(unwantedTags) == 0) {
-// 		return nil, nil, errors.New("unwantedTags are empty")
-// 	}
-// 	sort.Strings(unwantedTags)
-
-// 	wantedTags, err := TagsWantedNames(mongoClient)
-// 	if err != nil {
-// 		return nil, nil, err
-// 	}
-// 	if (wantedTags == nil) || (len(wantedTags) == 0) {
-// 		return nil, nil, errors.New("wantedTags are empty")
-// 	}
-// 	sort.Strings(wantedTags)
-// 	return unwantedTags, wantedTags, nil
-// }

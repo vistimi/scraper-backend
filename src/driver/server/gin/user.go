@@ -1,27 +1,41 @@
 package gin
 
 import (
-	"scraper-backend/src/mongodb"
-	"scraper-backend/src/utils"
+	"context"
+	serverModel "scraper-backend/src/driver/server/model"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-
-	interfaceEntity "scraper-backend/src/entity/interface"
+	"github.com/google/uuid"
 )
 
-type usecaseUser struct {
+func (d DriverServerGin) CreateUserBlocked(ctx context.Context, user serverModel.User) (string, error) {
+	err := d.ControllerUser.CreateUser(ctx, user.DriverUnmarshal())
+	if err != nil {
+		return "error", err
+	}
+	return "ok", nil
 }
 
-func (u *usecaseUser) Contructor() interfaceEntity.UsecaseUser {
-	return &usecaseUser{}
+type ParamsDeleteUser struct {
+	Origin string    `uri:"origin" binding:"required"`
+	ID     uuid.UUID `uri:"id" binding:"required"`
 }
 
-func RemoveUserUnwanted(mongoClient *mongo.Client, params ParamsRemoveTag) (*int64, error) {
-	collectionUsersUnwanted := mongoClient.Database(utils.GetEnvVariable("SCRAPER_DB")).Collection(utils.GetEnvVariable("USERS_UNDESIRED_COLLECTION"))
-	userID, err := primitive.ObjectIDFromHex(params.ID)
+func (d DriverServerGin) DeleteUserBlocked(ctx context.Context, params ParamsDeleteUser) (string, error) {
+	err := d.ControllerUser.DeleteUser(ctx, params.Origin, params.ID)
+	if err != nil {
+		return "error", err
+	}
+	return "ok", nil
+}
+
+func (d DriverServerGin) ReadUsers(ctx context.Context) ([]serverModel.User, error) {
+	controllerUsers, err := d.ControllerUser.ReadUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return mongodb.RemoveUser(collectionUsersUnwanted, userID)
+	serverUsers := make([]serverModel.User, len(controllerUsers))
+	for i, controllerUser := range controllerUsers {
+		serverUsers[i].DriverMarshal(controllerUser)
+	}
+	return serverUsers, nil
 }

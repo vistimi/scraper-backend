@@ -14,7 +14,7 @@ type DriverDynamodbPicture interface {
 	CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error
 	DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
 	DeletePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID) error
-	CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tag controllerModel.PictureTag) error
+	CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error
 	UpdatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error
 	CreatePictureSize(ctx context.Context, primaryKey string, sortKey uuid.UUID, size controllerModel.PictureSize) error
 }
@@ -28,6 +28,7 @@ type DriverDynamodbTag interface {
 
 type DriverDynamodbUser interface {
 	ReadUsers(ctx context.Context, primaryKey string) ([]controllerModel.User, error)
+	ScanUsers(ctx context.Context) ([]controllerModel.User, error)
 	CreateUser(ctx context.Context, picture controllerModel.User) error
 	DeleteUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
 }

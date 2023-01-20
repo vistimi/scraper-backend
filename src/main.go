@@ -4,6 +4,7 @@ import (
 	"log"
 	"scraper-backend/src/driver/server"
 	"scraper-backend/src/util"
+	"scraper-backend/src/adapter/controller"
 )
 
 func main() {
@@ -12,5 +13,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = server.Constructor(mongoClient, s3Client)
+	controllerPicture := controller.ConstructorPicture(*config)
+	constrollerTag := controller.ConstructorTag(*config, controllerPicture)
+	constrollerUser := controller.ConstructorUser(*config)
+
+	_ = server.Contructor(controllerPicture, constrollerTag, constrollerUser)
 }

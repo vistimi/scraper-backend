@@ -103,11 +103,6 @@ https://mermaid-js.github.io/mermaid/#/
 ```mermaid
 requirementDiagram
 
-element usecase {
-type: component
-docref: src/usecase
-}
-
 element adapter {
 type: component
 docref: src/adapter
@@ -118,7 +113,6 @@ type: component
 docref: src/driver
 }
 
-usecase - derives -> adapter
 adapter - derives -> driver
 ```
 
@@ -127,11 +121,7 @@ In a typical request:
 ```mermaid
 sequenceDiagram
     driver_api ->>adapter_api: request
-    adapter_api->>usecase: transfer
-    usecase->>adapter_db: transfer
-    adapter_db->>driver_db: fetch
-    driver_db-->>adapter_db: transfer
-    adapter_db-->>usecase: process
-    usecase-->>adapter_api: transfer
-    adapter_api-->>driver_api: response
+    adapter->>driver_db: fetch
+    driver_db-->>adapter: transfer
+    adapter-->>adapter_api: response
 ```

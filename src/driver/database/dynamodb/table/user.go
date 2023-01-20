@@ -17,8 +17,8 @@ import (
 type TableUser struct {
 	DynamoDbClient *dynamodb.Client
 	TableName      string
-	PrimaryKey     string	// Origin
-	SortKey        string	// ID
+	PrimaryKey     string // Origin
+	SortKey        string // ID
 }
 
 func (table TableUser) CreateUser(ctx context.Context, user controllerModel.User) error {
@@ -74,6 +74,31 @@ func (table TableUser) ReadUsers(ctx context.Context, primaryKey string) ([]cont
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = attributevalue.UnmarshalListOfMaps(response.Items, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	var controllerUsers []controllerModel.User
+	for _, user := range users {
+		controllerUsers = append(controllerUsers, user.DriverUnmarshal())
+	}
+
+	return controllerUsers, nil
+}
+
+func (table TableUser) ScanUsers(ctx context.Context) ([]controllerModel.User, error) {
+	var err error
+	var response *awsDynamodb.ScanOutput
+	var users []dynamodbModel.User
+
+	response, err = table.DynamoDbClient.Scan(ctx, &awsDynamodb.ScanInput{
+		TableName: aws.String(table.TableName),
 	})
 	if err != nil {
 		return nil, err

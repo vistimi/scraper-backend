@@ -37,5 +37,5 @@ type ControllerTag interface {
 type ControllerUser interface {
 	CreateUser(ctx context.Context, user controllerModel.User) error
 	DeleteUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) error
-	ReadUsers(ctx context.Context, primaryKey string) ([]controllerModel.User, error)
+	ReadUsers(ctx context.Context) ([]controllerModel.User, error)
 }

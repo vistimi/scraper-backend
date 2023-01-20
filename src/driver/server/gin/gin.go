@@ -46,21 +46,21 @@ func (d DriverServerGin) Router() *gin.Engine {
 	router.GET("/images/unwanted", wrapperJSONHandler(d.ReadPicturesBlocked))
 
 	// routes for one tag
-	router.POST("/tag/wanted", wrapperJSONHandlerBody(InsertTagWanted))
-	router.POST("/tag/unwanted", wrapperJSONHandlerBody(InsertTagUnwanted))
-	router.DELETE("/tag/wanted/:id", wrapperJSONHandlerURI(RemoveTagWanted))
-	router.DELETE("/tag/unwanted/:id", wrapperJSONHandlerURI(RemoveTagUnwanted))
+	router.POST("/tag/wanted", wrapperJSONHandlerBody(d.CreateTag))
+	router.POST("/tag/unwanted", wrapperJSONHandlerBody(d.CreateTagBlocked))
+	router.DELETE("/tag/wanted/:id", wrapperJSONHandlerURI(d.DeleteTag))         
+	router.DELETE("/tag/unwanted/:id", wrapperJSONHandlerURI(d.DeleteTagBlocked)) 
 
 	// routes for multiple tags
-	router.GET("/tags/wanted", wrapperJSONHandler(TagsWanted))
-	router.GET("/tags/unwanted", wrapperJSONHandler(TagsUnwanted))
+	router.GET("/tags/wanted", wrapperJSONHandler(d.ReadTags))
+	router.GET("/tags/unwanted", wrapperJSONHandler(d.ReadTagsBlocked))
 
 	// routes for one user unwanted
-	router.POST("/user/unwanted", wrapperJSONHandlerBody(InsertUserUnwanted))
-	router.DELETE("/user/unwanted/:id", wrapperJSONHandlerURI(RemoveUserUnwanted))
+	router.POST("/user/unwanted", wrapperJSONHandlerBody(d.CreateUserBlocked))
+	router.DELETE("/user/unwanted/:id", wrapperJSONHandlerURI(d.DeleteUserBlocked))
 
 	// routes for multiple users unwanted
-	router.GET("/users/unwanted", wrapperJSONHandler(UsersUnwanted))
+	router.GET("/users/unwanted", wrapperJSONHandler(d.ReadUsers))
 
 	// // routes for scraping the internet
 	// router.POST("/search/flickr/:quality", wrapperJSONHandlerURIS3(cfg, SearchPhotosFlickr))

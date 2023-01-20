@@ -97,8 +97,8 @@ func (c ControllerPicture) DeletePicturesAndFiles(ctx context.Context, pictures 
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tag controllerModel.PictureTag) error {
-	if err := c.DynamodbProcess.CreatePictureTag(ctx, primaryKey, sortKey, tag); err != nil {
+func (c ControllerPicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID,tag controllerModel.PictureTag) error {
+	if err := c.DynamodbProcess.CreatePictureTag(ctx, primaryKey, sortKey, tagID, tag); err != nil {
 		return err
 	}
 	return nil
