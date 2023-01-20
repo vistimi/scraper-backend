@@ -32,10 +32,6 @@
 				"shd101wyy.markdown-preview-enhanced",
 				"premparihar.gotestexplorer"
 			]
-			// "settings": {
-			// 	"go.toolsManagement.checkForUpdates": "local",
-			// 	"go.useLanguageServer": true
-			// }
 		}
 	}
 }

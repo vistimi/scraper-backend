@@ -1,11 +1,5 @@
 ARG VARIANT=golang:1.19.0-alpine
 ARG RUNNER=workflow
-ARG GO_ALPINE_VARIANT=golang:1.19.0-alpine
-
-#-------------------------
-#    GOLANG BUILDER
-#-------------------------
-FROM ${GO_ALPINE_VARIANT} as builder-alpine-go
 
 #-------------------------
 #    BUILDER FINAL
@@ -24,6 +18,7 @@ FROM ${VARIANT} as builder-final
 #-------------------------
 #    RUNNER WORKFLOW
 #-------------------------
+# builder
 FROM builder-final AS builder-workflow
 
 WORKDIR /usr/tmp
@@ -35,6 +30,7 @@ COPY . .
 ENV GIN_MODE=release
 RUN go build -o scraper src/main.go
 
+# runner
 FROM builder-final AS runner-workflow
 
 ARG USER_NAME=user
@@ -47,9 +43,9 @@ RUN addgroup --gid $USER_GID $USER_NAME \
     && chmod 0440 /etc/sudoers.d/$USER_NAME
 USER $USER_NAME
 
-COPY --from=builder-workflow /usr/tmp/scraper /usr/app/scraper
-
 WORKDIR /usr/app
+
+COPY --from=builder-workflow /usr/tmp/scraper /usr/app/scraper
 
 EXPOSE 8080
 
