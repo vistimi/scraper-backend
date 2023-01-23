@@ -9,5 +9,11 @@
   "go.buildOnSave": "off",
   "go.coverOnSave": false,
   "go.coverOnSingleTest": false,
-  "go.coverOnSingleTestFile": false
+  "go.coverOnSingleTestFile": false,
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.wordWrapColumn": 120,
+  "editor.rulers": [
+    80
+  ],
+  // "go.formatTool": "gofmt"
 }

@@ -31,8 +31,8 @@ curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
 
 #### Backend with Docker
 ```shell
-sudo docker build -t scraper-img .
-sudo docker run --rm -it --net scraper-net --name scraper-run --env-file <state>.env scraper-img
+sudo docker build -t scraper-backend .
+sudo docker run --rm -it --net scraper-net --name scraper-backend --env-file <state>.env scraper-backend
 ```
 
 #### Backend without docker
@@ -51,25 +51,16 @@ must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
 
 Create a local.env file:
 
-    ENV=local
-    MONGODB_URI=mongodb://scraper-mongodb:27017
-    LOCALSTACK_URI=http://scraper-localstack:4566
-    SCRAPER_DB=scraper
-    TAGS_UNDESIRED_COLLECTION=tagsUndesired
-    TAGS_DESIRED_COLLECTION=tagsDesired
-    PRODUCTION=imagesProduction
-    PENDING=imagesPending
-    UNDESIRED=imagesUndesired
-    VALIDATION=imagesValidation
-    USERS_UNDESIRED_COLLECTION=usersUndesired
-    IMAGES_BUCKET=scraper-backend-test-env
+    CLOUD_HOST=localstack
+    URL_LOCALSTACK=http://scraper-localstack:4566
+    IMAGES_BUCKET=scraper-backend-local-env
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
 
-ENV is either `production`, `staging`, `development` or `local`
+CLOUD_HOST is either `aws`, `localstack`
 
 ## linter
 
@@ -81,3 +72,36 @@ https://github.com/mgechev/revive
 
     go mod tidy
 
+## Architecture levels
+
+Usecases are applications-specific business rules, here the detector.
+Adapters converts data from usecase to drivers.
+Drivers are glue code that communicates to the next level.
+
+https://mermaid-js.github.io/mermaid/#/
+
+```mermaid
+requirementDiagram
+
+element adapter {
+type: component
+docref: src/adapter
+}
+
+element driver {
+type: component
+docref: src/driver
+}
+
+adapter - derives -> driver
+```
+
+In a typical request:
+
+```mermaid
+sequenceDiagram
+    driver_api ->>adapter_api: request
+    adapter->>driver_db: fetch
+    driver_db-->>adapter: transfer
+    adapter-->>adapter_api: response
+```
