@@ -13,25 +13,19 @@ import (
 type AwsDynamodbTable struct {
 	TableName  string
 	PrimaryKey string
-	SortKey    string
+	SortKey    *string
 }
 
 type Config struct {
-	AwsS3Client                *awsS3.Client
-	S3BucketNamePictures       string
-	AwsDynamoDbClient          *awsDynamodb.Client
-	TablePictureProcessName    string
-	TablePictureValidationName string
-	TablePictureProductionName string
-	TablePictureBlockedName    string
-	TablePicturePrimaryKey     string
-	TablePictureSortKey        string
-	TableTagName               string
-	TableTagPrimaryKey         string
-	TableTagSortKey            string
-	TableUserName              string
-	TableUserPrimaryKey        string
-	TableUserSortKey           string
+	AwsS3Client                       *awsS3.Client
+	S3BucketNamePictures              string
+	AwsDynamodbClient                 *awsDynamodb.Client
+	AwsDynamodbTablePictureProcess    AwsDynamodbTable
+	AwsDynamodbTablePictureValidation AwsDynamodbTable
+	AwsDynamodbTablePictureProduction AwsDynamodbTable
+	AwsDynamodbTablePictureBlocked    AwsDynamodbTable
+	AwsDynamodbTableTag               AwsDynamodbTable
+	AwsDynamodbTableUser              AwsDynamodbTable
 }
 
 func NewConfig() (*Config, error) {
@@ -41,20 +35,29 @@ func NewConfig() (*Config, error) {
 	var AwsS3Client *awsS3.Client
 	var AwsDynamodbClient *awsDynamodb.Client
 
-	TablePictureProcessName := GetEnvVariable("TABLE_PICTURE_PROCESS_NAME")
-	TablePictureValidationName := GetEnvVariable("TABLE_PICTURE_VALIDATION_NAME")
-	TablePictureProductionName := GetEnvVariable("TABLE_PICTURE_PRODUCTION_NAME")
-	TablePictureBlockedName := GetEnvVariable("TABLE_PICTURE_BLOCKED_NAME")
-	TablePicturePrimaryKey := GetEnvVariable("TABLE_PICTURE_PK")
-	TablePictureSortKey := GetEnvVariable("TABLE_PICTURE_SK")
+	TablePictureProcessName := GetEnvVariable("TablePictureProcessName")
+	TablePictureProcessPrimaryKey := GetEnvVariable("TablePicturePK")
+	TablePictureProcessSortKey := GetEnvVariable("TablePictureSK")
 
-	TableTagName := GetEnvVariable("TABLE_TAG_NAME")
-	TableTagPrimaryKey := GetEnvVariable("TABLE_TAG_PK")
-	TableTagSortKey := GetEnvVariable("TABLE_TAG_SK")
+	TablePictureValidationName := GetEnvVariable("TablePictureValidationName")
+	TablePictureValidationPrimaryKey := GetEnvVariable("TablePicturePK")
+	TablePictureValidationSortKey := GetEnvVariable("TablePictureSK")
 
-	TableUserName := GetEnvVariable("TABLE_USER_NAME")
-	TableUserPrimaryKey := GetEnvVariable("TABLE_USER_PK")
-	TableUserSortKey := GetEnvVariable("TABLE_USER_SK")
+	TablePictureProductionName := GetEnvVariable("TablePictureProductionName")
+	TablePictureProductionPrimaryKey := GetEnvVariable("TablePicturePK")
+	TablePictureProductionSortKey := GetEnvVariable("TablePictureSK")
+
+	TablePictureBlockedName := GetEnvVariable("TablePictureBlockedName")
+	TablePictureBlockedPrimaryKey := GetEnvVariable("TablePicturePK")
+	TablePictureBlockedSortKey := GetEnvVariable("TablePictureSK")
+
+	TableTagName := GetEnvVariable("TableTagName")
+	TableTagPrimaryKey := GetEnvVariable("TableTagPK")
+	TableTagSortKey := GetEnvVariable("TableTagSK")
+
+	TableUserName := GetEnvVariable("TableUserName")
+	TableUserPrimaryKey := GetEnvVariable("TableUserPK")
+	TableUserSortKey := GetEnvVariable("TableUserSK")
 
 	switch env {
 	case "aws":
@@ -83,26 +86,26 @@ func NewConfig() (*Config, error) {
 		client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureProcessName,
-			TablePicturePrimaryKey,
-			TablePictureSortKey,
+			TablePictureProcessPrimaryKey,
+			TablePictureProcessSortKey,
 		)
 		client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureValidationName,
-			TablePicturePrimaryKey,
-			TablePictureSortKey,
+			TablePictureProcessPrimaryKey,
+			TablePictureProcessSortKey,
 		)
 		client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureProductionName,
-			TablePicturePrimaryKey,
-			TablePictureSortKey,
+			TablePictureProcessPrimaryKey,
+			TablePictureProcessSortKey,
 		)
 		client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureBlockedName,
-			TablePicturePrimaryKey,
-			TablePictureSortKey,
+			TablePictureProcessPrimaryKey,
+			TablePictureProcessSortKey,
 		)
 		client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
@@ -121,20 +124,38 @@ func NewConfig() (*Config, error) {
 	}
 
 	return &Config{
-		AwsS3Client:                AwsS3Client,
-		S3BucketNamePictures:       s3BucketNamePictures,
-		AwsDynamoDbClient:          AwsDynamodbClient,
-		TablePictureProcessName:    TablePictureProcessName,
-		TablePictureValidationName: TablePictureValidationName,
-		TablePictureProductionName: TablePictureProductionName,
-		TablePictureBlockedName:    TablePictureBlockedName,
-		TablePicturePrimaryKey:     TablePicturePrimaryKey,
-		TablePictureSortKey:        TablePictureSortKey,
-		TableTagName:               TableTagName,
-		TableTagPrimaryKey:         TableTagPrimaryKey,
-		TableTagSortKey:            TableTagSortKey,
-		TableUserName:              TableUserName,
-		TableUserPrimaryKey:        TableUserPrimaryKey,
-		TableUserSortKey:           TableUserSortKey,
+		AwsS3Client:          AwsS3Client,
+		S3BucketNamePictures: s3BucketNamePictures,
+		AwsDynamodbClient:    AwsDynamodbClient,
+		AwsDynamodbTablePictureProcess: AwsDynamodbTable{
+			TableName:  TablePictureProcessName,
+			PrimaryKey: TablePictureProcessPrimaryKey,
+			SortKey:    &TablePictureProcessSortKey,
+		},
+		AwsDynamodbTablePictureValidation: AwsDynamodbTable{
+			TableName:  TablePictureValidationName,
+			PrimaryKey: TablePictureValidationPrimaryKey,
+			SortKey:    &TablePictureValidationSortKey,
+		},
+		AwsDynamodbTablePictureProduction: AwsDynamodbTable{
+			TableName:  TablePictureProductionName,
+			PrimaryKey: TablePictureProductionPrimaryKey,
+			SortKey:    &TablePictureProductionSortKey,
+		},
+		AwsDynamodbTablePictureBlocked: AwsDynamodbTable{
+			TableName:  TablePictureBlockedName,
+			PrimaryKey: TablePictureBlockedPrimaryKey,
+			SortKey:    &TablePictureBlockedSortKey,
+		},
+		AwsDynamodbTableTag: AwsDynamodbTable{
+			TableName:  TableTagName,
+			PrimaryKey: TableTagPrimaryKey,
+			SortKey:    &TableTagSortKey,
+		},
+		AwsDynamodbTableUser: AwsDynamodbTable{
+			TableName:  TableUserName,
+			PrimaryKey: TableUserPrimaryKey,
+			SortKey:    &TableUserSortKey,
+		},
 	}, nil
 }

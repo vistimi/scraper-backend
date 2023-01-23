@@ -13,28 +13,28 @@ func ConstructorPicture(cfg util.Config) interfaceAdapter.ControllerPicture {
 		S3:         driverBucket.Constructor(cfg.AwsS3Client),
 		BucketName: cfg.S3BucketNamePictures,
 		DynamodbProcess: driverDynamodb.ConstructorPicture(
-			cfg.AwsDynamoDbClient,
-			cfg.TablePictureProcessName,
-			cfg.TablePicturePrimaryKey,
-			cfg.TablePictureSortKey,
+			cfg.AwsDynamodbClient,
+			cfg.AwsDynamodbTablePictureProcess.TableName,
+			cfg.AwsDynamodbTablePictureProcess.PrimaryKey,
+			*cfg.AwsDynamodbTablePictureProcess.SortKey,
 		),
 		DynamodbValidation: driverDynamodb.ConstructorPicture(
-			cfg.AwsDynamoDbClient,
-			cfg.TablePictureValidationName,
-			cfg.TablePicturePrimaryKey,
-			cfg.TablePictureSortKey,
+			cfg.AwsDynamodbClient,
+			cfg.AwsDynamodbTablePictureValidation.TableName,
+			cfg.AwsDynamodbTablePictureValidation.PrimaryKey,
+			*cfg.AwsDynamodbTablePictureValidation.SortKey,
 		),
 		DynamodbProduction: driverDynamodb.ConstructorPicture(
-			cfg.AwsDynamoDbClient,
-			cfg.TablePictureProductionName,
-			cfg.TablePicturePrimaryKey,
-			cfg.TablePictureSortKey,
+			cfg.AwsDynamodbClient,
+			cfg.AwsDynamodbTablePictureProduction.TableName,
+			cfg.AwsDynamodbTablePictureProduction.PrimaryKey,
+			*cfg.AwsDynamodbTablePictureProduction.SortKey,
 		),
 		DynamodbBlocked: driverDynamodb.ConstructorPicture(
-			cfg.AwsDynamoDbClient,
-			cfg.TablePictureBlockedName,
-			cfg.TablePicturePrimaryKey,
-			cfg.TablePictureSortKey,
+			cfg.AwsDynamodbClient,
+			cfg.AwsDynamodbTablePictureBlocked.TableName,
+			cfg.AwsDynamodbTablePictureBlocked.PrimaryKey,
+			*cfg.AwsDynamodbTablePictureBlocked.SortKey,
 		),
 	}
 }
@@ -42,10 +42,10 @@ func ConstructorPicture(cfg util.Config) interfaceAdapter.ControllerPicture {
 func ConstructorTag(cfg util.Config, controllerPicture interfaceAdapter.ControllerPicture) interfaceAdapter.ControllerTag {
 	return &ControllerTag{
 		Dynamodb: driverDynamodb.ConstructorTag(
-			cfg.AwsDynamoDbClient,
-			cfg.TableTagName,
-			cfg.TableTagPrimaryKey,
-			cfg.TableTagSortKey,
+			cfg.AwsDynamodbClient,
+			cfg.AwsDynamodbTableTag.TableName,
+			cfg.AwsDynamodbTableTag.PrimaryKey,
+			*cfg.AwsDynamodbTableTag.SortKey,
 		),
 		ControllerPicture: controllerPicture,
 	}
@@ -54,10 +54,10 @@ func ConstructorTag(cfg util.Config, controllerPicture interfaceAdapter.Controll
 func ConstructorUser(cfg util.Config) interfaceAdapter.ControllerUser {
 	return &ControllerUser{
 		Dynamodb: driverDynamodb.ConstructorUser(
-			cfg.AwsDynamoDbClient,
-			cfg.TableUserName,
-			cfg.TableUserPrimaryKey,
-			cfg.TableUserSortKey,
+			cfg.AwsDynamodbClient,
+			cfg.AwsDynamodbTableUser.TableName,
+			cfg.AwsDynamodbTableUser.PrimaryKey,
+			*cfg.AwsDynamodbTableUser.SortKey,
 		),
 	}
 }
