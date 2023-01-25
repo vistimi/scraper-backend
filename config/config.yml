@@ -1,24 +1,25 @@
-dynamodbTablePictureProcess:
-  TablePictureProcessName: scraperPictureProcess
-  TablePicturePK: Origin
-  TablePictureSK: ID
-dynamodbTablePictureValidation:
-  TablePictureValidationName: scraperPictureValidation
-  TablePictureValidationPK: Origin
-  TablePictureValidationSK: ID
-dynamodbTablePictureProduction:
-  TablePictureProductionName: scraperPictureProduction
-  TablePictureProductionPK: Origin
-  TablePictureProductionSK: ID
-dynamodbTablePictureBlocked:
-  TablePictureBlockedName: scraperPictureBlocked
-  TablePictureBlockedPK: Origin
-  TablePictureBlockedSK: ID
-dynamodbTableTag:
-  TableTagName: scraperTag
-  TableTagPK: Type
-  TableTagSK: ID
-dynamodbTableUser:
-  TableUserName: scraperUser
-  TableUserPK: Origin
-  TableUserSK: ID
+dynamodb:
+  tablePictureProcess:
+    name: pictureProcess
+    primaryKey: Origin
+    sortKey: ID
+  tablePictureValidation:
+    name: pictureValidation
+    primaryKey: Origin
+    sortKey: ID
+  tablePictureProduction:
+    name: pictureProduction
+    primaryKey: Origin
+    sortKey: ID
+  tablePictureBlocked:
+    name: pictureBlocked
+    primaryKey: Origin
+    sortKey: ID
+  tableTag:
+    name: tag
+    primaryKey: Type
+    sortKey: ID
+  tableUser:
+    name: user
+    primaryKey: Origin
+    sortKey: ID

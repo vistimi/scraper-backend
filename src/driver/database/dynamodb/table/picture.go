@@ -26,10 +26,10 @@ func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, so
 	input := &awsDynamodb.GetItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: types.AttributeValueMemberS{
+			table.PrimaryKey: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberB{
+			table.SortKey: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},
@@ -120,10 +120,10 @@ func (table TablePicture) DeletePicture(ctx context.Context, primaryKey string, 
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &awsDynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: types.AttributeValueMemberS{
+			table.PrimaryKey: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberB{
+			table.SortKey: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},
@@ -145,10 +145,10 @@ func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey strin
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: types.AttributeValueMemberS{
+		table.PrimaryKey: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberB{
+		table.SortKey: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}
@@ -181,10 +181,10 @@ func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey strin
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: types.AttributeValueMemberS{
+		table.PrimaryKey: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberB{
+		table.SortKey: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}
@@ -216,10 +216,10 @@ func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey strin
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: types.AttributeValueMemberS{
+		table.PrimaryKey: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberB{
+		table.SortKey: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}
@@ -252,10 +252,10 @@ func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey stri
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: types.AttributeValueMemberS{
+		table.PrimaryKey: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: types.AttributeValueMemberB{
+		table.SortKey: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}

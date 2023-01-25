@@ -46,10 +46,10 @@ func (table TableTag) DeleteTag(ctx context.Context, primaryKey string, sortKey 
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: types.AttributeValueMemberS{
+			table.PrimaryKey: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: types.AttributeValueMemberB{
+			table.SortKey: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},

@@ -3,8 +3,8 @@ package dynamodb
 import (
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
+	table "scraper-backend/src/driver/database/dynamodb/table"
 	interfaceDatabase "scraper-backend/src/driver/interface/database"
-	dynamodbTable "scraper-backend/src/driver/database/dynamodb/table"
 )
 
 func ConstructorPicture(
@@ -13,7 +13,7 @@ func ConstructorPicture(
 	PrimaryKey string,
 	SortKey string,
 ) interfaceDatabase.DriverDynamodbPicture {
-	return &dynamodbTable.TablePicture{
+	return &table.TablePicture{
 		DynamoDbClient: client,
 		TableName:      TableName,
 		PrimaryKey:     PrimaryKey,
@@ -27,7 +27,7 @@ func ConstructorTag(
 	PrimaryKey string,
 	SortKey string,
 ) interfaceDatabase.DriverDynamodbTag {
-	return &dynamodbTable.TableTag{
+	return &table.TableTag{
 		DynamoDbClient: client,
 		TableName:      TableName,
 		PrimaryKey:     PrimaryKey,
@@ -41,7 +41,7 @@ func ConstructorUser(
 	PrimaryKey string,
 	SortKey string,
 ) interfaceDatabase.DriverDynamodbUser {
-	return &dynamodbTable.TableUser{
+	return &table.TableUser{
 		DynamoDbClient: client,
 		TableName:      TableName,
 		PrimaryKey:     PrimaryKey,

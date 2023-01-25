@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"scraper-backend/config"
 	"scraper-backend/src/driver/client"
 	"scraper-backend/src/driver/database/dynamodb"
 	"scraper-backend/src/driver/storage/bucket"
@@ -16,6 +17,7 @@ type AwsDynamodbTable struct {
 	SortKey    *string
 }
 
+// TODO: map of tables
 type Config struct {
 	AwsS3Client                       *awsS3.Client
 	S3BucketNamePictures              string
@@ -35,29 +37,29 @@ func NewConfig() (*Config, error) {
 	var AwsS3Client *awsS3.Client
 	var AwsDynamodbClient *awsDynamodb.Client
 
-	TablePictureProcessName := GetEnvVariable("TablePictureProcessName")
-	TablePictureProcessPrimaryKey := GetEnvVariable("TablePicturePK")
-	TablePictureProcessSortKey := GetEnvVariable("TablePictureSK")
+	configYml, err := config.ReadConfigFile()
+	if err != nil {
+		return nil, err
+	}
 
-	TablePictureValidationName := GetEnvVariable("TablePictureValidationName")
-	TablePictureValidationPrimaryKey := GetEnvVariable("TablePicturePK")
-	TablePictureValidationSortKey := GetEnvVariable("TablePictureSK")
-
-	TablePictureProductionName := GetEnvVariable("TablePictureProductionName")
-	TablePictureProductionPrimaryKey := GetEnvVariable("TablePicturePK")
-	TablePictureProductionSortKey := GetEnvVariable("TablePictureSK")
-
-	TablePictureBlockedName := GetEnvVariable("TablePictureBlockedName")
-	TablePictureBlockedPrimaryKey := GetEnvVariable("TablePicturePK")
-	TablePictureBlockedSortKey := GetEnvVariable("TablePictureSK")
-
-	TableTagName := GetEnvVariable("TableTagName")
-	TableTagPrimaryKey := GetEnvVariable("TableTagPK")
-	TableTagSortKey := GetEnvVariable("TableTagSK")
-
-	TableUserName := GetEnvVariable("TableUserName")
-	TableUserPrimaryKey := GetEnvVariable("TableUserPK")
-	TableUserSortKey := GetEnvVariable("TableUserSK")
+	TablePictureProcessName := *configYml.Databases["tablePictureProcess"].Name
+	TablePictureProcessPrimaryKey := *configYml.Databases["tablePictureProcess"].PrimaryKey
+	TablePictureProcessSortKey := *configYml.Databases["tablePictureProcess"].SortKey
+	TablePictureValidationName := *configYml.Databases["tablePictureValidation"].Name
+	TablePictureValidationPrimaryKey := *configYml.Databases["tablePictureValidation"].PrimaryKey
+	TablePictureValidationSortKey := *configYml.Databases["tablePictureValidation"].SortKey
+	TablePictureProductionName := *configYml.Databases["tablePictureProduction"].Name
+	TablePictureProductionPrimaryKey := *configYml.Databases["tablePictureProduction"].PrimaryKey
+	TablePictureProductionSortKey := *configYml.Databases["tablePictureProduction"].SortKey
+	TablePictureBlockedName := *configYml.Databases["tablePictureBlocked"].Name
+	TablePictureBlockedPrimaryKey := *configYml.Databases["tablePictureBlocked"].PrimaryKey
+	TablePictureBlockedSortKey := *configYml.Databases["tablePictureBlocked"].SortKey
+	TableTagName := *configYml.Databases["tableTag"].Name
+	TableTagPrimaryKey := *configYml.Databases["tableTag"].PrimaryKey
+	TableTagSortKey := *configYml.Databases["tableTag"].SortKey
+	TableUserName := *configYml.Databases["tableUser"].Name
+	TableUserPrimaryKey := *configYml.Databases["tableUser"].PrimaryKey
+	TableUserSortKey := *configYml.Databases["tableUser"].SortKey
 
 	switch env {
 	case "aws":
