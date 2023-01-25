@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"path/filepath"
 	"scraper-backend/config"
 	"scraper-backend/src/driver/client"
 	"scraper-backend/src/driver/database/dynamodb"
@@ -37,7 +38,11 @@ func NewConfig() (*Config, error) {
 	var AwsS3Client *awsS3.Client
 	var AwsDynamodbClient *awsDynamodb.Client
 
-	configYml, err := config.ReadConfigFile()
+	path, err := filepath.Abs("config/config.yml")
+	if err != nil {
+		return nil, err
+	}
+	configYml, err := config.ReadConfigFile(path)
 	if err != nil {
 		return nil, err
 	}

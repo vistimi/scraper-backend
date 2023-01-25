@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
@@ -19,12 +18,7 @@ type ConfigDynamodbTable struct {
 	SortKey    *string `mapstructure:"sortKey"`
 }
 
-func ReadConfigFile() (*ConfigDynamodb, error) {
-	path, err := filepath.Abs("config/config.yml")
-	if err != nil {
-		return nil, err
-	}
-
+func ReadConfigFile(path string) (*ConfigDynamodb, error) {
 	f, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
