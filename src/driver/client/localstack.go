@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -31,26 +32,44 @@ func NewConfigLocalstack(url string) (aws.Config, error) {
 	)
 }
 
+func convertKeyType(keyType string) types.ScalarAttributeType {
+	switch keyType {
+	case "S":
+		return types.ScalarAttributeTypeS
+	case "N":
+		return types.ScalarAttributeTypeN
+	case "B":
+		return types.ScalarAttributeTypeB
+	}
+	return ""
+}
+
 // not global table with primary and secondary keys
-func DynamodbCreateTableStandardPkSk(client *dynamodb.Client, tableName, primaryKey, sortKey string) error {
+func DynamodbCreateTableStandardPkSk(client *dynamodb.Client, tableName, primaryKeyName, primaryKeyType, sortKeyName, sortKeyType string) error {
+
+	primaryKeyAttributeType := convertKeyType(primaryKeyType)
+	sortKeyAttributeType := convertKeyType(sortKeyType)
+	if primaryKeyAttributeType == "" || sortKeyAttributeType == "" {
+		return fmt.Errorf("invalid key type: %s, %s", primaryKeyType, sortKeyType)
+	}
 	if _, err := client.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: aws.String(primaryKey),
-				AttributeType: types.ScalarAttributeTypeS,
+				AttributeName: aws.String(primaryKeyName),
+				AttributeType: primaryKeyAttributeType,
 			},
 			{
-				AttributeName: aws.String(sortKey),
-				AttributeType: types.ScalarAttributeTypeS,
+				AttributeName: aws.String(sortKeyName),
+				AttributeType: sortKeyAttributeType,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: aws.String(primaryKey),
+				AttributeName: aws.String(primaryKeyName),
 				KeyType:       types.KeyTypeHash,
 			},
 			{
-				AttributeName: aws.String(sortKey),
+				AttributeName: aws.String(sortKeyName),
 				KeyType:       types.KeyTypeRange,
 			},
 		},

@@ -1,25 +1,37 @@
 dynamodb:
   tablePictureProcess:
     name: pictureProcess
-    primaryKey: Origin
-    sortKey: ID
+    primaryKeyName: Origin
+    primaryKeyType: S
+    sortKeyName: ID
+    sortKeyType: S
   tablePictureValidation:
     name: pictureValidation
-    primaryKey: Origin
-    sortKey: ID
+    primaryKeyName: Origin
+    primaryKeyType: S
+    sortKeyName: ID
+    sortKeyType: S
   tablePictureProduction:
     name: pictureProduction
-    primaryKey: Origin
-    sortKey: ID
+    primaryKeyName: Origin
+    primaryKeyType: S
+    sortKeyName: ID
+    sortKeyType: S
   tablePictureBlocked:
     name: pictureBlocked
-    primaryKey: Origin
-    sortKey: ID
+    primaryKeyName: Origin
+    primaryKeyType: S
+    sortKeyName: ID
+    sortKeyType: S
   tableTag:
     name: tag
-    primaryKey: Type
-    sortKey: ID
+    primaryKeyName: Type
+    primaryKeyType: S
+    sortKeyName: ID
+    sortKeyType: S
   tableUser:
     name: user
-    primaryKey: Origin
-    sortKey: ID
+    primaryKeyName: Origin
+    primaryKeyType: S
+    sortKeyName: ID
+    sortKeyType: S

@@ -13,9 +13,11 @@ type ConfigDynamodb struct {
 }
 
 type ConfigDynamodbTable struct {
-	Name       *string `mapstructure:"name"`
-	PrimaryKey *string `mapstructure:"primaryKey"`
-	SortKey    *string `mapstructure:"sortKey"`
+	Name           *string `mapstructure:"name"`
+	PrimaryKeyName *string `mapstructure:"primaryKeyName"`
+	PrimaryKeyType *string `mapstructure:"primaryKeyType"`
+	SortKeyName    *string `mapstructure:"sortKeyName"`
+	SortKeyType    *string `mapstructure:"sortKeyType"`
 }
 
 func ReadConfigFile(path string) (*ConfigDynamodb, error) {
@@ -45,14 +47,8 @@ func ReadConfigFile(path string) (*ConfigDynamodb, error) {
 	}
 
 	for tableReference, tableConfig := range c.Databases {
-		if tableConfig.Name == nil {
-			return nil, fmt.Errorf("no name found for table %s", tableReference)
-		}
-		if tableConfig.PrimaryKey == nil {
-			return nil, fmt.Errorf("no primaryKey found for table %s", tableReference)
-		}
-		if tableConfig.SortKey == nil {
-			return nil, fmt.Errorf("no sortKey found for table %s", tableReference)
+		if tableConfig.Name == nil || tableConfig.PrimaryKeyName == nil || tableConfig.PrimaryKeyType == nil || tableConfig.SortKeyName == nil || tableConfig.SortKeyType == nil {
+			return nil, fmt.Errorf("element missing for table %+#v", tableReference)
 		}
 	}
 
