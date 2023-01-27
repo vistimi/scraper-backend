@@ -19,10 +19,6 @@ on:
         description: "The name used acrross many resources, usually account-region-project-repo-branch"
         required: true
         type: string
-      mongodb-adress:
-        description: "The adress of the mongodb instance"
-        required: true
-        type: string
       task-desired-count:
         description: "The number of tasks to run in the service"
         required: true
@@ -52,7 +48,6 @@ jobs:
     environment:
       name: ${{ inputs.aws-account-name }}
     env:
-      MONGODB_URI: mongodb://${{ inputs.mongodb-adress }}:27017
       BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
 
@@ -64,7 +59,6 @@ jobs:
         run: |
           printf " \
           ENV_FILE_NAME = $ENV_FILE_NAME\n \
-          MONGODB_URI = $MONGODB_URI\n \
           IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
           "
@@ -79,22 +73,14 @@ jobs:
       - name: Upload env file
         run: |
           cat <<EOF > .env
-          MONGODB_URI=$MONGODB_URI
-          SCRAPER_DB=scraper
-          TAGS_UNDESIRED_COLLECTION=tagsUndesired
-          TAGS_DESIRED_COLLECTION=tagsDesired
-          PRODUCTION=imagesProduction
-          PENDING=imagesPending
-          UNDESIRED=imagesUndesired
-          VALIDATION=imagesValidation
-          USERS_UNDESIRED_COLLECTION=usersUndesired
+          CLOUD_HOST=aws
+          COMMON_NAME=$COMMON_NAME
           IMAGES_BUCKET=$BUCKET_ENV
           FLICKR_PRIVATE_KEY=${{ secrets.FLICKR_PRIVATE_KEY }}
           FLICKR_PUBLIC_KEY=${{ secrets.FLICKR_PUBLIC_KEY }}
           UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }}
           UNSPLASH_PUBLIC_KEY=${{ secrets.UNSPLASH_PUBLIC_KEY }}
           PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }}
-          CLOUD_HOST=aws
           EOF
           aws s3 cp .env s3://$BUCKET_ENV/$ENV_FILE_NAME
 

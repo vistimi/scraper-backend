@@ -35,3 +35,7 @@ dynamodb:
     primaryKeyType: S
     sortKeyName: ID
     sortKeyType: S
+
+buckets:
+  env:
+    name: env

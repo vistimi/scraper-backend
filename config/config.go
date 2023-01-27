@@ -10,6 +10,7 @@ import (
 
 type ConfigDynamodb struct {
 	Databases map[string]ConfigDynamodbTable `mapstructure:"dynamodb"`
+	Buckets   map[string]ConfigS3Bucket      `mapstructure:"buckets"`
 }
 
 type ConfigDynamodbTable struct {
@@ -18,6 +19,10 @@ type ConfigDynamodbTable struct {
 	PrimaryKeyType *string `mapstructure:"primaryKeyType"`
 	SortKeyName    *string `mapstructure:"sortKeyName"`
 	SortKeyType    *string `mapstructure:"sortKeyType"`
+}
+
+type ConfigS3Bucket struct {
+	Name *string `mapstructure:"name"`
 }
 
 func ReadConfigFile(path string) (*ConfigDynamodb, error) {
@@ -46,9 +51,19 @@ func ReadConfigFile(path string) (*ConfigDynamodb, error) {
 		return nil, fmt.Errorf("no database found")
 	}
 
+	if len(c.Buckets) == 0 {
+		return nil, fmt.Errorf("no buckets found")
+	}
+
 	for tableReference, tableConfig := range c.Databases {
 		if tableConfig.Name == nil || tableConfig.PrimaryKeyName == nil || tableConfig.PrimaryKeyType == nil || tableConfig.SortKeyName == nil || tableConfig.SortKeyType == nil {
-			return nil, fmt.Errorf("element missing for table %+#v", tableReference)
+			return nil, fmt.Errorf("element missing for table %s: %+#v", tableReference, tableConfig)
+		}
+	}
+
+	for tableReference, bucketConfig := range c.Buckets {
+		if bucketConfig.Name == nil {
+			return nil, fmt.Errorf("element missing for bucket %s: %+#v", tableReference, bucketConfig)
 		}
 	}
 

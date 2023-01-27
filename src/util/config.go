@@ -32,7 +32,7 @@ type Config struct {
 }
 
 func NewConfig() (*Config, error) {
-	s3BucketNamePictures := GetEnvVariable("IMAGES_BUCKET")
+	commonName := GetEnvVariable("COMMON_NAME")
 	env := GetEnvVariable("CLOUD_HOST")
 
 	var AwsS3Client *awsS3.Client
@@ -47,36 +47,38 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	TablePictureProcessName := *configYml.Databases["tablePictureProcess"].Name
+	TablePictureProcessName := commonName + *configYml.Databases["tablePictureProcess"].Name
 	TablePictureProcessPrimaryKey := *configYml.Databases["tablePictureProcess"].PrimaryKeyName
 	TablePictureProcessSortKey := *configYml.Databases["tablePictureProcess"].SortKeyName
 	TablePictureProcessPrimaryKeyType := *configYml.Databases["tablePictureProcess"].PrimaryKeyType
 	TablePictureProcessSortKeyType := *configYml.Databases["tablePictureProcess"].SortKeyType
-	TablePictureValidationName := *configYml.Databases["tablePictureValidation"].Name
+	TablePictureValidationName := commonName + *configYml.Databases["tablePictureValidation"].Name
 	TablePictureValidationPrimaryKey := *configYml.Databases["tablePictureValidation"].PrimaryKeyName
 	TablePictureValidationSortKey := *configYml.Databases["tablePictureValidation"].SortKeyName
 	TablePictureValidationPrimaryKeyType := *configYml.Databases["tablePictureValidation"].PrimaryKeyType
 	TablePictureValidationSortKeyType := *configYml.Databases["tablePictureValidation"].SortKeyType
-	TablePictureProductionName := *configYml.Databases["tablePictureProduction"].Name
+	TablePictureProductionName := commonName + *configYml.Databases["tablePictureProduction"].Name
 	TablePictureProductionPrimaryKey := *configYml.Databases["tablePictureProduction"].PrimaryKeyName
 	TablePictureProductionSortKey := *configYml.Databases["tablePictureProduction"].SortKeyName
 	TablePictureProductionPrimaryKeyType := *configYml.Databases["tablePictureProduction"].PrimaryKeyType
 	TablePictureProductionSortKeyType := *configYml.Databases["tablePictureProduction"].SortKeyType
-	TablePictureBlockedName := *configYml.Databases["tablePictureBlocked"].Name
+	TablePictureBlockedName := commonName + *configYml.Databases["tablePictureBlocked"].Name
 	TablePictureBlockedPrimaryKey := *configYml.Databases["tablePictureBlocked"].PrimaryKeyName
 	TablePictureBlockedSortKey := *configYml.Databases["tablePictureBlocked"].SortKeyName
 	TablePictureBlockedPrimaryKeyType := *configYml.Databases["tablePictureBlocked"].PrimaryKeyType
 	TablePictureBlockedSortKeyType := *configYml.Databases["tablePictureBlocked"].SortKeyType
-	TableTagName := *configYml.Databases["tableTag"].Name
+	TableTagName := commonName + *configYml.Databases["tableTag"].Name
 	TableTagPrimaryKey := *configYml.Databases["tableTag"].PrimaryKeyName
 	TableTagSortKey := *configYml.Databases["tableTag"].SortKeyName
 	TableTagPrimaryKeyType := *configYml.Databases["tableTag"].PrimaryKeyType
 	TableTagSortKeyType := *configYml.Databases["tableTag"].SortKeyType
-	TableUserName := *configYml.Databases["tableUser"].Name
+	TableUserName := commonName + *configYml.Databases["tableUser"].Name
 	TableUserPrimaryKey := *configYml.Databases["tableUser"].PrimaryKeyName
 	TableUserSortKey := *configYml.Databases["tableUser"].SortKeyName
 	TableUserPrimaryKeyType := *configYml.Databases["tableUser"].PrimaryKeyType
 	TableUserSortKeyType := *configYml.Databases["tableUser"].SortKeyType
+
+	s3BucketNamePictures := commonName + *configYml.Buckets["env"].Name
 
 	switch env {
 	case "aws":
