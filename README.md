@@ -54,7 +54,6 @@ Create a local.env file:
     CLOUD_HOST=localstack
     URL_LOCALSTACK=http://scraper-localstack:4566
     COMMON_NAME=scraper-backend-test
-    IMAGES_BUCKET=scraper-backend-local-env
     FLICKR_PRIVATE_KEY=***
     FLICKR_PUBLIC_KEY=***
     UNSPLASH_PRIVATE_KEY=***
