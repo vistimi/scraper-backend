@@ -59,6 +59,33 @@ func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKe
 	return nil
 }
 
+func (table TableUser) ReadUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.User, error) {
+	input := &awsDynamodb.GetItemInput{
+		TableName: aws.String(table.TableName),
+		Key: map[string]types.AttributeValue{
+			table.PrimaryKey: &types.AttributeValueMemberS{
+				Value: primaryKey,
+			},
+			table.SortKey: &types.AttributeValueMemberB{
+				Value: sortKey[:],
+			},
+		},
+	}
+
+	response, err := table.DynamoDbClient.GetItem(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	var user controllerModel.User
+	err = attributevalue.UnmarshalMap(response.Item, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (table TableUser) ReadUsers(ctx context.Context, primaryKey string) ([]controllerModel.User, error) {
 	var err error
 	var response *awsDynamodb.QueryOutput

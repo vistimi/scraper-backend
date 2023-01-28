@@ -68,7 +68,11 @@ func (c ControllerPicture) ReadPictureFile(ctx context.Context, origin, name, ex
 	return buffer, nil
 }
 
-func (c ControllerPicture) CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error {
+func (c ControllerPicture) CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture, buffer []byte) error {
+	path := fmt.Sprintf("%s/%s.%s", picture.Origin, picture.Name, picture.Extension)
+	if err := c.S3.ItemCreate(ctx, bytes.NewReader(buffer), c.BucketName, path); err != nil {
+		return err
+	}
 	return c.DynamodbProcess.CreatePicture(ctx, id, picture)
 }
 

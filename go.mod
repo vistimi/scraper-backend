@@ -14,8 +14,12 @@ require (
 )
 
 require (
+	github.com/PuerkitoBio/goquery v1.5.1 // indirect
+	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.21 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
 )
 
 require (
@@ -37,12 +41,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.16 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
+	github.com/foolin/pagser v0.1.5
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/google/uuid v1.3.0
+	github.com/hbagdi/go-unsplash v0.0.0-20220920231246-14121bdf6d94
+	github.com/jinzhu/copier v0.3.5
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect

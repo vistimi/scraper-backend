@@ -4,6 +4,7 @@ import (
 	interfaceAdapter "scraper-backend/src/adapter/interface"
 	"scraper-backend/src/util"
 
+	driverHost "scraper-backend/src/driver/host"
 	driverDynamodb "scraper-backend/src/driver/database/dynamodb"
 	driverBucket "scraper-backend/src/driver/storage/bucket"
 )
@@ -59,5 +60,32 @@ func ConstructorUser(cfg util.Config) interfaceAdapter.ControllerUser {
 			cfg.AwsDynamodbTableUser.PrimaryKey,
 			*cfg.AwsDynamodbTableUser.SortKey,
 		),
+	}
+}
+
+func ConstructorFlickr(cfg util.Config, controllerPicture interfaceAdapter.ControllerPicture, controllerTag interfaceAdapter.ControllerTag, controllerUser interfaceAdapter.ControllerUser) interfaceAdapter.ControllerFlickr {
+	return &ControllerFlickr{
+		Api:               driverHost.ConstructorApiFlickr(),
+		ControllerPicture: controllerPicture,
+		ControllerTag:     controllerTag,
+		ControllerUser:    controllerUser,
+	}
+}
+
+func ConstructorPexels(cfg util.Config, controllerPicture interfaceAdapter.ControllerPicture, controllerTag interfaceAdapter.ControllerTag, controllerUser interfaceAdapter.ControllerUser) interfaceAdapter.ControllerPexels {
+	return &ControllerPexels{
+		Api:               driverHost.ConstructorApiPexels(),
+		ControllerPicture: controllerPicture,
+		ControllerTag:     controllerTag,
+		ControllerUser:    controllerUser,
+	}
+}
+
+func ConstructorUnsplash(cfg util.Config, controllerPicture interfaceAdapter.ControllerPicture, controllerTag interfaceAdapter.ControllerTag, controllerUser interfaceAdapter.ControllerUser) interfaceAdapter.ControllerUnsplash {
+	return &ControllerUnsplash{
+		Api:               driverHost.ConstructorApiUnsplash(),
+		ControllerPicture: controllerPicture,
+		ControllerTag:     controllerTag,
+		ControllerUser:    controllerUser,
 	}
 }

@@ -1,5 +1,7 @@
 package adapter
 
-type DriverServerGin interface {
+import "github.com/gin-gonic/gin"
 
+type DriverServerGin interface {
+	Router() *gin.Engine
 }

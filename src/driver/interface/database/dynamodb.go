@@ -27,6 +27,7 @@ type DriverDynamodbTag interface {
 }
 
 type DriverDynamodbUser interface {
+	ReadUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.User, error)
 	ReadUsers(ctx context.Context, primaryKey string) ([]controllerModel.User, error)
 	ScanUsers(ctx context.Context) ([]controllerModel.User, error)
 	CreateUser(ctx context.Context, picture controllerModel.User) error

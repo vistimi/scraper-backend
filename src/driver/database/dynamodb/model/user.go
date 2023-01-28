@@ -9,10 +9,10 @@ import (
 
 type User struct {
 	Origin       string    `dynamodbav:"Origin"` // PK original website
-	ID           uuid.UUID `dynamodbav:"Origin"` // SK
-	Name         string    `dynamodbav:"Origin"` // userName
-	OriginID     string    `dynamodbav:"Origin"` // ID from the original website
-	CreationDate time.Time `dynamodbav:"Origin"`
+	ID           uuid.UUID `dynamodbav:"ID"` // SK
+	Name         string    `dynamodbav:"Name"` // userName
+	OriginID     string    `dynamodbav:"OriginID"` // ID from the original website
+	CreationDate time.Time `dynamodbav:"CreationDate"`
 }
 
 func (u *User) DriverMarshal(value controllerModel.User) {

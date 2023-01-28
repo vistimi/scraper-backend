@@ -1,4 +1,4 @@
-package util
+package utilModel
 
 import (
 	"database/sql/driver"

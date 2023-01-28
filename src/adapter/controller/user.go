@@ -23,3 +23,7 @@ func (c ControllerUser) DeleteUser(ctx context.Context, primaryKey string, sortK
 func (c ControllerUser) ReadUsers(ctx context.Context) ([]controllerModel.User, error) {
 	return c.Dynamodb.ScanUsers(ctx)
 }
+
+func (c ControllerUser) ReadUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.User, error) {
+	return c.Dynamodb.ReadUser(ctx, primaryKey, sortKey)
+}

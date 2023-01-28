@@ -51,7 +51,7 @@ func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, so
 
 func (table TablePicture) ReadPictures(ctx context.Context, projection *expression.ProjectionBuilder, filter *expression.ConditionBuilder) ([]controllerModel.Picture, error) {
 	var err error
-	var response *awsDynamodb.QueryOutput
+	var response *awsDynamodb.ScanOutput
 	var pictures []dynamodbModel.Picture
 	builder := expression.NewBuilder()
 
@@ -71,11 +71,11 @@ func (table TablePicture) ReadPictures(ctx context.Context, projection *expressi
 		return nil, err
 	}
 
-	response, err = table.DynamoDbClient.Query(ctx, &awsDynamodb.QueryInput{
+	response, err = table.DynamoDbClient.Scan(ctx, &awsDynamodb.ScanInput{
 		TableName:                 aws.String(table.TableName),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-		KeyConditionExpression:    expr.KeyCondition(),
+		// KeyConditionExpression:    expr.KeyCondition(),
 		FilterExpression:          expr.Filter(),
 		ProjectionExpression:      expr.Projection(),
 	})

@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -20,6 +21,16 @@ type TableTag struct {
 	TableName      string
 	PrimaryKey     string	// Type
 	SortKey        string	// ID
+}
+
+func checkTablePK(primarykey string) (error) {
+	switch primarykey {
+		case "searched", "blocked":
+			return nil
+		
+		default:
+			return fmt.Errorf("invalid primary key")
+	}
 }
 
 func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) error {
@@ -43,6 +54,9 @@ func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) er
 }
 
 func (table TableTag) DeleteTag(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+	if err := checkTablePK(primaryKey); err != nil {
+		return err
+	}
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
@@ -61,6 +75,9 @@ func (table TableTag) DeleteTag(ctx context.Context, primaryKey string, sortKey 
 }
 
 func (table TableTag) ReadTags(ctx context.Context, primaryKey string) ([]controllerModel.Tag, error) {
+	if err := checkTablePK(primaryKey); err != nil {
+		return nil, err
+	}
 	var err error
 	var response *awsDynamodb.QueryOutput
 	var tags []dynamodbModel.Tag
