@@ -16,6 +16,11 @@ import (
 	dynamodbModel "scraper-backend/src/driver/database/dynamodb/model"
 )
 
+const (
+	TagPrimaryKeySearched = "searched"
+	TagPrimaryKeyBlocked    = "blocked"
+)
+
 type TableTag struct {
 	DynamoDbClient *dynamodb.Client
 	TableName      string
@@ -25,7 +30,7 @@ type TableTag struct {
 
 func checkTablePK(primarykey string) (error) {
 	switch primarykey {
-		case "searched", "blocked":
+		case TagPrimaryKeySearched, TagPrimaryKeyBlocked:
 			return nil
 		
 		default:
@@ -37,10 +42,13 @@ func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) er
 	var driverTag dynamodbModel.Tag
 	driverTag.DriverMarshal(tag)
 
-	item, err := attributevalue.MarshalMap(driverTag)
+	item, err := attributevalue.MarshalMapWithOptions(driverTag)
 	if err != nil {
 		return err
 	}
+
+
+	fmt.Printf("%+#v", item)
 
 	_, err = table.DynamoDbClient.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(table.TableName),

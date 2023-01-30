@@ -15,6 +15,9 @@ type DriverServerGin struct {
 	ControllerPicture interfaceAdapter.ControllerPicture
 	ControllerTag     interfaceAdapter.ControllerTag
 	ControllerUser    interfaceAdapter.ControllerUser
+	ControllerFlickr interfaceAdapter.ControllerFlickr
+	ControllerPexels interfaceAdapter.ControllerPexels
+	ControllerUnsplash interfaceAdapter.ControllerUnsplash
 }
 
 // TODO: check Body and URI match path
@@ -62,10 +65,10 @@ func (d DriverServerGin) Router() *gin.Engine {
 	// routes for multiple users unwanted
 	router.GET("/users/unwanted", wrapperJSONHandler(d.ReadUsers))
 
-	// // routes for scraping the internet
-	// router.POST("/search/flickr/:quality", wrapperJSONHandlerURIS3(cfg, SearchPhotosFlickr))
-	// router.POST("/search/unsplash/:quality", wrapperJSONHandlerURIS3(cfg, SearchPhotosUnsplash))
-	// router.POST("/search/pexels/:quality", wrapperJSONHandlerURIS3(cfg, SearchPhotosPexels))
+	// routes for scraping the internet
+	router.POST("/search/flickr/:quality", wrapperJSONHandlerURI(d.SearchPhotosFlickr))
+	router.POST("/search/unsplash/:quality", wrapperJSONHandlerURI(d.SearchPhotosUnsplash))
+	router.POST("/search/pexels/:quality", wrapperJSONHandlerURI(d.SearchPhotosPexels))
 
 	// start the backend
 	router.Run("0.0.0.0:8080")

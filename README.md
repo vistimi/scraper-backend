@@ -22,17 +22,15 @@ docker network ls
 
 # docker images
 docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
-docker run --rm -it --net scraper-net --name scraper-mongodb mongo:6.0.1
 
 # To test the connection, should not throw an error
-curl --connect-timeout 10 --silent --show-error scraper-mongodb:27017
-curl --connect-timeout 10 --silent --show-error scraper-localstack:4566
+curl --connect-timeout 10 --silent --show-error http://scraper-localstack:4566 || echo "fail"
 ```
 
 #### Backend with Docker
 ```shell
 sudo docker build -t scraper-backend .
-sudo docker run --rm -it --net scraper-net --name scraper-backend --env-file <state>.env scraper-backend
+sudo docker run --rm -it --net scraper-net --name scraper-backend --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
 #### Backend without docker

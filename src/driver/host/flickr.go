@@ -113,8 +113,3 @@ func (d *DriverApiFlickr) InfoPhoto(parser *pagser.Pagser, photo hostModel.Photo
 func (d *DriverApiFlickr) GetFile(url string) ([]byte, error) {
 	return GetFile(url)
 }
-
-
-type ParamsSearchPhotoFlickr struct {
-	Quality string `uri:"quality" binding:"required"`
-}

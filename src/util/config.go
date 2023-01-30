@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"scraper-backend/config"
@@ -104,59 +105,71 @@ func NewConfig() (*Config, error) {
 			return nil, err
 		}
 
-		client.DynamodbCreateTableStandardPkSk(
+		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureProcessName,
 			TablePictureProcessPrimaryKey,
 			TablePictureProcessPrimaryKeyType,
 			TablePictureProcessSortKey,
 			TablePictureProcessSortKeyType,
-		)
-		client.DynamodbCreateTableStandardPkSk(
+		); err != nil {
+			return nil, err
+		}
+		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureValidationName,
 			TablePictureValidationPrimaryKey,
 			TablePictureValidationPrimaryKeyType,
 			TablePictureValidationSortKey,
 			TablePictureValidationSortKeyType,
-		)
-		client.DynamodbCreateTableStandardPkSk(
+		); err != nil {
+			return nil, err
+		}
+		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureProductionName,
 			TablePictureProductionPrimaryKey,
 			TablePictureProductionPrimaryKeyType,
 			TablePictureProductionSortKey,
 			TablePictureProductionSortKeyType,
-		)
-		client.DynamodbCreateTableStandardPkSk(
+		); err != nil {
+			return nil, err
+		}
+		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureBlockedName,
 			TablePictureBlockedPrimaryKey,
 			TablePictureBlockedPrimaryKeyType,
 			TablePictureBlockedSortKey,
 			TablePictureBlockedSortKeyType,
-		)
-		client.DynamodbCreateTableStandardPkSk(
+		); err != nil {
+			return nil, err
+		}
+		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TableTagName,
 			TableTagPrimaryKey,
 			TableTagPrimaryKeyType,
 			TableTagSortKey,
 			TableTagSortKeyType,
-		)
-		client.DynamodbCreateTableStandardPkSk(
+		); err != nil {
+			return nil, err
+		}
+		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TableUserName,
 			TableUserPrimaryKey,
 			TableUserPrimaryKeyType,
 			TableUserSortKey,
 			TableUserSortKeyType,
-		)
+		); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("env variable not valid: %s", env)
 	}
 
-	return &Config{
+	config := Config{
 		AwsS3Client:          AwsS3Client,
 		S3BucketNamePictures: s3BucketNamePictures,
 		AwsDynamodbClient:    AwsDynamodbClient,
@@ -190,5 +203,13 @@ func NewConfig() (*Config, error) {
 			PrimaryKey: TableUserPrimaryKey,
 			SortKey:    &TableUserSortKey,
 		},
-	}, nil
+	}
+
+	configJSON, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("config: %s\n", string(configJSON))
+
+	return &config, nil
 }

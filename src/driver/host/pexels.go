@@ -41,7 +41,3 @@ func (d *DriverApiPexels) SearchPhotosPerPage(tag string, page int) (*hostModel.
 func (d *DriverApiPexels) GetFile(url string) ([]byte, error) {
 	return GetFile(url)
 }
-
-type ParamsSearchPhotoPexels struct {
-	Quality string `uri:"quality" binding:"required"`
-}

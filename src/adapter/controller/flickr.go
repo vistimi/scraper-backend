@@ -16,7 +16,6 @@ import (
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceAdapter "scraper-backend/src/adapter/interface"
-	driverHost "scraper-backend/src/driver/host"
 	interfaceHost "scraper-backend/src/driver/interface/host"
 	"scraper-backend/src/util"
 	utilModel "scraper-backend/src/util/model"
@@ -33,8 +32,7 @@ type ControllerFlickr struct {
 //TODO: use model types
 
 // Find all the photos with specific quality and folder directory.
-func (c *ControllerFlickr) SearchPhotos(ctx context.Context, params driverHost.ParamsSearchPhotoFlickr) error {
-	quality := params.Quality
+func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) error {
 	qualitiesAvailable := []string{"Small", "Medium", "Large", "Original"}
 	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
 	if idx == -1 {

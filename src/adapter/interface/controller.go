@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	controllerModel "scraper-backend/src/adapter/controller/model"
-	driverHost "scraper-backend/src/driver/host"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/google/uuid"
@@ -43,13 +42,13 @@ type ControllerUser interface {
 }
 
 type ControllerFlickr interface {
-	SearchPhotos(ctx context.Context, params driverHost.ParamsSearchPhotoFlickr) error
+	SearchPhotos(ctx context.Context, quality string) error
 }
 
 type ControllerUnsplash interface {
-	SearchPhotos(ctx context.Context, params driverHost.ParamsSearchPhotoUnsplash) error
+	SearchPhotos(ctx context.Context, quality string) error
 }
 
 type ControllerPexels interface {
-	SearchPhotos(ctx context.Context, params driverHost.ParamsSearchPhotoPexels) error
+	SearchPhotos(ctx context.Context, quality string) error
 }

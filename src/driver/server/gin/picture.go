@@ -26,7 +26,7 @@ func (d DriverServerGin) ReadPictureFile(ctx context.Context, params ParamsReadP
 }
 
 type ParamsReadPicturesID struct {
-	Origin     string `uri:"origin" binding:"required"`
+	// Origin     string `uri:"origin" binding:"required"`
 	Collection string `uri:"collection" binding:"required"`
 }
 
@@ -44,13 +44,17 @@ func (d DriverServerGin) ReadPicturesID(ctx context.Context, params ParamsReadPi
 }
 
 type ParamsReadPicture struct {
-	Origin     string    `uri:"origin" binding:"required"`
-	ID         uuid.UUID `uri:"id" binding:"required"`
-	Collection string    `uri:"collection" binding:"required"`
+	Origin     string `uri:"origin" binding:"required"`
+	ID         string `uri:"id" binding:"required"`
+	Collection string `uri:"collection" binding:"required"`
 }
 
 func (d DriverServerGin) ReadPicture(ctx context.Context, params ParamsReadPicture) (*serverModel.Picture, error) {
-	controllerPicture, err := d.ControllerPicture.ReadPicture(ctx, params.Collection, params.Origin, params.ID)
+	id, err := uuid.Parse(params.ID)
+	if err != nil {
+		return nil, err
+	}
+	controllerPicture, err := d.ControllerPicture.ReadPicture(ctx, params.Collection, params.Origin, id)
 	if err != nil || controllerPicture == nil {
 		return nil, err
 	}
@@ -72,25 +76,33 @@ func (d DriverServerGin) ReadPicturesBlocked(ctx context.Context) ([]serverModel
 }
 
 type ParamsDeletePictureAndFile struct {
-	Origin string    `uri:"origin" binding:"required"`
-	ID     uuid.UUID `uri:"id" binding:"required"`
-	Name   string    `uri:"name" binding:"required"`
+	Origin string `uri:"origin" binding:"required"`
+	ID     string `uri:"id" binding:"required"`
+	Name   string `uri:"name" binding:"required"`
 }
 
 func (d DriverServerGin) DeletePictureAndFile(ctx context.Context, params ParamsDeletePictureAndFile) (string, error) {
-	if err := d.ControllerPicture.DeletePictureAndFile(ctx, params.Origin, params.ID, params.Name); err != nil {
+	id, err := uuid.Parse(params.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.DeletePictureAndFile(ctx, params.Origin, id, params.Name); err != nil {
 		return "error", err
 	}
 	return "ok", nil
 }
 
 type ParamsDeletePicture struct {
-	Origin string    `uri:"origin" binding:"required"`
-	ID     uuid.UUID `uri:"id" binding:"required"`
+	Origin string `uri:"origin" binding:"required"`
+	ID     string `uri:"id" binding:"required"`
 }
 
 func (d DriverServerGin) DeletePicture(ctx context.Context, params ParamsDeletePicture) (string, error) {
-	if err := d.ControllerPicture.DeletePicture(ctx, params.Origin, params.ID); err != nil {
+	id, err := uuid.Parse(params.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.DeletePicture(ctx, params.Origin, id); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -98,7 +110,7 @@ func (d DriverServerGin) DeletePicture(ctx context.Context, params ParamsDeleteP
 
 type BodyUpdatePictureTag struct {
 	Origin *string                 `json:"origin"`
-	ID     *uuid.UUID              `json:"id"`
+	ID     *string                 `json:"id"`
 	Tag    *serverModel.PictureTag `json:"tag"`
 }
 
@@ -109,23 +121,35 @@ func (d DriverServerGin) UpdatePictureTag(ctx context.Context, body BodyUpdatePi
 	if body.Tag.BoxInformation == nil {
 		return "error", fmt.Errorf("body not valid, tag.boxInformation missing")
 	}
-	if err := d.ControllerPicture.UpdatePictureTag(ctx, *body.Origin, *body.ID, uuid.New(), body.Tag.DriverUnmarshal()); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.UpdatePictureTag(ctx, *body.Origin, id, uuid.New(), body.Tag.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
 }
 
 type BodyDeletePictureTag struct {
-	Origin *string    `json:"origin"`
-	ID     *uuid.UUID `json:"id"`
-	TagID  *uuid.UUID `json:"tagID"`
+	Origin *string `json:"origin"`
+	ID     *string `json:"id"`
+	TagID  *string `json:"tagID"`
 }
 
 func (d DriverServerGin) DeletePictureTag(ctx context.Context, body BodyDeletePictureTag) (string, error) {
 	if body.Origin == nil || body.ID == nil || body.TagID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.DeletePictureTag(ctx, *body.Origin, *body.ID, *body.TagID); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	tagID, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.DeletePictureTag(ctx, *body.Origin, id, tagID); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -133,7 +157,7 @@ func (d DriverServerGin) DeletePictureTag(ctx context.Context, body BodyDeletePi
 
 type BodyUpdatePictureCrop struct {
 	Origin *string          `json:"origin"`
-	ID     *uuid.UUID       `json:"id"`
+	ID     *string          `json:"id"`
 	Name   *string          `json:"name"`
 	Box    *serverModel.Box `json:"box"`
 }
@@ -142,7 +166,11 @@ func (d DriverServerGin) UpdatePictureCrop(ctx context.Context, body BodyUpdateP
 	if body.Origin == nil || body.ID == nil || body.Name == nil || body.Box == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.UpdatePictureCrop(ctx, *body.Origin, *body.ID, *body.Name, uuid.New(), body.Box.DriverUnmarshal()); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.UpdatePictureCrop(ctx, *body.Origin, id, *body.Name, uuid.New(), body.Box.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -150,9 +178,9 @@ func (d DriverServerGin) UpdatePictureCrop(ctx context.Context, body BodyUpdateP
 
 type BodyCreatePictureCrop struct {
 	Origin      *string          `json:"origin"`
-	ID          *uuid.UUID       `json:"id"`
+	ID          *string          `json:"id"`
 	Name        *string          `json:"name"`
-	ImageSizeID *uuid.UUID       `json:"imageSizeID"`
+	ImageSizeID *string          `json:"imageSizeID"`
 	Box         *serverModel.Box `json:"box"`
 }
 
@@ -160,69 +188,93 @@ func (d DriverServerGin) CreatePictureCrop(ctx context.Context, body BodyCreateP
 	if body.Origin == nil || body.ID == nil || body.Name == nil || body.ImageSizeID == nil || body.Box == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.CreatePictureCrop(ctx, *body.Origin, *body.ID, uuid.New(), *body.ImageSizeID, body.Box.DriverUnmarshal()); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	imageSizeID, err := uuid.Parse(*body.ImageSizeID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.CreatePictureCrop(ctx, *body.Origin, id, uuid.New(), imageSizeID, body.Box.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
 }
 
 type BodyCreatePictureCopy struct {
-	Origin *string    `json:"origin"`
-	ID     *uuid.UUID `json:"id"`
+	Origin *string `json:"origin"`
+	ID     *string `json:"id"`
 }
 
 func (d DriverServerGin) CreatePictureCopy(ctx context.Context, body BodyCreatePictureCopy) (string, error) {
 	if body.Origin == nil || body.ID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.CreatePictureCopy(ctx, *body.Origin, *body.ID, uuid.New()); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.CreatePictureCopy(ctx, *body.Origin, id, uuid.New()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
 }
 
 type BodyUpdatePictureTransfer struct {
-	Origin *string    `json:"origin"`
-	ID     *uuid.UUID `json:"id"`
-	From   *string    `json:"from"`
-	To     *string    `json:"from"`
+	Origin *string `json:"origin"`
+	ID     *string `json:"id"`
+	From   *string `json:"from"`
+	To     *string `json:"to"`
 }
 
 func (d DriverServerGin) UpdatePictureTransfer(ctx context.Context, body BodyUpdatePictureTransfer) (string, error) {
 	if body.Origin == nil || body.ID == nil || body.From == nil || body.To == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.UpdatePictureTransfer(ctx, *body.Origin, *body.ID, *body.From, *body.To); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.UpdatePictureTransfer(ctx, *body.Origin, id, *body.From, *body.To); err != nil {
 		return "error", err
 	}
 	return "ok", nil
 }
 
 type BodyCreatePictureBlocked struct {
-	Origin *string    `json:"origin"`
-	ID     *uuid.UUID `json:"id"`
+	Origin *string `json:"origin"`
+	ID     *string `json:"id"`
 }
 
 func (d DriverServerGin) CreatePictureBlocked(ctx context.Context, body BodyCreatePictureBlocked) (string, error) {
 	if body.Origin == nil || body.ID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.UpdatePictureTransfer(ctx, *body.Origin, *body.ID, "process", "blocked"); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.UpdatePictureTransfer(ctx, *body.Origin, id, "process", "blocked"); err != nil {
 		return "error", err
 	}
 	return "ok", nil
 }
 
 type BodyDeletePictureBlocked struct {
-	Origin *string    `json:"origin"`
-	ID     *uuid.UUID `json:"id"`
+	Origin *string `json:"origin"`
+	ID     *string `json:"id"`
 }
 
 func (d DriverServerGin) DeletePictureBlocked(ctx context.Context, body BodyCreatePictureBlocked) (string, error) {
 	if body.Origin == nil || body.ID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if err := d.ControllerPicture.UpdatePictureTransfer(ctx, *body.Origin, *body.ID, "blocked", "process"); err != nil {
+	id, err := uuid.Parse(*body.ID)
+	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerPicture.UpdatePictureTransfer(ctx, *body.Origin, id, "blocked", "process"); err != nil {
 		return "error", err
 	}
 	return "ok", nil

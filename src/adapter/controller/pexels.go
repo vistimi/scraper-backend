@@ -17,7 +17,6 @@ import (
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceAdapter "scraper-backend/src/adapter/interface"
-	driverHost "scraper-backend/src/driver/host"
 	interfaceHost "scraper-backend/src/driver/interface/host"
 	utilModel "scraper-backend/src/util/model"
 )
@@ -31,8 +30,7 @@ type ControllerPexels struct {
 
 //TODO: use model types
 
-func (c *ControllerPexels) SearchPhotos(ctx context.Context, params driverHost.ParamsSearchPhotoPexels) error {
-	quality := params.Quality
+func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) error {
 	qualitiesAvailable := []string{"large2x", "large", "medium", "small", "portrait", "landscape", "tiny"}
 	idx := slices.IndexFunc(qualitiesAvailable, func(qualityAvailable string) bool { return qualityAvailable == quality })
 	if idx == -1 {

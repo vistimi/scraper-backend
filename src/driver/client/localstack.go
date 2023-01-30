@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -29,6 +30,12 @@ func NewConfigLocalstack(url string) (aws.Config, error) {
 	return config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(awsRegion),
 		config.WithEndpointResolverWithOptions(customResolver),
+		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
+			Value: aws.Credentials{
+				AccessKeyID: "dummy", SecretAccessKey: "dummy", SessionToken: "dummy",
+				Source: "Hard-coded credentials; values are irrelevant for local DynamoDB",
+			},
+		}),
 	)
 }
 
@@ -52,6 +59,14 @@ func DynamodbCreateTableStandardPkSk(client *dynamodb.Client, tableName, primary
 	if primaryKeyAttributeType == "" || sortKeyAttributeType == "" {
 		return fmt.Errorf("invalid key type: %s, %s", primaryKeyType, sortKeyType)
 	}
+
+	_, err := client.DescribeTable(context.TODO(), &dynamodb.DescribeTableInput{
+		TableName: aws.String(tableName),
+	})
+	if err == nil {
+		return nil
+	}
+
 	if _, err := client.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{

@@ -46,6 +46,7 @@ USER $USER_NAME
 WORKDIR /usr/app
 
 COPY --from=builder-workflow /usr/tmp/scraper /usr/app/scraper
+COPY --from=builder-workflow /usr/tmp/config /usr/app/config
 
 EXPOSE 8080
 

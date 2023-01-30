@@ -16,13 +16,16 @@ func (d DriverServerGin) CreateUserBlocked(ctx context.Context, user serverModel
 }
 
 type ParamsDeleteUser struct {
-	Origin string    `uri:"origin" binding:"required"`
-	ID     uuid.UUID `uri:"id" binding:"required"`
+	Origin string `uri:"origin" binding:"required"`
+	ID     string `uri:"id" binding:"required"`
 }
 
 func (d DriverServerGin) DeleteUserBlocked(ctx context.Context, params ParamsDeleteUser) (string, error) {
-	err := d.ControllerUser.DeleteUser(ctx, params.Origin, params.ID)
+	id, err := uuid.Parse(params.ID)
 	if err != nil {
+		return "error", err
+	}
+	if err := d.ControllerUser.DeleteUser(ctx, params.Origin, id); err != nil {
 		return "error", err
 	}
 	return "ok", nil

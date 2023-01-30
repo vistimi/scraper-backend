@@ -10,10 +10,16 @@ func Contructor(
 	controllerPicture interfaceAdapter.ControllerPicture,
 	controllerTag interfaceAdapter.ControllerTag,
 	controllerUser interfaceAdapter.ControllerUser,
+	controllerFlickr interfaceAdapter.ControllerFlickr,
+	controllerPexels interfaceAdapter.ControllerPexels,
+	controllerUnsplash interfaceAdapter.ControllerUnsplash,
 ) interfaceServer.DriverServerGin {
 	return &driverServerGin.DriverServerGin{
-		ControllerPicture: controllerPicture,
-		ControllerTag:     controllerTag,
-		ControllerUser:    controllerUser,
+		ControllerPicture:  controllerPicture,
+		ControllerTag:      controllerTag,
+		ControllerUser:     controllerUser,
+		ControllerFlickr:   controllerFlickr,
+		ControllerPexels:   controllerPexels,
+		ControllerUnsplash: controllerUnsplash,
 	}
 }

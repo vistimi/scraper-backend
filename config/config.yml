@@ -10,31 +10,31 @@ dynamodb:
     primaryKeyName: Origin
     primaryKeyType: S
     sortKeyName: ID
-    sortKeyType: S
+    sortKeyType: B
   tablePictureProduction:
     name: pictureProduction
     primaryKeyName: Origin
     primaryKeyType: S
     sortKeyName: ID
-    sortKeyType: S
+    sortKeyType: B
   tablePictureBlocked:
     name: pictureBlocked
     primaryKeyName: Origin
     primaryKeyType: S
     sortKeyName: ID
-    sortKeyType: S
+    sortKeyType: B
   tableTag:
     name: tag
     primaryKeyName: Type
     primaryKeyType: S
     sortKeyName: ID
-    sortKeyType: S
+    sortKeyType: B
   tableUser:
     name: user
     primaryKeyName: Origin
     primaryKeyType: S
     sortKeyName: ID
-    sortKeyType: S
+    sortKeyType: B
 
 buckets:
   env:

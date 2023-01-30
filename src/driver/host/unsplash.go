@@ -40,7 +40,3 @@ func (d *DriverApiUnsplash) SearchPhotosPerPage(tag string, page int) (*unsplash
 func (d *DriverApiUnsplash) GetFile(url string) ([]byte, error) {
 	return GetFile(url)
 }
-
-type ParamsSearchPhotoUnsplash struct {
-	Quality string `uri:"quality" binding:"required"`
-}
