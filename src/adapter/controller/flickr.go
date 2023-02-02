@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/foolin/pagser"
-	"github.com/google/uuid"
 
 	"golang.org/x/exp/slices"
 
@@ -16,10 +15,10 @@ import (
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceAdapter "scraper-backend/src/adapter/interface"
-	interfaceHost "scraper-backend/src/driver/interface/host"
-	"scraper-backend/src/util"
-	utilModel "scraper-backend/src/util/model"
 	hostModel "scraper-backend/src/driver/host/model"
+	interfaceHost "scraper-backend/src/driver/interface/host"
+	model "scraper-backend/src/driver/model"
+	"scraper-backend/src/util"
 )
 
 type ControllerFlickr struct {
@@ -156,10 +155,11 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 					}
 
 					// image creation
-					imageSizeID := uuid.New()
-					tags := make(map[uuid.UUID]controllerModel.PictureTag)
+					imageSizeID := model.NewUUID()
+					tags := make(map[model.UUID]controllerModel.PictureTag)
 					now := time.Now()
 					user := controllerModel.User{
+						ID:           model.NewUUID(),
 						Origin:       origin,
 						Name:         infoData.UserName,
 						OriginID:     infoData.UserID,
@@ -173,26 +173,24 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 						Height: downloadData.Photos[idx].Height,
 					}
 					for _, infoDataTag := range infoData.Tags {
-						tags[uuid.New()] = controllerModel.PictureTag{
+						tags[model.NewUUID()] = controllerModel.PictureTag{
 							Name:         strings.ToLower(infoDataTag.Name),
 							CreationDate: now,
 							OriginName:   origin,
-							BoxInformation: utilModel.Nullable[controllerModel.BoxInformation]{
-								Valid: true,
-								Body: controllerModel.BoxInformation{
-									ImageSizeID: imageSizeID,
-									Box: box,
-								},
-							},
+							BoxInformation: model.NewNullable(controllerModel.BoxInformation{
+								ImageSizeID: imageSizeID,
+								Box:         box,
+							}),
 						}
 					}
-					sizes := map[uuid.UUID]controllerModel.PictureSize{
+					sizes := map[model.UUID]controllerModel.PictureSize{
 						imageSizeID: {
 							CreationDate: now,
 							Box:          box,
 						},
 					}
 					document := controllerModel.Picture{
+						ID:           model.NewUUID(),
 						Origin:       origin,
 						OriginID:     photo.ID,
 						User:         user,
@@ -206,7 +204,7 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 						Tags:         tags,
 					}
 
-					if c.ControllerPicture.CreatePicture(ctx, uuid.New(), document, buffer); err != nil {
+					if c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), document, buffer); err != nil {
 						return fmt.Errorf("CreatePicture has failed: %v", err)
 					}
 				}

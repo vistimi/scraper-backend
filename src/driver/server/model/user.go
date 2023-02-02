@@ -4,16 +4,15 @@ import (
 	"time"
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
-
-	"github.com/google/uuid"
+	model "scraper-backend/src/driver/model"
 )
 
 type User struct {
-	Origin       string    `json:"origin,omitempty"`
-	ID           uuid.UUID `json:"id,omitempty"`
-	Name         string    `json:"name,omitempty"`
-	OriginID     string    `json:"originID,omitempty"`
-	CreationDate time.Time `json:"creationDate,omitempty"`
+	Origin       string     `json:"origin,omitempty"`
+	ID           model.UUID `json:"id,omitempty"`
+	Name         string     `json:"name,omitempty"`
+	OriginID     string     `json:"originID,omitempty"`
+	CreationDate time.Time  `json:"creationDate,omitempty"`
 }
 
 func (u *User) DriverMarshal(value controllerModel.User) {

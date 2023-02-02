@@ -2,9 +2,8 @@ package gin
 
 import (
 	"context"
+	"scraper-backend/src/driver/model"
 	serverModel "scraper-backend/src/driver/server/model"
-
-	"github.com/google/uuid"
 )
 
 func (d DriverServerGin) CreateUserBlocked(ctx context.Context, user serverModel.User) (string, error) {
@@ -21,7 +20,7 @@ type ParamsDeleteUser struct {
 }
 
 func (d DriverServerGin) DeleteUserBlocked(ctx context.Context, params ParamsDeleteUser) (string, error) {
-	id, err := uuid.Parse(params.ID)
+	id, err := model.ParseUUID(params.ID)
 	if err != nil {
 		return "error", err
 	}

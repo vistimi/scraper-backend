@@ -2,25 +2,23 @@ package controller
 
 import (
 	"database/sql"
-	utilModel "scraper-backend/src/util/model"
+	model "scraper-backend/src/driver/model"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Picture struct {
-	Origin       string                    
-	ID           uuid.UUID                 
-	Name         string                    
-	OriginID     string                    
-	User         User                      
-	Extension    string                    
-	Sizes        map[uuid.UUID]PictureSize 
-	Title        string                    
-	Description  string                    
-	License      string                    
-	CreationDate time.Time                 
-	Tags         map[uuid.UUID]PictureTag  
+	Origin       string
+	ID           model.UUID
+	Name         string
+	OriginID     string
+	User         User
+	Extension    string
+	Sizes        map[model.UUID]PictureSize
+	Title        string
+	Description  string
+	License      string
+	CreationDate time.Time
+	Tags         map[model.UUID]PictureTag
 }
 
 type PictureSize struct {
@@ -39,13 +37,13 @@ type PictureTag struct {
 	Name           string
 	CreationDate   time.Time
 	OriginName     string
-	BoxInformation utilModel.Nullable[BoxInformation]
+	BoxInformation model.Nullable[BoxInformation]
 }
 
 type BoxInformation struct {
 	Model       sql.NullString
 	Weights     sql.NullString
-	ImageSizeID uuid.UUID
+	ImageSizeID model.UUID
 	Box         Box
 	Confidence  sql.NullFloat64
 }

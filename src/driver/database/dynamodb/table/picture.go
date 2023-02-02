@@ -11,8 +11,7 @@ import (
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	dynamodbModel "scraper-backend/src/driver/database/dynamodb/model"
-
-	"github.com/google/uuid"
+	"scraper-backend/src/driver/model"
 )
 
 type TablePicture struct {
@@ -22,7 +21,7 @@ type TablePicture struct {
 	SortKey        string // ID
 }
 
-func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.Picture, error) {
+func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, sortKey model.UUID) (*controllerModel.Picture, error) {
 	input := &awsDynamodb.GetItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
@@ -66,19 +65,23 @@ func (table TablePicture) ReadPictures(ctx context.Context, projection *expressi
 		builder = builder.WithFilter(*filter)
 	}
 
-	expr, err := builder.Build()
-	if err != nil {
-		return nil, err
+	scanInput := awsDynamodb.ScanInput{
+		TableName: aws.String(table.TableName),
 	}
 
-	response, err = table.DynamoDbClient.Scan(ctx, &awsDynamodb.ScanInput{
-		TableName:                 aws.String(table.TableName),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		// KeyConditionExpression:    expr.KeyCondition(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-	})
+	if projection != nil || filter != nil {
+		expr, err := builder.Build()
+		if err != nil {
+			return nil, err
+		}
+		scanInput.ExpressionAttributeNames = expr.Names()
+		scanInput.ExpressionAttributeValues = expr.Values()
+		// scanInput.KeyConditionExpression:    expr.KeyCondition()
+		scanInput.FilterExpression = expr.Filter()
+		scanInput.ProjectionExpression = expr.Projection()
+	}
+
+	response, err = table.DynamoDbClient.Scan(ctx, &scanInput)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +100,7 @@ func (table TablePicture) ReadPictures(ctx context.Context, projection *expressi
 	return controllerPictures, nil
 }
 
-func (table TablePicture) CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture) error {
+func (table TablePicture) CreatePicture(ctx context.Context, id model.UUID, picture controllerModel.Picture) error {
 	var driverPicture dynamodbModel.Picture
 	driverPicture.DriverMarshal(picture)
 	driverPicture.ID = id
@@ -116,7 +119,7 @@ func (table TablePicture) CreatePicture(ctx context.Context, id uuid.UUID, pictu
 	return nil
 }
 
-func (table TablePicture) DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (table TablePicture) DeletePicture(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &awsDynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
@@ -134,7 +137,7 @@ func (table TablePicture) DeletePicture(ctx context.Context, primaryKey string, 
 	return err
 }
 
-func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID) error {
+func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID) error {
 	// Build the update expression
 	updateExpr, err := expression.NewBuilder().
 		WithUpdate(expression.Delete(expression.Name("tags"), expression.Value(tagID.String()))).
@@ -166,12 +169,12 @@ func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey strin
 	return nil
 }
 
-func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error {
+func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID, tag controllerModel.PictureTag) error {
 	var driverTag dynamodbModel.PictureTag
 	driverTag.DriverMarshal(tag)
 
 	// Build the update expression
-	tagMap := map[uuid.UUID]dynamodbModel.PictureTag{tagID: driverTag}
+	tagMap := map[model.UUID]dynamodbModel.PictureTag{tagID: driverTag}
 	updateExpr, err := expression.NewBuilder().
 		WithUpdate(expression.Add(expression.Name("tags"), expression.Value(tagMap))).
 		Build()
@@ -202,13 +205,13 @@ func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey strin
 	return nil
 }
 
-func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error {
+func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID, tag controllerModel.PictureTag) error {
 	var driverTag dynamodbModel.PictureTag
 	driverTag.DriverMarshal(tag)
 
 	// Build the update expression
 	updateExpr, err := expression.NewBuilder().
-		WithUpdate(expression.Set(expression.Name("tags"), expression.Value(map[uuid.UUID]dynamodbModel.PictureTag{tagID: driverTag}))).
+		WithUpdate(expression.Set(expression.Name("tags"), expression.Value(map[model.UUID]dynamodbModel.PictureTag{tagID: driverTag}))).
 		Build()
 	if err != nil {
 		return err
@@ -237,12 +240,12 @@ func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey strin
 	return nil
 }
 
-func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey string, sortKey uuid.UUID, size controllerModel.PictureSize) error {
+func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey string, sortKey model.UUID, size controllerModel.PictureSize) error {
 	var driverSize dynamodbModel.PictureSize
 	driverSize.DriverMarshal(size)
 
 	// Build the update expression
-	sizeMap := map[uuid.UUID]dynamodbModel.PictureSize{uuid.New(): driverSize}
+	sizeMap := map[model.UUID]dynamodbModel.PictureSize{model.NewUUID(): driverSize}
 	updateExpr, err := expression.NewBuilder().
 		WithUpdate(expression.Add(expression.Name("size"), expression.Value(sizeMap))).
 		Build()

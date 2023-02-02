@@ -21,8 +21,10 @@
 	// "forwardPorts": [],
 	// "appPort": [],
 	"initializeCommand": "if [ ! \"$(docker network ls | grep scraper-net)\" ]; then docker network create scraper-net; fi",
-	"postStartCommand": "go install github.com/davidrjenni/reftools/cmd/fillstruct@latest",
-	"features": {},
+	"postStartCommand": "aws configure set aws_access_key_id $AWS_ACCESS_KEY --profile $AWS_PROFILE && aws configure set --profile $AWS_PROFILE aws_secret_access_key $AWS_SECRET_KEY --profile $AWS_PROFILE && aws configure set region $AWS_REGION --profile $AWS_PROFILE && aws configure set output 'text' --profile $AWS_PROFILE && aws configure list && go install github.com/davidrjenni/reftools/cmd/fillstruct@latest",
+	"features": {
+		"ghcr.io/devcontainers/features/aws-cli": "latest"
+	},
 	"customizations": {
 		"vscode": {
 			"extensions": [

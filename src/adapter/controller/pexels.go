@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/google/uuid"
 
 	"golang.org/x/exp/slices"
 
@@ -18,7 +17,7 @@ import (
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceAdapter "scraper-backend/src/adapter/interface"
 	interfaceHost "scraper-backend/src/driver/interface/host"
-	utilModel "scraper-backend/src/util/model"
+	model "scraper-backend/src/driver/model"
 )
 
 type ControllerPexels struct {
@@ -116,8 +115,9 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 
 				// image creation
 				now := time.Now()
-				imageSizeID := uuid.New()
+				imageSizeID := model.NewUUID()
 				user := controllerModel.User{
+					ID:           model.NewUUID(),
 					Origin:       origin,
 					Name:         photo.Photographer,
 					OriginID:     fmt.Sprint(photo.PhotographerID),
@@ -142,27 +142,25 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 					Width:  width,
 					Height: height,
 				}
-				tags := map[uuid.UUID]controllerModel.PictureTag{
-					uuid.New(): {
+				tags := map[model.UUID]controllerModel.PictureTag{
+					model.NewUUID(): {
 						Name:         strings.ToLower(searchedTag.Name),
 						CreationDate: now,
 						OriginName:   origin,
-						BoxInformation: utilModel.Nullable[controllerModel.BoxInformation]{
-							Valid: true,
-							Body: controllerModel.BoxInformation{
-								ImageSizeID: imageSizeID,
-								Box:         box,
-							},
-						},
+						BoxInformation: model.NewNullable(controllerModel.BoxInformation{
+							ImageSizeID: imageSizeID,
+							Box:         box,
+						}),
 					},
 				}
-				sizes := map[uuid.UUID]controllerModel.PictureSize{
+				sizes := map[model.UUID]controllerModel.PictureSize{
 					imageSizeID: {
 						CreationDate: now,
 						Box:          box,
 					},
 				}
 				document := controllerModel.Picture{
+					ID:           model.NewUUID(),
 					Origin:       origin,
 					OriginID:     fmt.Sprint(photo.ID),
 					User:         user,
@@ -176,7 +174,7 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 					Tags:         tags,
 				}
 
-				if c.ControllerPicture.CreatePicture(ctx, uuid.New(), document, buffer); err != nil {
+				if c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), document, buffer); err != nil {
 					return fmt.Errorf("CreatePicture has failed: %v", err)
 				}
 			}

@@ -8,12 +8,7 @@ VSCode and Docker
 
 ## Run
 
-Run in devcontainer the backend and spawn in other terminals the localstack and mongodb.
-
-- ***Create network for docker*** (otherwise it will fail)
-- MongoDB
-- Localstack
-- Backend
+Run in devcontainer the backend and spawn in an other terminal localstack.
 
 ```shell
 # network
@@ -25,6 +20,13 @@ docker run --rm -it --net scraper-net --name scraper-localstack localstack/local
 
 # To test the connection, should not throw an error
 curl --connect-timeout 10 --silent --show-error http://scraper-localstack:4566 || echo "fail"
+```
+
+To check the tables with aws cli:
+    
+```shell
+aws --endpoint-url=http://scraper-localstack:4566 dynamodb describe-table --table-name scraper-backend-test-pictureProcess
+aws dynamodb scan --endpoint-url=http://scraper-localstack:4566 --table-name scraper-backend-test-pictureProcess
 ```
 
 #### Backend with Docker
@@ -57,6 +59,10 @@ Create a local.env file:
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
+    AWS_REGION=us-east-1
+    AWS_PROFILE=dummy
+    AWS_ACCESS_KEY=dummy
+    AWS_SECRET_KEY=dummy
 
 CLOUD_HOST is either `aws`, `localstack`
 

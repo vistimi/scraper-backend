@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"scraper-backend/src/driver/model"
 	serverModel "scraper-backend/src/driver/server/model"
-
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/google/uuid"
 )
 
 type ParamsReadPictureFile struct {
@@ -26,13 +24,12 @@ func (d DriverServerGin) ReadPictureFile(ctx context.Context, params ParamsReadP
 }
 
 type ParamsReadPicturesID struct {
-	// Origin     string `uri:"origin" binding:"required"`
 	Collection string `uri:"collection" binding:"required"`
 }
 
 func (d DriverServerGin) ReadPicturesID(ctx context.Context, params ParamsReadPicturesID) ([]serverModel.Picture, error) {
-	projEx := expression.NamesList(expression.Name("ID"))
-	controllerPictures, err := d.ControllerPicture.ReadPictures(ctx, params.Collection, &projEx, nil)
+	// projEx := expression.NamesList(expression.Name("ID"))
+	controllerPictures, err := d.ControllerPicture.ReadPictures(ctx, params.Collection, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +47,7 @@ type ParamsReadPicture struct {
 }
 
 func (d DriverServerGin) ReadPicture(ctx context.Context, params ParamsReadPicture) (*serverModel.Picture, error) {
-	id, err := uuid.Parse(params.ID)
+	id, err := model.ParseUUID(params.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +79,7 @@ type ParamsDeletePictureAndFile struct {
 }
 
 func (d DriverServerGin) DeletePictureAndFile(ctx context.Context, params ParamsDeletePictureAndFile) (string, error) {
-	id, err := uuid.Parse(params.ID)
+	id, err := model.ParseUUID(params.ID)
 	if err != nil {
 		return "error", err
 	}
@@ -98,7 +95,7 @@ type ParamsDeletePicture struct {
 }
 
 func (d DriverServerGin) DeletePicture(ctx context.Context, params ParamsDeletePicture) (string, error) {
-	id, err := uuid.Parse(params.ID)
+	id, err := model.ParseUUID(params.ID)
 	if err != nil {
 		return "error", err
 	}
@@ -121,11 +118,11 @@ func (d DriverServerGin) UpdatePictureTag(ctx context.Context, body BodyUpdatePi
 	if body.Tag.BoxInformation == nil {
 		return "error", fmt.Errorf("body not valid, tag.boxInformation missing")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
-	if err := d.ControllerPicture.UpdatePictureTag(ctx, *body.Origin, id, uuid.New(), body.Tag.DriverUnmarshal()); err != nil {
+	if err := d.ControllerPicture.UpdatePictureTag(ctx, *body.Origin, id, model.NewUUID(), body.Tag.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -141,11 +138,11 @@ func (d DriverServerGin) DeletePictureTag(ctx context.Context, body BodyDeletePi
 	if body.Origin == nil || body.ID == nil || body.TagID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
-	tagID, err := uuid.Parse(*body.ID)
+	tagID, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
@@ -166,11 +163,11 @@ func (d DriverServerGin) UpdatePictureCrop(ctx context.Context, body BodyUpdateP
 	if body.Origin == nil || body.ID == nil || body.Name == nil || body.Box == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
-	if err := d.ControllerPicture.UpdatePictureCrop(ctx, *body.Origin, id, *body.Name, uuid.New(), body.Box.DriverUnmarshal()); err != nil {
+	if err := d.ControllerPicture.UpdatePictureCrop(ctx, *body.Origin, id, *body.Name, model.NewUUID(), body.Box.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -188,15 +185,15 @@ func (d DriverServerGin) CreatePictureCrop(ctx context.Context, body BodyCreateP
 	if body.Origin == nil || body.ID == nil || body.Name == nil || body.ImageSizeID == nil || body.Box == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
-	imageSizeID, err := uuid.Parse(*body.ImageSizeID)
+	imageSizeID, err := model.ParseUUID(*body.ImageSizeID)
 	if err != nil {
 		return "error", err
 	}
-	if err := d.ControllerPicture.CreatePictureCrop(ctx, *body.Origin, id, uuid.New(), imageSizeID, body.Box.DriverUnmarshal()); err != nil {
+	if err := d.ControllerPicture.CreatePictureCrop(ctx, *body.Origin, id, model.NewUUID(), imageSizeID, body.Box.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -211,11 +208,11 @@ func (d DriverServerGin) CreatePictureCopy(ctx context.Context, body BodyCreateP
 	if body.Origin == nil || body.ID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
-	if err := d.ControllerPicture.CreatePictureCopy(ctx, *body.Origin, id, uuid.New()); err != nil {
+	if err := d.ControllerPicture.CreatePictureCopy(ctx, *body.Origin, id, model.NewUUID()); err != nil {
 		return "error", err
 	}
 	return "ok", nil
@@ -232,7 +229,7 @@ func (d DriverServerGin) UpdatePictureTransfer(ctx context.Context, body BodyUpd
 	if body.Origin == nil || body.ID == nil || body.From == nil || body.To == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
@@ -251,7 +248,7 @@ func (d DriverServerGin) CreatePictureBlocked(ctx context.Context, body BodyCrea
 	if body.Origin == nil || body.ID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
@@ -270,7 +267,7 @@ func (d DriverServerGin) DeletePictureBlocked(ctx context.Context, body BodyCrea
 	if body.Origin == nil || body.ID == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	id, err := uuid.Parse(*body.ID)
+	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}

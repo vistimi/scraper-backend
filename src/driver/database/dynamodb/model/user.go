@@ -2,17 +2,16 @@ package dynamodb
 
 import (
 	controllerModel "scraper-backend/src/adapter/controller/model"
+	model "scraper-backend/src/driver/model"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type User struct {
-	Origin       string    `dynamodbav:"Origin"` // PK original website
-	ID           uuid.UUID `dynamodbav:"ID"` // SK
-	Name         string    `dynamodbav:"Name"` // userName
-	OriginID     string    `dynamodbav:"OriginID"` // ID from the original website
-	CreationDate time.Time `dynamodbav:"CreationDate"`
+	Origin       string     `dynamodbav:"Origin"`   // PK original website
+	ID           model.UUID `dynamodbav:"ID"`       // SK
+	Name         string     `dynamodbav:"Name"`     // userName
+	OriginID     string     `dynamodbav:"OriginID"` // ID from the original website
+	CreationDate time.Time  `dynamodbav:"CreationDate"`
 }
 
 func (u *User) DriverMarshal(value controllerModel.User) {

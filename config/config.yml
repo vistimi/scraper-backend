@@ -4,7 +4,7 @@ dynamodb:
     primaryKeyName: Origin
     primaryKeyType: S
     sortKeyName: ID
-    sortKeyType: S
+    sortKeyType: B
   tablePictureValidation:
     name: pictureValidation
     primaryKeyName: Origin

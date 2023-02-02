@@ -11,8 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-func NewConfigLocalstack(url string) (aws.Config, error) {
-	awsRegion := "us-east-1"
+func NewConfigLocalstack(url, awsRegion, accessKeyID, secretAccessKey string) (aws.Config, error) {
 
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		if url != "" {
@@ -32,7 +31,7 @@ func NewConfigLocalstack(url string) (aws.Config, error) {
 		config.WithEndpointResolverWithOptions(customResolver),
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: aws.Credentials{
-				AccessKeyID: "dummy", SecretAccessKey: "dummy", SessionToken: "dummy",
+				AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey, SessionToken: "dummy",
 				Source: "Hard-coded credentials; values are irrelevant for local DynamoDB",
 			},
 		}),

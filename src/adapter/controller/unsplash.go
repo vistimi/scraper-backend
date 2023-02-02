@@ -8,7 +8,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/google/uuid"
 	"github.com/hbagdi/go-unsplash/unsplash"
 
 	"strings"
@@ -18,8 +17,8 @@ import (
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceAdapter "scraper-backend/src/adapter/interface"
 	interfaceHost "scraper-backend/src/driver/interface/host"
+	model "scraper-backend/src/driver/model"
 	"scraper-backend/src/util"
-	utilModel "scraper-backend/src/util/model"
 )
 
 type ControllerUnsplash struct {
@@ -160,36 +159,34 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 					Height: height,
 				}
 
-				tags := make(map[uuid.UUID]controllerModel.PictureTag)
+				tags := make(map[model.UUID]controllerModel.PictureTag)
 				now := time.Now()
-				imageSizeID := uuid.New()
+				imageSizeID := model.NewUUID()
 				for _, photoTag := range *photo.Tags {
 					var tagTitle string
 					if photoTag.Title != nil {
 						tagTitle = *photoTag.Title
 					}
-					tags[uuid.New()] = controllerModel.PictureTag{
+					tags[model.NewUUID()] = controllerModel.PictureTag{
 						Name:         strings.ToLower(tagTitle),
 						CreationDate: now,
 						OriginName:   origin,
-						BoxInformation: utilModel.Nullable[controllerModel.BoxInformation]{
-							Valid: true,
-							Body: controllerModel.BoxInformation{
-								ImageSizeID: imageSizeID,
-								Box:         box,
-							},
-						},
+						BoxInformation: model.NewNullable(controllerModel.BoxInformation{
+							ImageSizeID: imageSizeID,
+							Box:         box,
+						}),
 					}
 				}
 
 				// image creation
 				user := controllerModel.User{
+					ID:           model.NewUUID(),
 					Origin:       origin,
 					Name:         userName,
 					OriginID:     UserID,
 					CreationDate: now,
 				}
-				sizes := map[uuid.UUID]controllerModel.PictureSize{
+				sizes := map[model.UUID]controllerModel.PictureSize{
 					imageSizeID: {
 						CreationDate: now,
 						Box:          box,
@@ -204,6 +201,7 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 					description = *photo.AltDescription
 				}
 				document := controllerModel.Picture{
+					ID:           model.NewUUID(),
 					Origin:       origin,
 					OriginID:     originID,
 					User:         user,
@@ -217,7 +215,9 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 					Tags:         tags,
 				}
 
-				if c.ControllerPicture.CreatePicture(ctx, uuid.New(), document, buffer); err != nil {
+				fmt.Printf("\ndocument %+#v\n", document)
+
+				if c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), document, buffer); err != nil {
 					return fmt.Errorf("CreatePicture has failed: %v", err)
 				}
 			}

@@ -5,24 +5,22 @@ import (
 	"time"
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
-	utilModel "scraper-backend/src/util/model"
-
-	"github.com/google/uuid"
+	model "scraper-backend/src/driver/model"
 )
 
 type Picture struct {
-	Origin       string                    `dynamodbav:"Origin"`   // PK original werbsite
-	ID           uuid.UUID                 `dynamodbav:"ID"`       // SK
-	Name         string                    `dynamodbav:"Name"`     // name <originID>_time
-	OriginID     string                    `dynamodbav:"OriginID"` // id from original website
-	User         User                      `dynamodbav:"User"`
-	Extension    string                    `dynamodbav:"Extension"` // type of file
-	Sizes        map[uuid.UUID]PictureSize `dynamodbav:"Sizes"`     // size cropping history
-	Title        string                    `dynamodbav:"Title"`
-	Description  string                    `dynamodbav:"Description"` // decription of picture
-	License      string                    `dynamodbav:"License"`     // type of public license
-	CreationDate time.Time                 `dynamodbav:"CreationDate"`
-	Tags         map[uuid.UUID]PictureTag  `dynamodbav:"Tags"`
+	Origin       string                     `dynamodbav:"Origin"`   // PK original werbsite
+	ID           model.UUID                 `dynamodbav:"ID"`       // SK
+	Name         string                     `dynamodbav:"Name"`     // name <originID>_time
+	OriginID     string                     `dynamodbav:"OriginID"` // id from original website
+	User         User                       `dynamodbav:"User"`
+	Extension    string                     `dynamodbav:"Extension"` // type of file
+	Sizes        map[model.UUID]PictureSize `dynamodbav:"Sizes"`     // size cropping history
+	Title        string                     `dynamodbav:"Title"`
+	Description  string                     `dynamodbav:"Description"` // decription of picture
+	License      string                     `dynamodbav:"License"`     // type of public license
+	CreationDate time.Time                  `dynamodbav:"CreationDate"`
+	Tags         map[model.UUID]PictureTag  `dynamodbav:"Tags"`
 }
 
 func (p *Picture) DriverMarshal(value controllerModel.Picture) {
@@ -40,11 +38,11 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	user.DriverMarshal(value.User)
 	p.User = user
 
-	// size, err := ConvertMap[uuid.UUID, controllerModel.PictureSize, PictureSize](value.Size)
+	// size, err := ConvertMap[model.UUID, controllerModel.PictureSize, PictureSize](value.Size)
 	// if err != nil {
 	// 	return err
 	// }
-	sizes := make(map[uuid.UUID]PictureSize, len(value.Sizes))
+	sizes := make(map[model.UUID]PictureSize, len(value.Sizes))
 	for sizeID, controllerSize := range value.Sizes {
 		var driverSize PictureSize
 		driverSize.DriverMarshal(controllerSize)
@@ -52,11 +50,11 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	}
 	p.Sizes = sizes
 
-	// tags, err := ConvertMap[uuid.UUID, controllerModel.PictureTag, PictureTag](value.Tags)
+	// tags, err := ConvertMap[model.UUID, controllerModel.PictureTag, PictureTag](value.Tags)
 	// if err != nil {
 	// 	return err
 	// }
-	tags := make(map[uuid.UUID]PictureTag, len(value.Tags))
+	tags := make(map[model.UUID]PictureTag, len(value.Tags))
 	for tagID, controllerTag := range value.Tags {
 		var driverTag PictureTag
 		driverTag.DriverMarshal(controllerTag)
@@ -65,21 +63,21 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	p.Tags = tags
 }
 
-func (p Picture) DriverUnmarshal() (*controllerModel.Picture) {
-	sizes := make(map[uuid.UUID]controllerModel.PictureSize, len(p.Sizes))
+func (p Picture) DriverUnmarshal() *controllerModel.Picture {
+	sizes := make(map[model.UUID]controllerModel.PictureSize, len(p.Sizes))
 	for sizeID, pictureSize := range p.Sizes {
 		sizes[sizeID] = pictureSize.DriverUnmarshal()
 	}
-	// size, err := ConvertMap[uuid.UUID, PictureSize, controllerModel.PictureSize](p.Size)
+	// size, err := ConvertMap[model.UUID, PictureSize, controllerModel.PictureSize](p.Size)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	tags := make(map[uuid.UUID]controllerModel.PictureTag, len(p.Tags))
+	tags := make(map[model.UUID]controllerModel.PictureTag, len(p.Tags))
 	for tagID, pictureTag := range p.Tags {
 		tags[tagID] = pictureTag.DriverUnmarshal()
 	}
-	// tags, err := ConvertMap[uuid.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
+	// tags, err := ConvertMap[model.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -147,7 +145,7 @@ type PictureTag struct {
 	Name           string
 	CreationDate   time.Time
 	OriginName     string
-	BoxInformation utilModel.Nullable[BoxInformation] // origin informations
+	BoxInformation model.Nullable[BoxInformation] // origin informations
 }
 
 func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
@@ -158,12 +156,9 @@ func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
 	if value.BoxInformation.Valid {
 		var boxInformation BoxInformation
 		boxInformation.DriverMarshal(value.BoxInformation.Body)
-		pt.BoxInformation = utilModel.Nullable[BoxInformation]{
-			Valid: true,
-			Body:  boxInformation,
-		}
+		pt.BoxInformation = model.NewNullable(boxInformation)
 	} else {
-		pt.BoxInformation = utilModel.Nullable[BoxInformation]{
+		pt.BoxInformation = model.Nullable[BoxInformation]{
 			Valid: false,
 			Body:  BoxInformation{},
 		}
@@ -171,17 +166,9 @@ func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
 }
 
 func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
-	var boxInformation utilModel.Nullable[controllerModel.BoxInformation]
+	var boxInformation model.Nullable[controllerModel.BoxInformation]
 	if pt.BoxInformation.Valid {
-		boxInformation = utilModel.Nullable[controllerModel.BoxInformation]{
-			Valid: true,
-			Body:  pt.BoxInformation.Body.DriverUnmarshal(),
-		}
-	} else {
-		boxInformation = utilModel.Nullable[controllerModel.BoxInformation]{
-			Valid: false,
-			Body:  controllerModel.BoxInformation{},
-		}
+		boxInformation = model.NewNullable(pt.BoxInformation.Body.DriverUnmarshal())
 	}
 
 	return controllerModel.PictureTag{
@@ -195,7 +182,7 @@ func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 type BoxInformation struct {
 	Model       sql.NullString  // name of the model used for the detector
 	Weights     sql.NullString  // weights of the model used for the detector
-	ImageSizeID uuid.UUID       // reference to the anchor point
+	ImageSizeID model.UUID      // reference to the anchor point
 	Box         Box             // reference of the bounding box relative to the anchor
 	Confidence  sql.NullFloat64 // accuracy of the model
 }

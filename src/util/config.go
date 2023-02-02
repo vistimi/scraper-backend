@@ -92,8 +92,10 @@ func NewConfig() (*Config, error) {
 		AwsDynamodbClient = dynamodb.DynamodbClient(awsConfig)
 	case "localstack":
 		urlLocalstack := GetEnvVariable("LOCALSTACK_URI")
-
-		awsConfig, err := client.NewConfigLocalstack(urlLocalstack)
+		awsRegion := GetEnvVariable("AWS_REGION")
+		accessKeyID := GetEnvVariable("AWS_ACCESS_KEY")
+		secretAccessKey := GetEnvVariable("AWS_SECRET_KEY")
+		awsConfig, err := client.NewConfigLocalstack(urlLocalstack, awsRegion, accessKeyID, secretAccessKey)
 		if err != nil {
 			return nil, err
 		}

@@ -1,15 +1,14 @@
 package controller
 
 import (
+	model "scraper-backend/src/driver/model"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type User struct {
-	Origin       string    
-	ID           uuid.UUID 
-	Name         string    
-	OriginID     string    
-	CreationDate time.Time 
+	Origin       string
+	ID           model.UUID
+	Name         string
+	OriginID     string
+	CreationDate time.Time
 }

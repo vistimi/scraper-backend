@@ -1,4 +1,4 @@
-package utilModel
+package model
 
 import (
 	"database/sql/driver"
@@ -7,7 +7,18 @@ import (
 
 type Nullable[T any] struct {
 	Valid bool
-	Body T
+	Body  T
+}
+
+func NewNullable[T any](value T) Nullable[T] {
+	return Nullable[T]{
+		Valid: true,
+		Body:  value,
+	}
+}
+
+func (nt Nullable[T]) IsNull() bool {
+	return !nt.Valid
 }
 
 func (nt *Nullable[T]) Scan(value interface{}) error {
@@ -26,7 +37,7 @@ func (nt *Nullable[T]) Scan(value interface{}) error {
 		nt.Valid = true
 		nt.Body = value.(T)
 	default:
-		return fmt.Errorf("Scan: unable to scan type %T into UUID", valueType)
+		return fmt.Errorf("Scan: unable to scan type %T into Nullable", valueType)
 	}
 	return nil
 }

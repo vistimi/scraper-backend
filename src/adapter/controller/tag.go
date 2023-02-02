@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"regexp"
 	controllerModel "scraper-backend/src/adapter/controller/model"
-	interfaceDatabase "scraper-backend/src/driver/interface/database"
 	interfaceAdapter "scraper-backend/src/adapter/interface"
+	interfaceDatabase "scraper-backend/src/driver/interface/database"
+	model "scraper-backend/src/driver/model"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
 )
 
@@ -38,7 +38,7 @@ func (c ControllerTag) CreateTag(ctx context.Context, tag controllerModel.Tag) e
 		return fmt.Errorf("tag `%s` is too closely related to `%+#v`", tag.Name, existingTags[idx])
 	}
 
-	tag.ID = uuid.New()
+	tag.ID = model.NewUUID()
 	tag.CreationDate = time.Now()
 	tag.Name = strings.ToLower(tag.Name)
 	tag.OriginName = strings.ToLower(tag.OriginName)
@@ -60,7 +60,7 @@ func (c ControllerTag) CreateTagBlocked(ctx context.Context, tag controllerModel
 	return c.ControllerPicture.DeletePicturesAndFiles(ctx, pictures)
 }
 
-func (c ControllerTag) DeleteTag(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (c ControllerTag) DeleteTag(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	return c.Dynamodb.DeleteTag(ctx, primaryKey, sortKey)
 }
 

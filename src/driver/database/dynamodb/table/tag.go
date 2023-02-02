@@ -10,31 +10,31 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/google/uuid"
 
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	dynamodbModel "scraper-backend/src/driver/database/dynamodb/model"
+	"scraper-backend/src/driver/model"
 )
 
 const (
 	TagPrimaryKeySearched = "searched"
-	TagPrimaryKeyBlocked    = "blocked"
+	TagPrimaryKeyBlocked  = "blocked"
 )
 
 type TableTag struct {
 	DynamoDbClient *dynamodb.Client
 	TableName      string
-	PrimaryKey     string	// Type
-	SortKey        string	// ID
+	PrimaryKey     string // Type
+	SortKey        string // ID
 }
 
-func checkTablePK(primarykey string) (error) {
+func checkTablePK(primarykey string) error {
 	switch primarykey {
-		case TagPrimaryKeySearched, TagPrimaryKeyBlocked:
-			return nil
-		
-		default:
-			return fmt.Errorf("invalid primary key")
+	case TagPrimaryKeySearched, TagPrimaryKeyBlocked:
+		return nil
+
+	default:
+		return fmt.Errorf("invalid primary key")
 	}
 }
 
@@ -46,7 +46,6 @@ func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) er
 	if err != nil {
 		return err
 	}
-
 
 	fmt.Printf("%+#v", item)
 
@@ -61,7 +60,7 @@ func (table TableTag) CreateTag(ctx context.Context, tag controllerModel.Tag) er
 	return nil
 }
 
-func (table TableTag) DeleteTag(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (table TableTag) DeleteTag(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	if err := checkTablePK(primaryKey); err != nil {
 		return err
 	}

@@ -3,9 +3,8 @@ package gin
 import (
 	"context"
 	dynamodbTable "scraper-backend/src/driver/database/dynamodb/table"
+	"scraper-backend/src/driver/model"
 	serverModel "scraper-backend/src/driver/server/model"
-
-	"github.com/google/uuid"
 )
 
 func (d DriverServerGin) CreateTag(ctx context.Context, tag serverModel.Tag) (string, error) {
@@ -31,7 +30,7 @@ type ParamsDeleteTag struct {
 }
 
 func (d DriverServerGin) DeleteTag(ctx context.Context, params ParamsDeleteTag) (string, error) {
-	id, err := uuid.Parse(params.ID)
+	id, err := model.ParseUUID(params.ID)
 	if err != nil {
 		return "error", err
 	}
@@ -42,7 +41,7 @@ func (d DriverServerGin) DeleteTag(ctx context.Context, params ParamsDeleteTag) 
 }
 
 func (d DriverServerGin) DeleteTagBlocked(ctx context.Context, params ParamsDeleteTag) (string, error) {
-	id, err := uuid.Parse(params.ID)
+	id, err := model.ParseUUID(params.ID)
 	if err != nil {
 		return "error", err
 	}

@@ -2,17 +2,16 @@ package dynamodb
 
 import (
 	controllerModel "scraper-backend/src/adapter/controller/model"
+	model "scraper-backend/src/driver/model"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Tag struct {
-	Type         string    `dynamodbav:"Type"` // PK
-	ID           uuid.UUID `dynamodbav:"ID"`   // SK
-	Name         string    `dynamodbav:"Name"`
-	CreationDate time.Time `dynamodbav:"CreationDate"`
-	OriginName   string    `dynamodbav:"OriginName"` // user to create tag
+	Type         string     `dynamodbav:"Type"` // PK
+	ID           model.UUID `dynamodbav:"ID"`   // SK
+	Name         string     `dynamodbav:"Name"`
+	CreationDate time.Time  `dynamodbav:"CreationDate"`
+	OriginName   string     `dynamodbav:"OriginName"` // user to create tag
 }
 
 func (t *Tag) DriverMarshal(value controllerModel.Tag) {

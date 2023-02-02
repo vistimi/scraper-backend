@@ -11,10 +11,10 @@ import (
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	interfaceDatabase "scraper-backend/src/driver/interface/database"
 	interfaceStorage "scraper-backend/src/driver/interface/storage"
+	model "scraper-backend/src/driver/model"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/google/uuid"
 )
 
 type ControllerPicture struct {
@@ -49,7 +49,7 @@ func (c ControllerPicture) ReadPictures(ctx context.Context, state string, proje
 	return dynamodb.ReadPictures(ctx, projection, filter)
 }
 
-func (c ControllerPicture) ReadPicture(ctx context.Context, state string, primaryKey string, sortKey uuid.UUID) (*controllerModel.Picture, error) {
+func (c ControllerPicture) ReadPicture(ctx context.Context, state string, primaryKey string, sortKey model.UUID) (*controllerModel.Picture, error) {
 	dynamodb, err := c.driverDynamodbMap(state)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (c ControllerPicture) ReadPictureFile(ctx context.Context, origin, name, ex
 	return buffer, nil
 }
 
-func (c ControllerPicture) CreatePicture(ctx context.Context, id uuid.UUID, picture controllerModel.Picture, buffer []byte) error {
+func (c ControllerPicture) CreatePicture(ctx context.Context, id model.UUID, picture controllerModel.Picture, buffer []byte) error {
 	path := fmt.Sprintf("%s/%s.%s", picture.Origin, picture.Name, picture.Extension)
 	if err := c.S3.ItemCreate(ctx, bytes.NewReader(buffer), c.BucketName, path); err != nil {
 		return err
@@ -76,11 +76,11 @@ func (c ControllerPicture) CreatePicture(ctx context.Context, id uuid.UUID, pict
 	return c.DynamodbProcess.CreatePicture(ctx, id, picture)
 }
 
-func (c ControllerPicture) DeletePicture(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (c ControllerPicture) DeletePicture(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	return c.DynamodbProcess.DeletePicture(ctx, primaryKey, sortKey)
 }
 
-func (c ControllerPicture) DeletePictureAndFile(ctx context.Context, primaryKey string, sortKey uuid.UUID, name string) error {
+func (c ControllerPicture) DeletePictureAndFile(ctx context.Context, primaryKey string, sortKey model.UUID, name string) error {
 	if err := c.DynamodbProcess.DeletePicture(ctx, primaryKey, sortKey); err != nil {
 		return err
 	}
@@ -101,28 +101,28 @@ func (c ControllerPicture) DeletePicturesAndFiles(ctx context.Context, pictures 
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID,tag controllerModel.PictureTag) error {
+func (c ControllerPicture) CreatePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID, tag controllerModel.PictureTag) error {
 	if err := c.DynamodbProcess.CreatePictureTag(ctx, primaryKey, sortKey, tagID, tag); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c ControllerPicture) UpdatePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID, tag controllerModel.PictureTag) error {
+func (c ControllerPicture) UpdatePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID, tag controllerModel.PictureTag) error {
 	if err := c.DynamodbProcess.UpdatePictureTag(ctx, primaryKey, sortKey, tagID, tag); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c ControllerPicture) DeletePictureTag(ctx context.Context, primaryKey string, sortKey uuid.UUID, tagID uuid.UUID) error {
+func (c ControllerPicture) DeletePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID) error {
 	if err := c.DynamodbProcess.DeletePictureTag(ctx, primaryKey, sortKey, tagID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey uuid.UUID, name string, imageSizeID uuid.UUID, box controllerModel.Box) error {
+func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, name string, imageSizeID model.UUID, box controllerModel.Box) error {
 	newPicture, err := c.cropPicture(ctx, box, primaryKey, sortKey, imageSizeID)
 	if err != nil {
 		return err
@@ -149,7 +149,7 @@ func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey str
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey string, sortKey uuid.UUID, id uuid.UUID, imageSizeID uuid.UUID, box controllerModel.Box) error {
+func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID, imageSizeID model.UUID, box controllerModel.Box) error {
 	newPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey str
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureCopy(ctx context.Context, primaryKey string, sortKey uuid.UUID, id uuid.UUID) error {
+func (c ControllerPicture) CreatePictureCopy(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID) error {
 	newPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return err
@@ -204,7 +204,7 @@ func (c ControllerPicture) CreatePictureCopy(ctx context.Context, primaryKey str
 	return nil
 }
 
-func (c ControllerPicture) UpdatePictureTransfer(ctx context.Context, primaryKey string, sortKey uuid.UUID, from, to string) error {
+func (c ControllerPicture) UpdatePictureTransfer(ctx context.Context, primaryKey string, sortKey model.UUID, from, to string) error {
 	fromDynamodb, err := c.driverDynamodbMap(from)
 	if err != nil {
 		return err
@@ -231,7 +231,7 @@ func (c ControllerPicture) UpdatePictureTransfer(ctx context.Context, primaryKey
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureBlocked(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (c ControllerPicture) CreatePictureBlocked(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	picture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return err
@@ -254,7 +254,7 @@ func (c ControllerPicture) CreatePictureBlocked(ctx context.Context, primaryKey 
 	return nil
 }
 
-func (c ControllerPicture) DeletePictureBlocked(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (c ControllerPicture) DeletePictureBlocked(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	return c.DynamodbBlocked.DeletePicture(ctx, primaryKey, sortKey)
 }
 
@@ -279,7 +279,7 @@ func fileToBuffer(picture controllerModel.Picture, file image.Image) (*bytes.Buf
 	return buffer, nil
 }
 
-func (c ControllerPicture) cropPicture(ctx context.Context, box controllerModel.Box, primaryKey string, sortKey uuid.UUID, imageSizeID uuid.UUID) (*controllerModel.Picture, error) {
+func (c ControllerPicture) cropPicture(ctx context.Context, box controllerModel.Box, primaryKey string, sortKey model.UUID, imageSizeID model.UUID) (*controllerModel.Picture, error) {
 	oldPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return nil, err
@@ -287,13 +287,13 @@ func (c ControllerPicture) cropPicture(ctx context.Context, box controllerModel.
 	return updatePictureTagBoxes(box, *oldPicture, imageSizeID)
 }
 
-func updatePictureTagBoxes(box controllerModel.Box, picture controllerModel.Picture, imageSizeID uuid.UUID) (*controllerModel.Picture, error) {
+func updatePictureTagBoxes(box controllerModel.Box, picture controllerModel.Picture, imageSizeID model.UUID) (*controllerModel.Picture, error) {
 	// new size creation
 	size := controllerModel.PictureSize{
 		CreationDate: time.Now(),
 		Box:          box, // absolute position
 	}
-	picture.Sizes[uuid.New()] = size
+	picture.Sizes[model.NewUUID()] = size
 
 	for tagID, tag := range picture.Tags {
 		if tag.BoxInformation.Valid {

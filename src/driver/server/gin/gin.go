@@ -12,11 +12,11 @@ import (
 )
 
 type DriverServerGin struct {
-	ControllerPicture interfaceAdapter.ControllerPicture
-	ControllerTag     interfaceAdapter.ControllerTag
-	ControllerUser    interfaceAdapter.ControllerUser
-	ControllerFlickr interfaceAdapter.ControllerFlickr
-	ControllerPexels interfaceAdapter.ControllerPexels
+	ControllerPicture  interfaceAdapter.ControllerPicture
+	ControllerTag      interfaceAdapter.ControllerTag
+	ControllerUser     interfaceAdapter.ControllerUser
+	ControllerFlickr   interfaceAdapter.ControllerFlickr
+	ControllerPexels   interfaceAdapter.ControllerPexels
 	ControllerUnsplash interfaceAdapter.ControllerUnsplash
 }
 
@@ -29,17 +29,17 @@ func (d DriverServerGin) Router() *gin.Engine {
 	router.Any("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 
 	router.GET("/image/file/:origin/:name/:extension", wrapperDataHandlerURI(d.ReadPictureFile))
-	router.GET("/image/:id/:collection", wrapperJSONHandlerURI(d.ReadPicture))
-	router.PUT("/image/tag", wrapperJSONHandlerBody(d.UpdatePictureTag))    // TODO: changed URI
-	router.DELETE("/image/tag", wrapperJSONHandlerBody(d.DeletePictureTag)) // TODO: changed URI
+	router.GET("/image/:origin/:id/:collection", wrapperJSONHandlerURI(d.ReadPicture))
+	router.PUT("/image/tag", wrapperJSONHandlerBody(d.UpdatePictureTag))
+	router.DELETE("/image/tag", wrapperJSONHandlerBody(d.DeletePictureTag))
 	router.PUT("/image/crop", wrapperJSONHandlerBody(d.UpdatePictureCrop))
 	router.POST("/image/crop", wrapperJSONHandlerBody(d.CreatePictureCrop))
 	router.POST("/image/copy", wrapperJSONHandlerBody(d.CreatePictureCopy))
 	router.POST("/image/transfer", wrapperJSONHandlerBody(d.UpdatePictureTransfer))
-	router.DELETE("/image/:id", wrapperJSONHandlerURI(d.DeletePictureAndFile))
+	router.DELETE("/image/:origin/:id/:name", wrapperJSONHandlerURI(d.DeletePictureAndFile))
 
 	// routes for multiple images
-	router.GET("/images/id/:origin/:collection", wrapperJSONHandlerURI(d.ReadPicturesID))
+	router.GET("/images/id/:collection", wrapperJSONHandlerURI(d.ReadPicturesID))
 
 	// routes for one image unwanted
 	router.POST("/image/unwanted", wrapperJSONHandlerBody(d.CreatePictureBlocked))
@@ -51,8 +51,8 @@ func (d DriverServerGin) Router() *gin.Engine {
 	// routes for one tag
 	router.POST("/tag/wanted", wrapperJSONHandlerBody(d.CreateTag))
 	router.POST("/tag/unwanted", wrapperJSONHandlerBody(d.CreateTagBlocked))
-	router.DELETE("/tag/wanted/:id", wrapperJSONHandlerURI(d.DeleteTag))         
-	router.DELETE("/tag/unwanted/:id", wrapperJSONHandlerURI(d.DeleteTagBlocked)) 
+	router.DELETE("/tag/wanted/:id", wrapperJSONHandlerURI(d.DeleteTag))
+	router.DELETE("/tag/unwanted/:id", wrapperJSONHandlerURI(d.DeleteTagBlocked))
 
 	// routes for multiple tags
 	router.GET("/tags/wanted", wrapperJSONHandler(d.ReadTags))

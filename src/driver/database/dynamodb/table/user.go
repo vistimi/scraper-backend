@@ -4,6 +4,7 @@ import (
 	"context"
 	controllerModel "scraper-backend/src/adapter/controller/model"
 	dynamodbModel "scraper-backend/src/driver/database/dynamodb/model"
+	"scraper-backend/src/driver/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -11,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/google/uuid"
 )
 
 type TableUser struct {
@@ -41,7 +41,7 @@ func (table TableUser) CreateUser(ctx context.Context, user controllerModel.User
 	return nil
 }
 
-func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) error {
+func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKey model.UUID) error {
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
@@ -59,7 +59,7 @@ func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKe
 	return nil
 }
 
-func (table TableUser) ReadUser(ctx context.Context, primaryKey string, sortKey uuid.UUID) (*controllerModel.User, error) {
+func (table TableUser) ReadUser(ctx context.Context, primaryKey string, sortKey model.UUID) (*controllerModel.User, error) {
 	input := &awsDynamodb.GetItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
