@@ -39,7 +39,7 @@ func (d DriverServerGin) Router() *gin.Engine {
 	router.DELETE("/image/:origin/:id/:name", wrapperJSONHandlerURI(d.DeletePictureAndFile))
 
 	// routes for multiple images
-	router.GET("/images/id/:collection", wrapperJSONHandlerURI(d.ReadPicturesID))
+	router.GET("/images/id/:collection/:origin", wrapperJSONHandlerURI(d.ReadPicturesID))
 
 	// routes for one image unwanted
 	router.POST("/image/unwanted", wrapperJSONHandlerBody(d.CreatePictureBlocked))

@@ -9,18 +9,18 @@ import (
 )
 
 type Picture struct {
-	Origin       string                     `json:"origin,omitempty"`
-	ID           model.UUID                 `json:"id,omitempty"`
-	Name         string                     `json:"name,omitempty"`
-	OriginID     string                     `json:"originID,omitempty"`
-	User         User                       `json:"user,omitempty"`
-	Extension    string                     `json:"extension,omitempty"`
-	Sizes        map[model.UUID]PictureSize `json:"sizes,omitempty"`
-	Title        string                     `json:"title,omitempty"`
-	Description  string                     `json:"description,omitempty"`
-	License      string                     `json:"license,omitempty"`
-	CreationDate time.Time                  `json:"creationDate,omitempty"`
-	Tags         map[model.UUID]PictureTag  `json:"tags,omitempty"`
+	Origin       string        `json:"origin,omitempty"`
+	ID           model.UUID    `json:"id,omitempty"`
+	Name         string        `json:"name,omitempty"`
+	OriginID     string        `json:"originID,omitempty"`
+	User         User          `json:"user,omitempty"`
+	Extension    string        `json:"extension,omitempty"`
+	Sizes        []PictureSize `json:"sizes,omitempty"`
+	Title        string        `json:"title,omitempty"`
+	Description  string        `json:"description,omitempty"`
+	License      string        `json:"license,omitempty"`
+	CreationDate time.Time     `json:"creationDate,omitempty"`
+	Tags         []PictureTag  `json:"tags,omitempty"`
 }
 
 func (p *Picture) DriverMarshal(value controllerModel.Picture) {
@@ -42,11 +42,13 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	// if err != nil {
 	// 	return err
 	// }
-	sizes := make(map[model.UUID]PictureSize, len(value.Sizes))
+	// sizes := make([]PictureSize, len(value.Sizes))
+	var sizes []PictureSize
 	for sizeID, controllerSize := range value.Sizes {
 		var driverSize PictureSize
 		driverSize.DriverMarshal(controllerSize)
-		sizes[sizeID] = driverSize
+		driverSize.ID = sizeID
+		sizes = append(sizes, driverSize)
 	}
 	p.Sizes = sizes
 
@@ -54,11 +56,13 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	// if err != nil {
 	// 	return err
 	// }
-	tags := make(map[model.UUID]PictureTag, len(value.Tags))
+	// tags := make(map[model.UUID]PictureTag, len(value.Tags))
+	var tags []PictureTag
 	for tagID, controllerTag := range value.Tags {
 		var driverTag PictureTag
 		driverTag.DriverMarshal(controllerTag)
-		tags[tagID] = driverTag
+		driverTag.ID = tagID
+		tags = append(tags, driverTag)
 	}
 	p.Tags = tags
 }
@@ -66,10 +70,10 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 func (p Picture) DriverUnmarshal() *controllerModel.Picture {
 	picture := controllerModel.Picture{}
 
-	sizes := make(map[model.UUID]controllerModel.PictureSize, len(p.Sizes))
+	sizes := make(map[model.UUID]controllerModel.PictureSize)
 	if p.Sizes != nil {
-		for sizeID, pictureSize := range p.Sizes {
-			sizes[sizeID] = pictureSize.DriverUnmarshal()
+		for _, pictureSize := range p.Sizes {
+			sizes[pictureSize.ID] = pictureSize.DriverUnmarshal()
 		}
 		picture.Sizes = sizes
 	}
@@ -78,10 +82,10 @@ func (p Picture) DriverUnmarshal() *controllerModel.Picture {
 	// 	return nil, err
 	// }
 
-	tags := make(map[model.UUID]controllerModel.PictureTag, len(p.Tags))
+	tags := make(map[model.UUID]controllerModel.PictureTag)
 	if p.Tags != nil {
-		for tagID, pictureTag := range p.Tags {
-			tags[tagID] = pictureTag.DriverUnmarshal()
+		for _, pictureTag := range p.Tags {
+			tags[pictureTag.ID] = pictureTag.DriverUnmarshal()
 		}
 		picture.Tags = tags
 	}
@@ -105,8 +109,9 @@ func (p Picture) DriverUnmarshal() *controllerModel.Picture {
 }
 
 type PictureSize struct {
-	CreationDate time.Time `json:"creationDate,omitempty"`
-	Box          Box       `json:"box,omitempty"` // absolut reference of the top left of new box based on the original sizes
+	ID           model.UUID `json:"id"`
+	CreationDate time.Time  `json:"creationDate,omitempty"`
+	Box          Box        `json:"box,omitempty"` // absolut reference of the top left of new box based on the original sizes
 }
 
 func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
@@ -148,6 +153,7 @@ func (b Box) DriverUnmarshal() controllerModel.Box {
 }
 
 type PictureTag struct {
+	ID             model.UUID      `json:"id"`
 	Name           string          `json:"name,omitempty"`
 	CreationDate   time.Time       `json:"creationDate,omitempty"`
 	OriginName     string          `json:"originName,omitempty"`

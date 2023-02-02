@@ -76,6 +76,24 @@ https://github.com/mgechev/revive
 
     go mod tidy
 
+## Interfaces
+
+The database requires the following interface:
+
+```go
+type MyModel interface{
+    Scan(value interface{}) error
+    Value() (driver.Value, error)
+}
+```
+
+The gin router requires the following interface:
+
+```go
+    MarshalJSON() ([]byte, error) 
+    UnmarshalJSON(data []byte) error
+```
+
 ## Architecture levels
 
 Usecases are applications-specific business rules, here the detector.

@@ -6,6 +6,8 @@ import (
 
 	"scraper-backend/src/driver/model"
 	serverModel "scraper-backend/src/driver/server/model"
+
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 )
 
 type ParamsReadPictureFile struct {
@@ -25,11 +27,14 @@ func (d DriverServerGin) ReadPictureFile(ctx context.Context, params ParamsReadP
 
 type ParamsReadPicturesID struct {
 	Collection string `uri:"collection" binding:"required"`
+	Origin     string `uri:"origin" binding:"required"`
 }
 
+// TODO: use Query and not Scan
 func (d DriverServerGin) ReadPicturesID(ctx context.Context, params ParamsReadPicturesID) ([]serverModel.Picture, error) {
-	// projEx := expression.NamesList(expression.Name("ID"))
-	controllerPictures, err := d.ControllerPicture.ReadPictures(ctx, params.Collection, nil, nil)
+	projEx := expression.NamesList(expression.Name("ID"))
+	// filtEx := expression.Name("Origin").Contains(params.Origin)
+	controllerPictures, err := d.ControllerPicture.ReadPictures(ctx, params.Collection, &projEx, nil)
 	if err != nil {
 		return nil, err
 	}
