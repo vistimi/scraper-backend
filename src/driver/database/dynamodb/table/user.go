@@ -10,15 +10,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type TableUser struct {
 	DynamoDbClient *dynamodb.Client
 	TableName      string
-	PrimaryKey     string // Origin
-	SortKey        string // ID
+	PrimaryKeyName string // Origin
+	PrimaryKeyType string
+	SortKeyName    string // ID
+	SortKeyType    string
 }
 
 func (table TableUser) CreateUser(ctx context.Context, user controllerModel.User) error {
@@ -45,10 +46,10 @@ func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKe
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: &types.AttributeValueMemberS{
+			table.PrimaryKeyName: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: &types.AttributeValueMemberB{
+			table.SortKeyName: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},
@@ -60,13 +61,13 @@ func (table TableUser) DeleteUser(ctx context.Context, primaryKey string, sortKe
 }
 
 func (table TableUser) ReadUser(ctx context.Context, primaryKey string, sortKey model.UUID) (*controllerModel.User, error) {
-	input := &awsDynamodb.GetItemInput{
+	input := &dynamodb.GetItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: &types.AttributeValueMemberS{
+			table.PrimaryKeyName: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: &types.AttributeValueMemberB{
+			table.SortKeyName: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},
@@ -88,15 +89,15 @@ func (table TableUser) ReadUser(ctx context.Context, primaryKey string, sortKey 
 
 func (table TableUser) ReadUsers(ctx context.Context, primaryKey string) ([]controllerModel.User, error) {
 	var err error
-	var response *awsDynamodb.QueryOutput
+	var response *dynamodb.QueryOutput
 	var users []dynamodbModel.User
-	keyEx := expression.Key(table.PrimaryKey).Equal(expression.Value(primaryKey))
+	keyEx := expression.Key(table.PrimaryKeyName).Equal(expression.Value(primaryKey))
 	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
 	if err != nil {
 		return nil, err
 	}
 
-	response, err = table.DynamoDbClient.Query(ctx, &awsDynamodb.QueryInput{
+	response, err = table.DynamoDbClient.Query(ctx, &dynamodb.QueryInput{
 		TableName:                 aws.String(table.TableName),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
@@ -121,10 +122,10 @@ func (table TableUser) ReadUsers(ctx context.Context, primaryKey string) ([]cont
 
 func (table TableUser) ScanUsers(ctx context.Context) ([]controllerModel.User, error) {
 	var err error
-	var response *awsDynamodb.ScanOutput
+	var response *dynamodb.ScanOutput
 	var users []dynamodbModel.User
 
-	response, err = table.DynamoDbClient.Scan(ctx, &awsDynamodb.ScanInput{
+	response, err = table.DynamoDbClient.Scan(ctx, &dynamodb.ScanInput{
 		TableName: aws.String(table.TableName),
 	})
 	if err != nil {

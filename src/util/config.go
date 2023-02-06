@@ -14,12 +14,13 @@ import (
 )
 
 type AwsDynamodbTable struct {
-	TableName  string
-	PrimaryKey string
-	SortKey    *string
+	TableName      string
+	PrimaryKeyName string
+	PrimaryKeyType string
+	SortKeyName    *string
+	SortKeyType    *string
 }
 
-// TODO: map of tables
 type Config struct {
 	AwsS3Client                       *awsS3.Client
 	S3BucketNamePictures              string
@@ -49,33 +50,33 @@ func NewConfig() (*Config, error) {
 	}
 
 	TablePictureProcessName := commonName + "-" + *configYml.Databases["tablePictureProcess"].Name
-	TablePictureProcessPrimaryKey := *configYml.Databases["tablePictureProcess"].PrimaryKeyName
-	TablePictureProcessSortKey := *configYml.Databases["tablePictureProcess"].SortKeyName
+	TablePictureProcessPrimaryKeyName := *configYml.Databases["tablePictureProcess"].PrimaryKeyName
+	TablePictureProcessSortKeyName := *configYml.Databases["tablePictureProcess"].SortKeyName
 	TablePictureProcessPrimaryKeyType := *configYml.Databases["tablePictureProcess"].PrimaryKeyType
 	TablePictureProcessSortKeyType := *configYml.Databases["tablePictureProcess"].SortKeyType
 	TablePictureValidationName := commonName + "-" + *configYml.Databases["tablePictureValidation"].Name
-	TablePictureValidationPrimaryKey := *configYml.Databases["tablePictureValidation"].PrimaryKeyName
-	TablePictureValidationSortKey := *configYml.Databases["tablePictureValidation"].SortKeyName
+	TablePictureValidationPrimaryKeyName := *configYml.Databases["tablePictureValidation"].PrimaryKeyName
+	TablePictureValidationSortKeyName := *configYml.Databases["tablePictureValidation"].SortKeyName
 	TablePictureValidationPrimaryKeyType := *configYml.Databases["tablePictureValidation"].PrimaryKeyType
 	TablePictureValidationSortKeyType := *configYml.Databases["tablePictureValidation"].SortKeyType
 	TablePictureProductionName := commonName + "-" + *configYml.Databases["tablePictureProduction"].Name
-	TablePictureProductionPrimaryKey := *configYml.Databases["tablePictureProduction"].PrimaryKeyName
-	TablePictureProductionSortKey := *configYml.Databases["tablePictureProduction"].SortKeyName
+	TablePictureProductionPrimaryKeyName := *configYml.Databases["tablePictureProduction"].PrimaryKeyName
+	TablePictureProductionSortKeyName := *configYml.Databases["tablePictureProduction"].SortKeyName
 	TablePictureProductionPrimaryKeyType := *configYml.Databases["tablePictureProduction"].PrimaryKeyType
 	TablePictureProductionSortKeyType := *configYml.Databases["tablePictureProduction"].SortKeyType
 	TablePictureBlockedName := commonName + "-" + *configYml.Databases["tablePictureBlocked"].Name
-	TablePictureBlockedPrimaryKey := *configYml.Databases["tablePictureBlocked"].PrimaryKeyName
-	TablePictureBlockedSortKey := *configYml.Databases["tablePictureBlocked"].SortKeyName
+	TablePictureBlockedPrimaryKeyName := *configYml.Databases["tablePictureBlocked"].PrimaryKeyName
+	TablePictureBlockedSortKeyName := *configYml.Databases["tablePictureBlocked"].SortKeyName
 	TablePictureBlockedPrimaryKeyType := *configYml.Databases["tablePictureBlocked"].PrimaryKeyType
 	TablePictureBlockedSortKeyType := *configYml.Databases["tablePictureBlocked"].SortKeyType
 	TableTagName := commonName + "-" + *configYml.Databases["tableTag"].Name
-	TableTagPrimaryKey := *configYml.Databases["tableTag"].PrimaryKeyName
-	TableTagSortKey := *configYml.Databases["tableTag"].SortKeyName
+	TableTagPrimaryKeyName := *configYml.Databases["tableTag"].PrimaryKeyName
+	TableTagSortKeyName := *configYml.Databases["tableTag"].SortKeyName
 	TableTagPrimaryKeyType := *configYml.Databases["tableTag"].PrimaryKeyType
 	TableTagSortKeyType := *configYml.Databases["tableTag"].SortKeyType
 	TableUserName := commonName + "-" + *configYml.Databases["tableUser"].Name
-	TableUserPrimaryKey := *configYml.Databases["tableUser"].PrimaryKeyName
-	TableUserSortKey := *configYml.Databases["tableUser"].SortKeyName
+	TableUserPrimaryKeyName := *configYml.Databases["tableUser"].PrimaryKeyName
+	TableUserSortKeyName := *configYml.Databases["tableUser"].SortKeyName
 	TableUserPrimaryKeyType := *configYml.Databases["tableUser"].PrimaryKeyType
 	TableUserSortKeyType := *configYml.Databases["tableUser"].SortKeyType
 
@@ -110,9 +111,9 @@ func NewConfig() (*Config, error) {
 		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureProcessName,
-			TablePictureProcessPrimaryKey,
+			TablePictureProcessPrimaryKeyName,
 			TablePictureProcessPrimaryKeyType,
-			TablePictureProcessSortKey,
+			TablePictureProcessSortKeyName,
 			TablePictureProcessSortKeyType,
 		); err != nil {
 			return nil, err
@@ -120,9 +121,9 @@ func NewConfig() (*Config, error) {
 		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureValidationName,
-			TablePictureValidationPrimaryKey,
+			TablePictureValidationPrimaryKeyName,
 			TablePictureValidationPrimaryKeyType,
-			TablePictureValidationSortKey,
+			TablePictureValidationSortKeyName,
 			TablePictureValidationSortKeyType,
 		); err != nil {
 			return nil, err
@@ -130,9 +131,9 @@ func NewConfig() (*Config, error) {
 		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureProductionName,
-			TablePictureProductionPrimaryKey,
+			TablePictureProductionPrimaryKeyName,
 			TablePictureProductionPrimaryKeyType,
-			TablePictureProductionSortKey,
+			TablePictureProductionSortKeyName,
 			TablePictureProductionSortKeyType,
 		); err != nil {
 			return nil, err
@@ -140,9 +141,9 @@ func NewConfig() (*Config, error) {
 		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TablePictureBlockedName,
-			TablePictureBlockedPrimaryKey,
+			TablePictureBlockedPrimaryKeyName,
 			TablePictureBlockedPrimaryKeyType,
-			TablePictureBlockedSortKey,
+			TablePictureBlockedSortKeyName,
 			TablePictureBlockedSortKeyType,
 		); err != nil {
 			return nil, err
@@ -150,9 +151,9 @@ func NewConfig() (*Config, error) {
 		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TableTagName,
-			TableTagPrimaryKey,
+			TableTagPrimaryKeyName,
 			TableTagPrimaryKeyType,
-			TableTagSortKey,
+			TableTagSortKeyName,
 			TableTagSortKeyType,
 		); err != nil {
 			return nil, err
@@ -160,9 +161,9 @@ func NewConfig() (*Config, error) {
 		if err := client.DynamodbCreateTableStandardPkSk(
 			AwsDynamodbClient,
 			TableUserName,
-			TableUserPrimaryKey,
+			TableUserPrimaryKeyName,
 			TableUserPrimaryKeyType,
-			TableUserSortKey,
+			TableUserSortKeyName,
 			TableUserSortKeyType,
 		); err != nil {
 			return nil, err
@@ -176,34 +177,46 @@ func NewConfig() (*Config, error) {
 		S3BucketNamePictures: s3BucketNamePictures,
 		AwsDynamodbClient:    AwsDynamodbClient,
 		AwsDynamodbTablePictureProcess: AwsDynamodbTable{
-			TableName:  TablePictureProcessName,
-			PrimaryKey: TablePictureProcessPrimaryKey,
-			SortKey:    &TablePictureProcessSortKey,
+			TableName:      TablePictureProcessName,
+			PrimaryKeyName: TablePictureProcessPrimaryKeyName,
+			PrimaryKeyType: TablePictureProcessPrimaryKeyType,
+			SortKeyName:    &TablePictureProcessSortKeyName,
+			SortKeyType:    &TablePictureProcessSortKeyType,
 		},
 		AwsDynamodbTablePictureValidation: AwsDynamodbTable{
-			TableName:  TablePictureValidationName,
-			PrimaryKey: TablePictureValidationPrimaryKey,
-			SortKey:    &TablePictureValidationSortKey,
+			TableName:      TablePictureValidationName,
+			PrimaryKeyName: TablePictureValidationPrimaryKeyName,
+			PrimaryKeyType: TablePictureValidationPrimaryKeyType,
+			SortKeyName:    &TablePictureValidationSortKeyName,
+			SortKeyType:    &TablePictureValidationSortKeyType,
 		},
 		AwsDynamodbTablePictureProduction: AwsDynamodbTable{
-			TableName:  TablePictureProductionName,
-			PrimaryKey: TablePictureProductionPrimaryKey,
-			SortKey:    &TablePictureProductionSortKey,
+			TableName:      TablePictureProductionName,
+			PrimaryKeyName: TablePictureProductionPrimaryKeyName,
+			PrimaryKeyType: TablePictureProductionPrimaryKeyType,
+			SortKeyName:    &TablePictureProductionSortKeyName,
+			SortKeyType:    &TablePictureProductionSortKeyType,
 		},
 		AwsDynamodbTablePictureBlocked: AwsDynamodbTable{
-			TableName:  TablePictureBlockedName,
-			PrimaryKey: TablePictureBlockedPrimaryKey,
-			SortKey:    &TablePictureBlockedSortKey,
+			TableName:      TablePictureBlockedName,
+			PrimaryKeyName: TablePictureBlockedPrimaryKeyName,
+			PrimaryKeyType: TablePictureBlockedPrimaryKeyType,
+			SortKeyName:    &TablePictureBlockedSortKeyName,
+			SortKeyType:    &TablePictureBlockedSortKeyType,
 		},
 		AwsDynamodbTableTag: AwsDynamodbTable{
-			TableName:  TableTagName,
-			PrimaryKey: TableTagPrimaryKey,
-			SortKey:    &TableTagSortKey,
+			TableName:      TableTagName,
+			PrimaryKeyName: TableTagPrimaryKeyName,
+			PrimaryKeyType: TableTagPrimaryKeyType,
+			SortKeyName:    &TableTagSortKeyName,
+			SortKeyType:    &TableTagSortKeyType,
 		},
 		AwsDynamodbTableUser: AwsDynamodbTable{
-			TableName:  TableUserName,
-			PrimaryKey: TableUserPrimaryKey,
-			SortKey:    &TableUserSortKey,
+			TableName:      TableUserName,
+			PrimaryKeyName: TableUserPrimaryKeyName,
+			PrimaryKeyType: TableUserPrimaryKeyType,
+			SortKeyName:    &TableUserSortKeyName,
+			SortKeyType:    &TableUserSortKeyType,
 		},
 	}
 

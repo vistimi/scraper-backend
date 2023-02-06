@@ -17,9 +17,6 @@ docker network ls
 
 # docker images
 docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
-
-# To test the connection, should not throw an error
-curl --connect-timeout 10 --silent --show-error http://scraper-localstack:4566 || echo "fail"
 ```
 
 To check the tables with aws cli:
@@ -59,6 +56,7 @@ Create a local.env file:
     UNSPLASH_PRIVATE_KEY=***
     UNSPLASH_PUBLIC_KEY=***
     PEXELS_PUBLIC_KEY=***
+    
     AWS_REGION=us-east-1
     AWS_PROFILE=dummy
     AWS_ACCESS_KEY=dummy

@@ -17,18 +17,20 @@ import (
 type TablePicture struct {
 	DynamoDbClient *awsDynamodb.Client
 	TableName      string
-	PrimaryKey     string // Origin
-	SortKey        string // ID
+	PrimaryKeyName string // Origin
+	PrimaryKeyType string
+	SortKeyName    string // ID
+	SortKeyType    string
 }
 
 func (table TablePicture) ReadPicture(ctx context.Context, primaryKey string, sortKey model.UUID) (*controllerModel.Picture, error) {
 	input := &awsDynamodb.GetItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: &types.AttributeValueMemberS{
+			table.PrimaryKeyName: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: &types.AttributeValueMemberB{
+			table.SortKeyName: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},
@@ -105,15 +107,14 @@ func (table TablePicture) CreatePicture(ctx context.Context, id model.UUID, pict
 	driverPicture.DriverMarshal(picture)
 	driverPicture.ID = id
 
-	item, err := attributevalue.MarshalMap(picture)
+	item, err := attributevalue.MarshalMap(driverPicture)
 	if err != nil {
 		return err
 	}
-	_, err = table.DynamoDbClient.PutItem(ctx, &awsDynamodb.PutItemInput{
+	if _, err := table.DynamoDbClient.PutItem(ctx, &awsDynamodb.PutItemInput{
 		TableName: aws.String(table.TableName),
 		Item:      item,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -123,10 +124,10 @@ func (table TablePicture) DeletePicture(ctx context.Context, primaryKey string, 
 	_, err := table.DynamoDbClient.DeleteItem(ctx, &awsDynamodb.DeleteItemInput{
 		TableName: aws.String(table.TableName),
 		Key: map[string]types.AttributeValue{
-			table.PrimaryKey: &types.AttributeValueMemberS{
+			table.PrimaryKeyName: &types.AttributeValueMemberS{
 				Value: primaryKey,
 			},
-			table.SortKey: &types.AttributeValueMemberB{
+			table.SortKeyName: &types.AttributeValueMemberB{
 				Value: sortKey[:],
 			},
 		},
@@ -148,10 +149,10 @@ func (table TablePicture) DeletePictureTag(ctx context.Context, primaryKey strin
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: &types.AttributeValueMemberS{
+		table.PrimaryKeyName: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: &types.AttributeValueMemberB{
+		table.SortKeyName: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}
@@ -184,10 +185,10 @@ func (table TablePicture) CreatePictureTag(ctx context.Context, primaryKey strin
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: &types.AttributeValueMemberS{
+		table.PrimaryKeyName: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: &types.AttributeValueMemberB{
+		table.SortKeyName: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}
@@ -219,10 +220,10 @@ func (table TablePicture) UpdatePictureTag(ctx context.Context, primaryKey strin
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: &types.AttributeValueMemberS{
+		table.PrimaryKeyName: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: &types.AttributeValueMemberB{
+		table.SortKeyName: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}
@@ -255,10 +256,10 @@ func (table TablePicture) CreatePictureSize(ctx context.Context, primaryKey stri
 
 	// Set the primary key values
 	key := map[string]types.AttributeValue{
-		table.PrimaryKey: &types.AttributeValueMemberS{
+		table.PrimaryKeyName: &types.AttributeValueMemberS{
 			Value: primaryKey,
 		},
-		table.SortKey: &types.AttributeValueMemberB{
+		table.SortKeyName: &types.AttributeValueMemberB{
 			Value: sortKey[:],
 		},
 	}

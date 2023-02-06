@@ -45,6 +45,9 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 	if err != nil {
 		return err
 	}
+	if len(searchedTags) == 0 {
+		return fmt.Errorf("no searched tags")
+	}
 
 	blockedTags, err := c.ControllerTag.ReadTags(ctx, "blocked")
 	if err != nil {
@@ -155,8 +158,8 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 					}
 
 					// image creation
-					imageSizeID := model.NewUUID()
-					tags := make(map[model.UUID]controllerModel.PictureTag)
+					pictureSizeID := model.NewUUID()
+					tags := make([]controllerModel.PictureTag, 0, len(infoData.Tags))
 					now := time.Now()
 					user := controllerModel.User{
 						ID:           model.NewUUID(),
@@ -173,23 +176,22 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 						Height: downloadData.Photos[idx].Height,
 					}
 					for _, infoDataTag := range infoData.Tags {
-						tags[model.NewUUID()] = controllerModel.PictureTag{
+						tags = append(tags, controllerModel.PictureTag{
+							ID:           model.NewUUID(),
 							Name:         strings.ToLower(infoDataTag.Name),
 							CreationDate: now,
 							OriginName:   origin,
-							BoxInformation: model.NewNullable(controllerModel.BoxInformation{
-								ImageSizeID: imageSizeID,
-								Box:         box,
-							}),
-						}
+							// BoxInformation
+						})
 					}
-					sizes := map[model.UUID]controllerModel.PictureSize{
-						imageSizeID: {
+					sizes := []controllerModel.PictureSize{
+						{
+							ID:           pictureSizeID,
 							CreationDate: now,
 							Box:          box,
 						},
 					}
-					document := controllerModel.Picture{
+					picture := controllerModel.Picture{
 						ID:           model.NewUUID(),
 						Origin:       origin,
 						OriginID:     photo.ID,
@@ -204,7 +206,7 @@ func (c *ControllerFlickr) SearchPhotos(ctx context.Context, quality string) err
 						Tags:         tags,
 					}
 
-					if c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), document, buffer); err != nil {
+					if err := c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), picture, buffer); err != nil {
 						return fmt.Errorf("CreatePicture has failed: %v", err)
 					}
 				}

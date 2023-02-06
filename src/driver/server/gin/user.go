@@ -35,9 +35,11 @@ func (d DriverServerGin) ReadUsers(ctx context.Context) ([]serverModel.User, err
 	if err != nil {
 		return nil, err
 	}
-	serverUsers := make([]serverModel.User, len(controllerUsers))
-	for i, controllerUser := range controllerUsers {
-		serverUsers[i].DriverMarshal(controllerUser)
+	serverUsers := make([]serverModel.User, 0, len(controllerUsers))
+	for _, controllerUser := range controllerUsers {
+		var serverUser serverModel.User
+		serverUser.DriverMarshal(controllerUser)
+		serverUsers = append(serverUsers, serverUser)
 	}
 	return serverUsers, nil
 }

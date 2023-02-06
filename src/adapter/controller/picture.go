@@ -122,8 +122,8 @@ func (c ControllerPicture) DeletePictureTag(ctx context.Context, primaryKey stri
 	return nil
 }
 
-func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, name string, imageSizeID model.UUID, box controllerModel.Box) error {
-	newPicture, err := c.cropPicture(ctx, box, primaryKey, sortKey, imageSizeID)
+func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, name string, pictureSizeID model.UUID, box controllerModel.Box) error {
+	newPicture, err := c.cropPicture(ctx, box, primaryKey, sortKey, pictureSizeID)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (c ControllerPicture) UpdatePictureCrop(ctx context.Context, primaryKey str
 	return nil
 }
 
-func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID, imageSizeID model.UUID, box controllerModel.Box) error {
+func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID, pictureSizeID model.UUID, box controllerModel.Box) error {
 	newPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (c ControllerPicture) CreatePictureCrop(ctx context.Context, primaryKey str
 	newPicture.Name = name
 	newPicture.CreationDate = time.Now()
 
-	newPicture, err = c.cropPicture(ctx, box, primaryKey, sortKey, imageSizeID)
+	newPicture, err = c.cropPicture(ctx, box, primaryKey, sortKey, pictureSizeID)
 	if err != nil {
 		return err
 	}
@@ -279,23 +279,30 @@ func fileToBuffer(picture controllerModel.Picture, file image.Image) (*bytes.Buf
 	return buffer, nil
 }
 
-func (c ControllerPicture) cropPicture(ctx context.Context, box controllerModel.Box, primaryKey string, sortKey model.UUID, imageSizeID model.UUID) (*controllerModel.Picture, error) {
+func (c ControllerPicture) cropPicture(ctx context.Context, box controllerModel.Box, primaryKey string, sortKey model.UUID, pictureSizeID model.UUID) (*controllerModel.Picture, error) {
 	oldPicture, err := c.DynamodbProcess.ReadPicture(ctx, primaryKey, sortKey)
 	if err != nil {
 		return nil, err
 	}
-	return updatePictureTagBoxes(box, *oldPicture, imageSizeID)
+	return updatePictureTagBoxes(box, *oldPicture, pictureSizeID)
 }
 
-func updatePictureTagBoxes(box controllerModel.Box, picture controllerModel.Picture, imageSizeID model.UUID) (*controllerModel.Picture, error) {
+func updatePictureTagBoxes(box controllerModel.Box, picture controllerModel.Picture, pictureSizeID model.UUID) (*controllerModel.Picture, error) {
 	// new size creation
 	size := controllerModel.PictureSize{
+		ID:           model.NewUUID(),
 		CreationDate: time.Now(),
 		Box:          box, // absolute position
 	}
-	picture.Sizes[model.NewUUID()] = size
+	picture.Sizes = append(picture.Sizes, size)
 
-	for tagID, tag := range picture.Tags {
+	i := 0
+	for {
+		if i >= len(picture.Tags) {
+			break
+		}
+		tag := &picture.Tags[i]
+
 		if tag.BoxInformation.Valid {
 			boxInformation := tag.BoxInformation.Body
 			// relative position of tags
@@ -306,42 +313,44 @@ func updatePictureTagBoxes(box controllerModel.Box, picture controllerModel.Pict
 
 			// box outside on the image right
 			if tlx > box.Tlx+box.Width {
-				delete(picture.Tags, tagID)
+				removeSliceElement(picture.Tags, i)
 				continue
 			}
 			// box left outside on the image left
 			if tlx < box.Tlx {
-				// box outside on the image left
 				if tlx+width < box.Tlx {
+					// box outside on the image left
 					width = 0
-				} else { // box right inside the image
+				} else {
+					// box right inside the image
 					width = width - box.Tlx + tlx
 				}
 				tlx = box.Tlx
 			} else { // box left inside image
-				// box right outside on the image right
 				if tlx+width > box.Tlx+box.Width {
+					// box right outside on the image right
 					width = box.Tlx + box.Width - tlx
 				}
 				tlx = tlx - box.Tlx
 			}
 			// box width too small
 			if width < 50 {
-				delete(picture.Tags, tagID)
+				removeSliceElement(picture.Tags, i)
 				continue
 			}
 
 			// box outside at the image bottom
 			if tly > box.Tly+box.Height {
-				delete(picture.Tags, tagID)
+				removeSliceElement(picture.Tags, i)
 				continue
 			}
 			// box top outside on the image top
 			if tly < box.Tly {
-				// box outside on the image top
 				if tly+height < box.Tly {
+					// box outside on the image top
 					height = 0
-				} else { // box bottom inside the image
+				} else {
+					// box bottom inside the image
 					height = height - box.Tly + tly
 				}
 				tly = box.Tly
@@ -354,18 +363,18 @@ func updatePictureTagBoxes(box controllerModel.Box, picture controllerModel.Pict
 			}
 			// box height too small
 			if height < 50 {
-				delete(picture.Tags, tagID)
+				removeSliceElement(picture.Tags, i)
 				continue
 			}
 
 			// set the new relative reference to the newly cropped image
-			tag.BoxInformation.Body.ImageSizeID = imageSizeID
+			tag.BoxInformation.Body.PictureSizeID = pictureSizeID
 			tag.BoxInformation.Body.Box.Tlx = tlx
 			tag.BoxInformation.Body.Box.Tly = tly
 			tag.BoxInformation.Body.Box.Width = width
 			tag.BoxInformation.Body.Box.Height = height
 		}
-		picture.Tags[tagID] = tag
+		i++
 	}
 	return &picture, nil
 }
@@ -414,5 +423,15 @@ func updateFileDimension(img image.Image, cropRect image.Rectangle) (image.Image
 		return rgbaImg, nil
 	} else {
 		return nil, fmt.Errorf("cannot crop the image")
+	}
+}
+
+func removeSliceElement[T any](slice []T, i int) {
+	if i == len(slice)-1 {
+		// last element removed
+		slice = slice[:i]
+	} else {
+		// not last element removed
+		slice = append(slice[:i], slice[i+1:]...)
 	}
 }

@@ -13,15 +13,16 @@ type Picture struct {
 	OriginID     string
 	User         User
 	Extension    string
-	Sizes        map[model.UUID]PictureSize
+	Sizes        []PictureSize
 	Title        string
 	Description  string
 	License      string
 	CreationDate time.Time
-	Tags         map[model.UUID]PictureTag
+	Tags         []PictureTag
 }
 
 type PictureSize struct {
+	ID           model.UUID
 	CreationDate time.Time
 	Box          Box
 }
@@ -34,6 +35,7 @@ type Box struct {
 }
 
 type PictureTag struct {
+	ID             model.UUID
 	Name           string
 	CreationDate   time.Time
 	OriginName     string
@@ -41,9 +43,9 @@ type PictureTag struct {
 }
 
 type BoxInformation struct {
-	Model       sql.NullString
-	Weights     sql.NullString
-	ImageSizeID model.UUID
-	Box         Box
-	Confidence  sql.NullFloat64
+	Model         sql.NullString
+	Weights       sql.NullString
+	PictureSizeID model.UUID
+	Box           Box
+	Confidence    sql.NullFloat64
 }

@@ -10,8 +10,8 @@ import (
 type UUID uuid.UUID
 
 // database
-func (u *UUID) Scan(src interface{}) error {
-	return (*uuid.UUID)(u).Scan(src)
+func (u *UUID) Scan(value interface{}) error {
+	return (*uuid.UUID)(u).Scan(value)
 }
 
 func (u UUID) Value() (driver.Value, error) {

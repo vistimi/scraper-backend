@@ -42,6 +42,9 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 	if err != nil {
 		return err
 	}
+	if len(searchedTags) == 0 {
+		return fmt.Errorf("no searched tags")
+	}
 	// no blocked tag for pexels
 
 	for _, searchedTag := range searchedTags {
@@ -115,7 +118,7 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 
 				// image creation
 				now := time.Now()
-				imageSizeID := model.NewUUID()
+				pictureSizeID := model.NewUUID()
 				user := controllerModel.User{
 					ID:           model.NewUUID(),
 					Origin:       origin,
@@ -142,24 +145,23 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 					Width:  width,
 					Height: height,
 				}
-				tags := map[model.UUID]controllerModel.PictureTag{
-					model.NewUUID(): {
+				tags := []controllerModel.PictureTag{
+					{
+						ID: model.NewUUID(),
 						Name:         strings.ToLower(searchedTag.Name),
 						CreationDate: now,
 						OriginName:   origin,
-						BoxInformation: model.NewNullable(controllerModel.BoxInformation{
-							ImageSizeID: imageSizeID,
-							Box:         box,
-						}),
+						// BoxInformation
 					},
 				}
-				sizes := map[model.UUID]controllerModel.PictureSize{
-					imageSizeID: {
+				sizes := []controllerModel.PictureSize{
+					{
+						ID: pictureSizeID,
 						CreationDate: now,
 						Box:          box,
 					},
 				}
-				document := controllerModel.Picture{
+				picture := controllerModel.Picture{
 					ID:           model.NewUUID(),
 					Origin:       origin,
 					OriginID:     fmt.Sprint(photo.ID),
@@ -174,7 +176,7 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 					Tags:         tags,
 				}
 
-				if c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), document, buffer); err != nil {
+				if err := c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), picture, buffer); err != nil {
 					return fmt.Errorf("CreatePicture has failed: %v", err)
 				}
 			}

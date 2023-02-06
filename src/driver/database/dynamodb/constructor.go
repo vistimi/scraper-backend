@@ -10,41 +10,53 @@ import (
 func ConstructorPicture(
 	client *awsDynamodb.Client,
 	TableName string,
-	PrimaryKey string,
-	SortKey string,
+	PrimaryKeyName string,
+	PrimaryKeyType string,
+	SortKeyName string,
+	SortKeyType string,
 ) interfaceDatabase.DriverDynamodbPicture {
 	return &table.TablePicture{
 		DynamoDbClient: client,
 		TableName:      TableName,
-		PrimaryKey:     PrimaryKey,
-		SortKey:        SortKey,
+		PrimaryKeyName: PrimaryKeyName,
+		PrimaryKeyType: PrimaryKeyType,
+		SortKeyName:    SortKeyName,
+		SortKeyType:    SortKeyType,
 	}
 }
 
 func ConstructorTag(
 	client *awsDynamodb.Client,
 	TableName string,
-	PrimaryKey string,
-	SortKey string,
+	PrimaryKeyName string,
+	PrimaryKeyType string,
+	SortKeyName string,
+	SortKeyType string,
 ) interfaceDatabase.DriverDynamodbTag {
 	return &table.TableTag{
 		DynamoDbClient: client,
 		TableName:      TableName,
-		PrimaryKey:     PrimaryKey,
-		SortKey:        SortKey,
+		PrimaryKeyName: PrimaryKeyName,
+		PrimaryKeyType: PrimaryKeyType,
+		SortKeyName:    SortKeyName,
+		SortKeyType:    SortKeyType,
 	}
 }
 
 func ConstructorUser(
 	client *awsDynamodb.Client,
 	TableName string,
-	PrimaryKey string,
-	SortKey string,
+	PrimaryKeyName string,
+	PrimaryKeyType string,
+	SortKeyName string,
+	SortKeyType string,
 ) interfaceDatabase.DriverDynamodbUser {
 	return &table.TableUser{
 		DynamoDbClient: client,
 		TableName:      TableName,
-		PrimaryKey:     PrimaryKey,
-		SortKey:        SortKey,
+		PrimaryKeyName: PrimaryKeyName,
+		PrimaryKeyType: PrimaryKeyType,
+		SortKeyName:    SortKeyName,
+		SortKeyType:    SortKeyType,
 	}
 }

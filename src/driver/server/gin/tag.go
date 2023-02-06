@@ -56,9 +56,11 @@ func (d DriverServerGin) ReadTags(ctx context.Context) ([]serverModel.Tag, error
 	if err != nil {
 		return nil, err
 	}
-	serverTags := make([]serverModel.Tag, len(controllerTags))
-	for i, controllerTag := range controllerTags {
-		serverTags[i].DriverMarshal(controllerTag)
+	serverTags := make([]serverModel.Tag, 0, len(controllerTags))
+	for _, controllerTag := range controllerTags {
+		var serverTag serverModel.Tag
+		serverTag.DriverMarshal(controllerTag)
+		serverTags= append(serverTags, serverTag)
 	}
 	return serverTags, nil
 }
@@ -68,9 +70,11 @@ func (d DriverServerGin) ReadTagsBlocked(ctx context.Context) ([]serverModel.Tag
 	if err != nil {
 		return nil, err
 	}
-	serverTags := make([]serverModel.Tag, len(controllerTags))
-	for i, controllerTag := range controllerTags {
-		serverTags[i].DriverMarshal(controllerTag)
+	serverTags := make([]serverModel.Tag, 0, len(controllerTags))
+	for _, controllerTag := range controllerTags {
+		var serverTag serverModel.Tag
+		serverTag.DriverMarshal(controllerTag)
+		serverTags= append(serverTags, serverTag)
 	}
 	return serverTags, nil
 }

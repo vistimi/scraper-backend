@@ -9,18 +9,18 @@ import (
 )
 
 type Picture struct {
-	Origin       string                     `dynamodbav:"Origin"`   // PK original werbsite
-	ID           model.UUID                 `dynamodbav:"ID"`       // SK
-	Name         string                     `dynamodbav:"Name"`     // name <originID>_time
-	OriginID     string                     `dynamodbav:"OriginID"` // id from original website
-	User         User                       `dynamodbav:"User"`
-	Extension    string                     `dynamodbav:"Extension"` // type of file
-	Sizes        map[model.UUID]PictureSize `dynamodbav:"Sizes"`     // size cropping history
-	Title        string                     `dynamodbav:"Title"`
-	Description  string                     `dynamodbav:"Description"` // decription of picture
-	License      string                     `dynamodbav:"License"`     // type of public license
-	CreationDate time.Time                  `dynamodbav:"CreationDate"`
-	Tags         map[model.UUID]PictureTag  `dynamodbav:"Tags"`
+	Origin       string        `dynamodbav:"Origin"`   // PK original werbsite
+	ID           model.UUID    `dynamodbav:"ID"`       // SK
+	Name         string        `dynamodbav:"Name"`     // name <originID>_time
+	OriginID     string        `dynamodbav:"OriginID"` // id from original website
+	User         User          `dynamodbav:"User"`
+	Extension    string        `dynamodbav:"Extension"` // type of file
+	Sizes        []PictureSize `dynamodbav:"Sizes"`     // size cropping history
+	Title        string        `dynamodbav:"Title"`
+	Description  string        `dynamodbav:"Description"` // decription of picture
+	License      string        `dynamodbav:"License"`     // type of public license
+	CreationDate time.Time     `dynamodbav:"CreationDate"`
+	Tags         []PictureTag  `dynamodbav:"Tags"`
 }
 
 func (p *Picture) DriverMarshal(value controllerModel.Picture) {
@@ -42,11 +42,11 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	// if err != nil {
 	// 	return err
 	// }
-	sizes := make(map[model.UUID]PictureSize, len(value.Sizes))
-	for sizeID, controllerSize := range value.Sizes {
+	sizes := make([]PictureSize, 0, len(value.Sizes))
+	for _, controllerSize := range value.Sizes {
 		var driverSize PictureSize
 		driverSize.DriverMarshal(controllerSize)
-		sizes[sizeID] = driverSize
+		sizes = append(sizes, driverSize)
 	}
 	p.Sizes = sizes
 
@@ -54,33 +54,25 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	// if err != nil {
 	// 	return err
 	// }
-	tags := make(map[model.UUID]PictureTag, len(value.Tags))
-	for tagID, controllerTag := range value.Tags {
+	tags := make([]PictureTag, 0, len(value.Tags))
+	for _, controllerTag := range value.Tags {
 		var driverTag PictureTag
 		driverTag.DriverMarshal(controllerTag)
-		tags[tagID] = driverTag
+		tags = append(tags, driverTag)
 	}
 	p.Tags = tags
 }
 
 func (p Picture) DriverUnmarshal() *controllerModel.Picture {
-	sizes := make(map[model.UUID]controllerModel.PictureSize, len(p.Sizes))
-	for sizeID, pictureSize := range p.Sizes {
-		sizes[sizeID] = pictureSize.DriverUnmarshal()
+	sizes := make([]controllerModel.PictureSize, 0, len(p.Sizes))
+	for _, pictureSize := range p.Sizes {
+		sizes = append(sizes, pictureSize.DriverUnmarshal())
 	}
-	// size, err := ConvertMap[model.UUID, PictureSize, controllerModel.PictureSize](p.Size)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
-	tags := make(map[model.UUID]controllerModel.PictureTag, len(p.Tags))
-	for tagID, pictureTag := range p.Tags {
-		tags[tagID] = pictureTag.DriverUnmarshal()
+	tags := make([]controllerModel.PictureTag, 0, len(p.Tags))
+	for _, pictureTag := range p.Tags {
+		tags = append(tags, pictureTag.DriverUnmarshal())
 	}
-	// tags, err := ConvertMap[model.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	return &controllerModel.Picture{
 		Origin:       p.Origin,
@@ -99,11 +91,13 @@ func (p Picture) DriverUnmarshal() *controllerModel.Picture {
 }
 
 type PictureSize struct {
+	ID           model.UUID
 	CreationDate time.Time
 	Box          Box // absolut reference of the top left of new box based on the original sizes
 }
 
 func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
+	ps.ID = value.ID
 	ps.CreationDate = value.CreationDate
 
 	var box Box
@@ -113,6 +107,7 @@ func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
 
 func (ps PictureSize) DriverUnmarshal() controllerModel.PictureSize {
 	return controllerModel.PictureSize{
+		ID:           ps.ID,
 		CreationDate: ps.CreationDate,
 		Box:          ps.Box.DriverUnmarshal(),
 	}
@@ -142,6 +137,7 @@ func (b Box) DriverUnmarshal() controllerModel.Box {
 }
 
 type PictureTag struct {
+	ID             model.UUID
 	Name           string
 	CreationDate   time.Time
 	OriginName     string
@@ -149,6 +145,7 @@ type PictureTag struct {
 }
 
 func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
+	pt.ID = value.ID
 	pt.Name = value.Name
 	pt.CreationDate = value.CreationDate
 	pt.OriginName = value.OriginName
@@ -157,11 +154,6 @@ func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
 		var boxInformation BoxInformation
 		boxInformation.DriverMarshal(value.BoxInformation.Body)
 		pt.BoxInformation = model.NewNullable(boxInformation)
-	} else {
-		pt.BoxInformation = model.Nullable[BoxInformation]{
-			Valid: false,
-			Body:  BoxInformation{},
-		}
 	}
 }
 
@@ -172,6 +164,7 @@ func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 	}
 
 	return controllerModel.PictureTag{
+		ID:             pt.ID,
 		Name:           pt.Name,
 		CreationDate:   pt.CreationDate,
 		OriginName:     pt.OriginName,
@@ -180,17 +173,17 @@ func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 }
 
 type BoxInformation struct {
-	Model       sql.NullString  // name of the model used for the detector
-	Weights     sql.NullString  // weights of the model used for the detector
-	ImageSizeID model.UUID      // reference to the anchor point
-	Box         Box             // reference of the bounding box relative to the anchor
-	Confidence  sql.NullFloat64 // accuracy of the model
+	Model         sql.NullString  // name of the model used for the detector
+	Weights       sql.NullString  // weights of the model used for the detector
+	PictureSizeID model.UUID      // reference to the anchor point
+	Box           Box             // reference of the bounding box relative to the anchor
+	Confidence    sql.NullFloat64 // accuracy of the model
 }
 
 func (bi *BoxInformation) DriverMarshal(value controllerModel.BoxInformation) {
 	bi.Model = value.Model
 	bi.Weights = value.Weights
-	bi.ImageSizeID = value.ImageSizeID
+	bi.PictureSizeID = value.PictureSizeID
 
 	var box Box
 	box.DriverMarshal(value.Box)
@@ -201,10 +194,10 @@ func (bi *BoxInformation) DriverMarshal(value controllerModel.BoxInformation) {
 
 func (bi BoxInformation) DriverUnmarshal() controllerModel.BoxInformation {
 	return controllerModel.BoxInformation{
-		Model:       bi.Model,
-		Weights:     bi.Weights,
-		ImageSizeID: bi.ImageSizeID,
-		Box:         bi.Box.DriverUnmarshal(),
-		Confidence:  bi.Confidence,
+		Model:         bi.Model,
+		Weights:       bi.Weights,
+		PictureSizeID: bi.PictureSizeID,
+		Box:           bi.Box.DriverUnmarshal(),
+		Confidence:    bi.Confidence,
 	}
 }

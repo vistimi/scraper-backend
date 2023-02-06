@@ -19,8 +19,8 @@ type ControllerPicture interface {
 	CreatePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID, tag controllerModel.PictureTag) error
 	UpdatePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID, tag controllerModel.PictureTag) error
 	DeletePictureTag(ctx context.Context, primaryKey string, sortKey model.UUID, tagID model.UUID) error
-	UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, name string, imageSizeID model.UUID, box controllerModel.Box) error
-	CreatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID, imageSizeID model.UUID, box controllerModel.Box) error
+	UpdatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, name string, pictureSizeID model.UUID, box controllerModel.Box) error
+	CreatePictureCrop(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID, pictureSizeID model.UUID, box controllerModel.Box) error
 	CreatePictureCopy(ctx context.Context, primaryKey string, sortKey model.UUID, id model.UUID) error
 	UpdatePictureTransfer(ctx context.Context, primaryKey string, sortKey model.UUID, from, to string) error
 	CreatePictureBlocked(ctx context.Context, primaryKey string, sortKey model.UUID) error

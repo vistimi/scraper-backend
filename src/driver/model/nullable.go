@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 )
 
@@ -17,10 +18,7 @@ func NewNullable[T any](value T) Nullable[T] {
 	}
 }
 
-func (nt Nullable[T]) IsNull() bool {
-	return !nt.Valid
-}
-
+// database
 func (nt *Nullable[T]) Scan(value interface{}) error {
 	var t T
 	if value == nil {
@@ -44,4 +42,27 @@ func (nt *Nullable[T]) Scan(value interface{}) error {
 
 func (nt Nullable[T]) Value() (driver.Value, error) {
 	return nt.Body, nil
+}
+
+// json
+func (u Nullable[T]) MarshalJSON() ([]byte, error) {
+	if !u.Valid {
+		return json.Marshal(nil)
+	}
+	return json.Marshal(u.Body)
+}
+
+func (u *Nullable[T]) UnmarshalJSON(data []byte) error {
+	var uu T
+	err := json.Unmarshal(data, &uu)
+	if err != nil {
+		return err
+	}
+	*u = NewNullable(uu)
+	return nil
+}
+
+// other
+func (nt Nullable[T]) IsValid() bool {
+	return nt.Valid
 }

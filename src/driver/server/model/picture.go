@@ -38,30 +38,18 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 	user.DriverMarshal(value.User)
 	p.User = user
 
-	// size, err := ConvertMap[model.UUID, controllerModel.PictureSize, PictureSize](value.Size)
-	// if err != nil {
-	// 	return err
-	// }
-	// sizes := make([]PictureSize, len(value.Sizes))
-	var sizes []PictureSize
-	for sizeID, controllerSize := range value.Sizes {
+	sizes := make([]PictureSize, 0, len(value.Sizes))
+	for _, controllerSize := range value.Sizes {
 		var driverSize PictureSize
 		driverSize.DriverMarshal(controllerSize)
-		driverSize.ID = sizeID
 		sizes = append(sizes, driverSize)
 	}
 	p.Sizes = sizes
 
-	// tags, err := ConvertMap[model.UUID, controllerModel.PictureTag, PictureTag](value.Tags)
-	// if err != nil {
-	// 	return err
-	// }
-	// tags := make(map[model.UUID]PictureTag, len(value.Tags))
-	var tags []PictureTag
-	for tagID, controllerTag := range value.Tags {
+	tags := make([]PictureTag, 0, len(value.Tags))
+	for _, controllerTag := range value.Tags {
 		var driverTag PictureTag
 		driverTag.DriverMarshal(controllerTag)
-		driverTag.ID = tagID
 		tags = append(tags, driverTag)
 	}
 	p.Tags = tags
@@ -70,29 +58,21 @@ func (p *Picture) DriverMarshal(value controllerModel.Picture) {
 func (p Picture) DriverUnmarshal() *controllerModel.Picture {
 	picture := controllerModel.Picture{}
 
-	sizes := make(map[model.UUID]controllerModel.PictureSize)
+	sizes := make([]controllerModel.PictureSize, 0, len(p.Sizes))
 	if p.Sizes != nil {
 		for _, pictureSize := range p.Sizes {
-			sizes[pictureSize.ID] = pictureSize.DriverUnmarshal()
+			sizes = append(sizes, pictureSize.DriverUnmarshal())
 		}
 		picture.Sizes = sizes
 	}
-	// size, err := ConvertMap[model.UUID, PictureSize, controllerModel.PictureSize](p.Size)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
-	tags := make(map[model.UUID]controllerModel.PictureTag)
+	tags := make([]controllerModel.PictureTag, 0, len(p.Tags))
 	if p.Tags != nil {
 		for _, pictureTag := range p.Tags {
-			tags[pictureTag.ID] = pictureTag.DriverUnmarshal()
+			tags = append(tags, pictureTag.DriverUnmarshal())
 		}
 		picture.Tags = tags
 	}
-	// tags, err := ConvertMap[model.UUID, PictureTag, controllerModel.PictureTag](p.Tags)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	picture.Origin = p.Origin
 	picture.ID = p.ID
@@ -115,6 +95,7 @@ type PictureSize struct {
 }
 
 func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
+	ps.ID = value.ID
 	ps.CreationDate = value.CreationDate
 
 	var box Box
@@ -124,6 +105,7 @@ func (ps *PictureSize) DriverMarshal(value controllerModel.PictureSize) {
 
 func (ps PictureSize) DriverUnmarshal() controllerModel.PictureSize {
 	return controllerModel.PictureSize{
+		ID:           ps.ID,
 		CreationDate: ps.CreationDate,
 		Box:          ps.Box.DriverUnmarshal(),
 	}
@@ -157,10 +139,11 @@ type PictureTag struct {
 	Name           string          `json:"name,omitempty"`
 	CreationDate   time.Time       `json:"creationDate,omitempty"`
 	OriginName     string          `json:"originName,omitempty"`
-	BoxInformation *BoxInformation `json:"boxInformation,omitempty"`
+	BoxInformation model.Nullable[BoxInformation] `json:"boxInformation,omitempty"`
 }
 
 func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
+	pt.ID = value.ID
 	pt.Name = value.Name
 	pt.CreationDate = value.CreationDate
 	pt.OriginName = value.OriginName
@@ -169,19 +152,18 @@ func (pt *PictureTag) DriverMarshal(value controllerModel.PictureTag) {
 	if value.BoxInformation.Valid {
 		var boxInformation BoxInformation
 		boxInformation.DriverMarshal(value.BoxInformation.Body)
-		pt.BoxInformation = &boxInformation
-	} else {
-		pt.BoxInformation = nil
+		pt.BoxInformation = model.NewNullable(boxInformation)
 	}
 }
 
 func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 	var boxInformation model.Nullable[controllerModel.BoxInformation]
-	if pt.BoxInformation != nil {
-		boxInformation = model.NewNullable(pt.BoxInformation.DriverUnmarshal())
+	if pt.BoxInformation.IsValid() {
+		boxInformation = model.NewNullable(pt.BoxInformation.Body.DriverUnmarshal())
 	}
 
 	return controllerModel.PictureTag{
+		ID:             pt.ID,
 		Name:           pt.Name,
 		CreationDate:   pt.CreationDate,
 		OriginName:     pt.OriginName,
@@ -190,11 +172,11 @@ func (pt PictureTag) DriverUnmarshal() controllerModel.PictureTag {
 }
 
 type BoxInformation struct {
-	Model       string     `json:"model,omitempty"`       // name of the model used for the detector
-	Weights     string     `json:"weights,omitempty"`     // weights of the model used for the detector
-	ImageSizeID model.UUID `json:"imageSizeID,omitempty"` // reference to the anchor point
-	Box         Box        `json:"box,omitempty"`         // reference of the bounding box relative to the anchor
-	Confidence  float64    `json:"confidence,omitempty"`  // accuracy of the model
+	Model         string     `json:"model,omitempty"`         // name of the model used for the detector
+	Weights       string     `json:"weights,omitempty"`       // weights of the model used for the detector
+	PictureSizeID model.UUID `json:"pictureSizeID,omitempty"` // reference to the anchor point
+	Box           Box        `json:"box,omitempty"`           // reference of the bounding box relative to the anchor
+	Confidence    float64    `json:"confidence,omitempty"`    // accuracy of the model
 }
 
 func (bi *BoxInformation) DriverMarshal(value controllerModel.BoxInformation) {
@@ -204,7 +186,7 @@ func (bi *BoxInformation) DriverMarshal(value controllerModel.BoxInformation) {
 	if value.Weights.Valid {
 		bi.Weights = value.Weights.String
 	}
-	bi.ImageSizeID = value.ImageSizeID
+	bi.PictureSizeID = value.PictureSizeID
 
 	var box Box
 	box.DriverMarshal(value.Box)
@@ -229,7 +211,7 @@ func (bi BoxInformation) DriverUnmarshal() controllerModel.BoxInformation {
 			Valid:  true,
 		}
 	}
-	boxInformation.ImageSizeID = bi.ImageSizeID
+	boxInformation.PictureSizeID = bi.PictureSizeID
 	boxInformation.Box = bi.Box.DriverUnmarshal()
 	if bi.Confidence != 0 {
 		boxInformation.Confidence = sql.NullFloat64{

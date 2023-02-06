@@ -32,15 +32,17 @@ type ParamsReadPicturesID struct {
 
 // TODO: use Query and not Scan
 func (d DriverServerGin) ReadPicturesID(ctx context.Context, params ParamsReadPicturesID) ([]serverModel.Picture, error) {
-	projEx := expression.NamesList(expression.Name("ID"))
-	// filtEx := expression.Name("Origin").Contains(params.Origin)
-	controllerPictures, err := d.ControllerPicture.ReadPictures(ctx, params.Collection, &projEx, nil)
+	// projEx := expression.NamesList(expression.Name("ID"))
+	filtEx := expression.Name("Origin").Contains(params.Origin)
+	controllerPictures, err := d.ControllerPicture.ReadPictures(ctx, params.Collection, nil, &filtEx)
 	if err != nil {
 		return nil, err
 	}
-	driverServerPictures := make([]serverModel.Picture, len(controllerPictures))
-	for i, controllerPicture := range controllerPictures {
-		driverServerPictures[i].DriverMarshal(controllerPicture)
+	driverServerPictures := make([]serverModel.Picture, 0, len(controllerPictures))
+	for _, controllerPicture := range controllerPictures {
+		var serverPicture serverModel.Picture
+		serverPicture.DriverMarshal(controllerPicture)
+		driverServerPictures = append(driverServerPictures, serverPicture)
 	}
 	return driverServerPictures, nil
 }
@@ -70,9 +72,11 @@ func (d DriverServerGin) ReadPicturesBlocked(ctx context.Context) ([]serverModel
 	if err != nil {
 		return nil, err
 	}
-	driverServerPictures := make([]serverModel.Picture, len(controllerPictures))
-	for i, controllerPicture := range controllerPictures {
-		driverServerPictures[i].DriverMarshal(controllerPicture)
+	driverServerPictures := make([]serverModel.Picture, 0, len(controllerPictures))
+	for _, controllerPicture := range controllerPictures {
+		var serverPicture serverModel.Picture
+		serverPicture.DriverMarshal(controllerPicture)
+		driverServerPictures = append(driverServerPictures, serverPicture)
 	}
 	return driverServerPictures, nil
 }
@@ -120,7 +124,7 @@ func (d DriverServerGin) UpdatePictureTag(ctx context.Context, body BodyUpdatePi
 	if body.Origin == nil || body.ID == nil || body.Tag == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
-	if body.Tag.BoxInformation == nil {
+	if !body.Tag.BoxInformation.IsValid() {
 		return "error", fmt.Errorf("body not valid, tag.boxInformation missing")
 	}
 	id, err := model.ParseUUID(*body.ID)
@@ -179,26 +183,26 @@ func (d DriverServerGin) UpdatePictureCrop(ctx context.Context, body BodyUpdateP
 }
 
 type BodyCreatePictureCrop struct {
-	Origin      *string          `json:"origin"`
-	ID          *string          `json:"id"`
-	Name        *string          `json:"name"`
-	ImageSizeID *string          `json:"imageSizeID"`
-	Box         *serverModel.Box `json:"box"`
+	Origin        *string          `json:"origin"`
+	ID            *string          `json:"id"`
+	Name          *string          `json:"name"`
+	PictureSizeID *string          `json:"pictureSizeID"`
+	Box           *serverModel.Box `json:"box"`
 }
 
 func (d DriverServerGin) CreatePictureCrop(ctx context.Context, body BodyCreatePictureCrop) (string, error) {
-	if body.Origin == nil || body.ID == nil || body.Name == nil || body.ImageSizeID == nil || body.Box == nil {
+	if body.Origin == nil || body.ID == nil || body.Name == nil || body.PictureSizeID == nil || body.Box == nil {
 		return "error", fmt.Errorf("body fields must not be empty")
 	}
 	id, err := model.ParseUUID(*body.ID)
 	if err != nil {
 		return "error", err
 	}
-	imageSizeID, err := model.ParseUUID(*body.ImageSizeID)
+	pictureSizeID, err := model.ParseUUID(*body.PictureSizeID)
 	if err != nil {
 		return "error", err
 	}
-	if err := d.ControllerPicture.CreatePictureCrop(ctx, *body.Origin, id, model.NewUUID(), imageSizeID, body.Box.DriverUnmarshal()); err != nil {
+	if err := d.ControllerPicture.CreatePictureCrop(ctx, *body.Origin, id, model.NewUUID(), pictureSizeID, body.Box.DriverUnmarshal()); err != nil {
 		return "error", err
 	}
 	return "ok", nil

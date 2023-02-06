@@ -44,6 +44,9 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 	if err != nil {
 		return err
 	}
+	if len(searchedTags) == 0 {
+		return fmt.Errorf("no searched tags")
+	}
 
 	blockedTags, err := c.ControllerTag.ReadTags(ctx, "blocked")
 	if err != nil {
@@ -159,23 +162,21 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 					Height: height,
 				}
 
-				tags := make(map[model.UUID]controllerModel.PictureTag)
+				tags := make([]controllerModel.PictureTag, 0, len(*photo.Tags))
 				now := time.Now()
-				imageSizeID := model.NewUUID()
+				pictureSizeID := model.NewUUID()
 				for _, photoTag := range *photo.Tags {
 					var tagTitle string
 					if photoTag.Title != nil {
 						tagTitle = *photoTag.Title
 					}
-					tags[model.NewUUID()] = controllerModel.PictureTag{
+					tags = append(tags, controllerModel.PictureTag{
+						ID:           model.NewUUID(),
 						Name:         strings.ToLower(tagTitle),
 						CreationDate: now,
 						OriginName:   origin,
-						BoxInformation: model.NewNullable(controllerModel.BoxInformation{
-							ImageSizeID: imageSizeID,
-							Box:         box,
-						}),
-					}
+						// BoxInformation
+					})
 				}
 
 				// image creation
@@ -186,8 +187,9 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 					OriginID:     UserID,
 					CreationDate: now,
 				}
-				sizes := map[model.UUID]controllerModel.PictureSize{
-					imageSizeID: {
+				sizes := []controllerModel.PictureSize{
+					{
+						ID:           pictureSizeID,
 						CreationDate: now,
 						Box:          box,
 					},
@@ -200,8 +202,7 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 				if photo.AltDescription != nil {
 					description = *photo.AltDescription
 				}
-				document := controllerModel.Picture{
-					ID:           model.NewUUID(),
+				picture := controllerModel.Picture{
 					Origin:       origin,
 					OriginID:     originID,
 					User:         user,
@@ -215,9 +216,7 @@ func (c *ControllerUnsplash) SearchPhotos(ctx context.Context, quality string) e
 					Tags:         tags,
 				}
 
-				fmt.Printf("\ndocument %+#v\n", document)
-
-				if c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), document, buffer); err != nil {
+				if err := c.ControllerPicture.CreatePicture(ctx, model.NewUUID(), picture, buffer); err != nil {
 					return fmt.Errorf("CreatePicture has failed: %v", err)
 				}
 			}
