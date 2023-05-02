@@ -2,7 +2,7 @@ name: Revive linter
 
 on:
   push:
-    branches: [production, staging, dev]
+    branches: [master]
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
