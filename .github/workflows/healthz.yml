@@ -10,49 +10,31 @@ jobs:
   healthz:
     name: Build dockerfile
     runs-on: ubuntu-latest
+    services:
+      localstack:
+        image: localstack/localstack
+        ports:
+          - 4566:4566
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Build docker image
-        run: |-
-          docker build \
-            --tag scraper-backend \
-            . \
-            -f Dockerfile
-      - name: Create network
-        run: |-
-          docker network create scraper-net
-      - name: Run localstack
-        run: |-
-          docker run \
-            -it \
-            --rm \
-            --net scraper-net \
-            --name scraper-localstack \
-            localstack/localstack
-      - name: Run docker image
-        run: |-
-          docker run \
-            -it \
-            --rm \
-            --net scraper-net \
-            --name scraper-backend \
-            --env AWS_ACCESS_KEY_ID=123 \
-            --env AWS_SECRET_ACCESS_KEY=123 \
-            --env CLOUD_HOST=localstack \
-            --env LOCALSTACK_URI=http://scraper-localstack:4566 \
-            --env COMMON_NAME=scraper-backend-test \
-            --env FLICKR_PRIVATE_KEY=123 \
-            --env FLICKR_PUBLIC_KEY=123 \
-            --env UNSPLASH_PRIVATE_KEY=123 \
-            --env UNSPLASH_PUBLIC_KEY=123 \
-            --env PEXELS_PUBLIC_KEY=123 \
-            --env AWS_REGION=us-east-1 \
-            --env AWS_PROFILE=dummy \
-            --env AWS_ACCESS_KEY=dummy \
-            --env AWS_SECRET_KEY=dummy \
-            scraper-backend
-
+      - name: Run project
+        run: |-          
+            AWS_ACCESS_KEY_ID=123 \
+            AWS_SECRET_ACCESS_KEY=123 \
+            CLOUD_HOST=localstack \
+            LOCALSTACK_URI=http://localhost:4566 \
+            COMMON_NAME=scraper-backend-test \
+            FLICKR_PRIVATE_KEY=123 \
+            FLICKR_PUBLIC_KEY=123 \
+            UNSPLASH_PRIVATE_KEY=123 \
+            UNSPLASH_PUBLIC_KEY=123 \
+            PEXELS_PUBLIC_KEY=123 \
+            AWS_REGION=us-east-1 \
+            AWS_PROFILE=dummy \
+            AWS_ACCESS_KEY=dummy \
+            AWS_SECRET_KEY=dummy \
+            go run src/main.go
       - name: Check health path
         run: |-
           curl \
