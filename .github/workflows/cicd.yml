@@ -63,6 +63,7 @@ jobs:
           ENV_FILE_NAME = $ENV_FILE_NAME\n \
           IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
+          AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           "
 
       - name: setup AWS CLI
