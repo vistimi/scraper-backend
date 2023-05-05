@@ -16,15 +16,43 @@ jobs:
       - name: Build docker image
         run: |-
           docker build \
-            --tag "tests:$GITHUB_SHA" \
+            --tag scraper-backend \
             . \
             -f Dockerfile
+      - name: Create network
+        run: |-
+          docker network create scraper-net
+      - name: Run localstack
+        run: |-
+          docker run \
+            -it \
+            --rm \
+            --net scraper-net \
+            --name scraper-localstack \
+            localstack/localstack
       - name: Run docker image
         run: |-
           docker run \
+            -it \
             --rm \
-            --name tests \
-            tests:$GITHUB_SHA
+            --net scraper-net \
+            --name scraper-backend \
+            --env AWS_ACCESS_KEY_ID=123 \
+            --env AWS_SECRET_ACCESS_KEY=123 \
+            --env CLOUD_HOST=localstack \
+            --env LOCALSTACK_URI=http://scraper-localstack:4566 \
+            --env COMMON_NAME=scraper-backend-test \
+            --env FLICKR_PRIVATE_KEY=123 \
+            --env FLICKR_PUBLIC_KEY=123 \
+            --env UNSPLASH_PRIVATE_KEY=123 \
+            --env UNSPLASH_PUBLIC_KEY=123 \
+            --env PEXELS_PUBLIC_KEY=123 \
+            --env AWS_REGION=us-east-1 \
+            --env AWS_PROFILE=dummy \
+            --env AWS_ACCESS_KEY=dummy \
+            --env AWS_SECRET_KEY=dummy \
+            scraper-backend
+
       - name: Check health path
         run: |-
           curl \
