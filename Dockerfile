@@ -1,23 +1,8 @@
 ARG VARIANT=golang:1.19.0-alpine
 ARG RUNNER=workflow
 
-#-------------------------
-#    BUILDER FINAL
-#-------------------------
 FROM ${VARIANT} as builder-final
 
-#-------------------------
-#    RUNNER
-#-------------------------
-#                    --->   workflow   ---
-#                   /                      \
-#  builder-final ---                        ---> runner
-#                   \                      /
-#                    ---> devcontainer ---
-
-#-------------------------
-#    RUNNER WORKFLOW
-#-------------------------
 # builder
 FROM builder-final AS builder-workflow
 
@@ -51,13 +36,3 @@ COPY --from=builder-workflow /usr/tmp/config /usr/app/config
 EXPOSE 8080
 
 CMD ["./scraper"]
-
-#-------------------------
-#    RUNNER DEVCONTAINER
-#-------------------------
-FROM builder-final AS runner-devcontainer
-
-#-------------------------
-#       RUNNER
-#-------------------------
-FROM runner-${RUNNER} AS runner

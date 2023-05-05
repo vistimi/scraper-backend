@@ -1,0 +1,37 @@
+name: Test container
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  healthz:
+    name: Build dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build docker image
+        run: |-
+          docker build \
+            --tag "tests:$GITHUB_SHA" \
+            . \
+            -f Dockerfile
+      - name: Run docker image
+        run: |-
+          docker run \
+            --rm \
+            --name tests \
+            tests:$GITHUB_SHA
+      - name: Check health path
+        run: |-
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --request GET \
+            --header "Content-Type: application/json" \
+            http://localhost:8080/healthz
