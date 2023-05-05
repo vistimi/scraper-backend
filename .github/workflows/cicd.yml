@@ -25,6 +25,7 @@ on:
         type: string
 
 env:
+  AWS_ACCOUNT_NAME: ${{ inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
   AWS_REGION: ${{ inputs.aws-region }}
   COMMON_NAME: ${{ inputs.common-name }}
@@ -58,6 +59,7 @@ jobs:
       - name: Display non-sensitive variables
         run: |
           printf " \
+          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
           ENV_FILE_NAME = $ENV_FILE_NAME\n \
           IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
@@ -66,7 +68,7 @@ jobs:
       - name: setup AWS CLI
         run: |
           aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_access_key_id '${{ secrets.AWS_ACCESS_KEY }}'
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
@@ -91,7 +93,7 @@ jobs:
       name: ${{ inputs.aws-account-name }}
     env:
       AWS_CLI_SERVICE: ecr
-      DOCKER_FOLDER_PATH: ""
+      DOCKER_FOLDER_PATH: Dockerfile
       ECR_REPOSITORY: ${{ inputs.common-name }}
     needs: [build]
     outputs:
@@ -107,7 +109,6 @@ jobs:
           AWS_CLI_SERVICE = $AWS_CLI_SERVICE\n \
           AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
           AWS_REGION = $AWS_REGION\n \
-          DOCKER_FOLDER_PATH = $DOCKER_FOLDER_PATH\n \
           ECR_REPOSITORY = $ECR_REPOSITORY\n \
           "
 
@@ -133,7 +134,8 @@ jobs:
         run: |
           export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
           echo "ECR_URI= $ECR_URI"
-          docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_URI/$IMAGE_TAG
+          # docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_URI/$IMAGE_TAG
+          docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
           docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
