@@ -67,6 +67,8 @@ jobs:
           AWS_ACCESS_KEY_ENV = $AWS_ACCESS_KEY_ENV\n \
           TEST = ${{ vars.AWS_ACCESS_KEY }}\n \
           "
+      - name: Display non-sensitive variables
+        run: |
           echo ${{ secrets.AWS_ACCESS_KEY }}
 
       - name: setup AWS CLI
