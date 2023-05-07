@@ -46,7 +46,9 @@ jobs:
   s3-env:
     name: S3 env
     runs-on: ubuntu-latest
-    environment: KookaS
+    environment: 
+      name: KookaS
+      url: https://github.com
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
