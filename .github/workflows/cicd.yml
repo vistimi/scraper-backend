@@ -46,8 +46,7 @@ jobs:
   s3-env:
     name: S3 env
     runs-on: ubuntu-latest
-    environment:
-      name: KookaS
+    environment: KookaS
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
@@ -66,6 +65,7 @@ jobs:
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           AWS_ACCESS_KEY_ENV = $AWS_ACCESS_KEY_ENV\n \
+          TEST = ${{ vars.AWS_ACCESS_KEY }}\n \
           "
 
       - name: setup AWS CLI
