@@ -46,9 +46,7 @@ jobs:
   s3-env:
     name: S3 env
     runs-on: ubuntu-latest
-    environment: 
-      name: KookaS
-      url: https://github.com
+    environment: ${{ inputs.aws-account-name }}
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
@@ -69,6 +67,7 @@ jobs:
           AWS_ACCESS_KEY_ENV = $AWS_ACCESS_KEY_ENV\n \
           TEST = ${{ vars.AWS_ACCESS_KEY }}\n \
           "
+          echo ${{ secrets.AWS_ACCESS_KEY }}
 
       - name: setup AWS CLI
         run: |
