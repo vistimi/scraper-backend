@@ -47,7 +47,7 @@ jobs:
     name: S3 env
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.aws-account-name }}
+      name: KookaS
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
