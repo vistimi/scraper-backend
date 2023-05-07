@@ -64,17 +64,13 @@ jobs:
           IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
-          AWS_ACCESS_KEY_ENV = $AWS_ACCESS_KEY_ENV\n \
-          TEST = ${{ vars.AWS_ACCESS_KEY }}\n \
+          AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
           "
-      - name: Display non-sensitive variables
-        run: |
-          echo ${{ secrets.AWS_ACCESS_KEY }}
 
       - name: setup AWS CLI
         run: |
           aws --version
-          aws configure set aws_access_key_id '${{ secrets.AWS_ACCESS_KEY }}'
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
