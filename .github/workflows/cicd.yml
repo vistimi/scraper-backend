@@ -51,6 +51,7 @@ jobs:
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
       ENV_FILE_NAME: "production.env"
+      AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
 
     steps:
       - name: Checkout
@@ -64,6 +65,7 @@ jobs:
           IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
+          AWS_ACCESS_KEY_ENV = $AWS_ACCESS_KEY_ENV\n \
           "
 
       - name: setup AWS CLI
