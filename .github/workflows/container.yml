@@ -7,14 +7,13 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 env:
-  AWS_ACCOUNT_NAME: KookaS
   COMMON_NAME: $GITHUB_SHA
 
 jobs:
   ecr:
     name: ECR create
     runs-on: ubuntu-latest
-    environment: ${{ AWS_ACCOUNT_NAME }}
+    environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
       ECR_REPOSITORY: $COMMON_NAME
@@ -74,7 +73,7 @@ jobs:
     name: Container check
     needs: ecr
     runs-on: ubuntu-latest
-    environment: $AWS_ACCOUNT_NAME
+    environment: KookaS
     services:
       localstack:
         image: localstack/localstack
