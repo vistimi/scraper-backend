@@ -97,7 +97,7 @@ jobs:
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         ports:
           - 8080:8080
-          - 4566:4566
+          # - 4566:4566
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://localhost:4566
