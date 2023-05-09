@@ -14,7 +14,7 @@ jobs:
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
-      ECR_REPOSITORY: ${ GITHUB_SHA }
+      ECR_REPOSITORY: $GITHUB_SHA
       DOCKER_FOLDER_PATH: Dockerfile
       AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
       AWS_REGION: ${{ vars.AWS_REGION }}
@@ -25,6 +25,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Display non-sensitive variables
+        run: |
+          printf " \
+          ECR_REPOSITORY = $ECR_REPOSITORY\n \
+          "
 
       - name: setup AWS CLI
         run: |
@@ -93,7 +99,7 @@ jobs:
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://localhost:4566
-          COMMON_NAME: ${ GITHUB_SHA }
+          COMMON_NAME: $GITHUB_SHA
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
           UNSPLASH_PRIVATE_KEY: 123
