@@ -91,12 +91,13 @@ jobs:
           AWS_ACCESS_KEY_ID: dummy
           AWS_SECRET_ACCESS_KEY: dummy
       project:
-        image:  $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${{ needs.ecr.outputs.IMAGE_TAG }}
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         ports:
           - 8080:8080
+          - 4566:4566
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://localhost:4566
@@ -132,3 +133,45 @@ jobs:
             --request GET \
             --header "Content-Type: application/json" \
             http://localhost:8080/healthz
+
+  cleanup:
+    name: ECR cleanup
+    runs-on: ubuntu-latest
+    needs: container
+    environment: KookaS
+    env:
+      AWS_CLI_SERVICE: ecr  # private
+      ECR_REPOSITORY: ${{ github.sha }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+    outputs:
+      IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
+      ECR_LOGIN_PASSWORD: ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: setup AWS CLI
+        run: |
+          aws --version
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
+          aws configure set region $AWS_REGION
+
+      - name: login to ECR
+        run: |
+          if [[ $AWS_CLI_SERVICE == ecr ]]; then
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+          fi
+      
+      - name: Create ECR repository
+        run: |
+          aws ecr delete-repository \
+            --repository-name $ECR_REPOSITORY \
+            --force \
+            --region $AWS_REGION \
+            --output text \
+            --query 'repository.registryId'
