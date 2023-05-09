@@ -216,7 +216,7 @@ jobs:
 
       - name: Wait for tasks
         run: |
-          sleep 30
+          sleep 30s
           TASKS=$(aws ecs list-tasks \
           --region $AWS_REGION \
           --cluster $COMMON_NAME \
@@ -245,7 +245,7 @@ jobs:
                 taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
                 echo "Waiting for task $task to be RUNNING, currently $latestStatus"
                 echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
-                sleep 5s
+                sleep 10s
               done
 
               if [ $i -gt 30 ]; then exit 1; fi
