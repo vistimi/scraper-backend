@@ -83,7 +83,7 @@ jobs:
       localstack:
         image: localstack/localstack
         ports:
-          - 4566:4566
+          - 45667:4566
         env:
           SERVICES: "s3,dynamodb"
           DEBUG: 1
@@ -97,7 +97,7 @@ jobs:
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         ports:
           - 8080:8080
-          # - 4566:4566
+          - 4567:4567
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://localhost:4566
