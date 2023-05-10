@@ -113,11 +113,6 @@ jobs:
           AWS_SECRET_KEY: dummy
 
     steps:
-      - name: Test localstack
-        env:
-          table_name: pictureProcess
-        run: |
-          aws dynamodb scan --endpoint-url=http://localstack:4566 --table-name ${{ github.sha }}-$table_name
       - name: Test root
         run: |
          curl \
@@ -138,6 +133,11 @@ jobs:
             --request GET \
             --header "Content-Type: application/json" \
             http://project:8080/healthz
+      - name: Test localstack
+        env:
+          table_name: pictureProcess
+        run: |
+          aws dynamodb scan --endpoint-url=http://localstack:4566 --table-name ${{ github.sha }}-pictureProcess
 
   cleanup:
     name: ECR cleanup
