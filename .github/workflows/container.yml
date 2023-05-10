@@ -83,7 +83,7 @@ jobs:
       localstack:
         image: localstack/localstack
         ports:
-          - 4567:4566
+          - 8081:4566
         env:
           SERVICES: "s3,dynamodb"
           DEBUG: 1
@@ -97,10 +97,10 @@ jobs:
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         ports:
           - 8080:8080
-          - 4567:4567
+          - 8081:8081
         env:
           CLOUD_HOST: localstack
-          LOCALSTACK_URI: http://localhost:4566
+          LOCALSTACK_URI: http://localhost:8081
           COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
@@ -117,7 +117,7 @@ jobs:
         env:
           table_name: pictureProcess
         run: |
-          aws dynamodb scan --endpoint-url=http://localstack:4567 --table-name ${{ github.sha }}-$table_name
+          aws dynamodb scan --endpoint-url=http://localstack:8081 --table-name ${{ github.sha }}-$table_name
       - name: Test root
         run: |
          curl \
