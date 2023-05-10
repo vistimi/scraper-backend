@@ -74,8 +74,7 @@ jobs:
         run: |
           echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
 
-  # Runs all steps on the VM
-  # The service containers will use host port binding instead of container networking so you access them via localhost rather than the service name
+  # Container network where we can access with the service name and the port
   container:
     name: Container check
     needs: ecr
@@ -85,7 +84,7 @@ jobs:
       localstack:
         image: localstack/localstack
         ports:
-          - 4566/tcp
+          - 4566:4566
         env:
           SERVICES: "s3,dynamodb"
           DEBUG: 1
@@ -98,10 +97,10 @@ jobs:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         ports:
-          - 8080/tcp
+          - 8080:8080
         env:
           CLOUD_HOST: localstack
-          LOCALSTACK_URI: http://localhost:${{ job.services.localstack.ports[4566] }}
+          LOCALSTACK_URI: http://localstack:4566
           COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
@@ -118,7 +117,7 @@ jobs:
         env:
           table_name: pictureProcess
         run: |
-          aws dynamodb scan --endpoint-url=http://localstack:${{ job.services.localstack.ports[4566] }} --table-name ${{ github.sha }}-$table_name
+          aws dynamodb scan --endpoint-url=http://localstack:4566 --table-name ${{ github.sha }}-$table_name
       - name: Test root
         run: |
          curl \
@@ -128,7 +127,7 @@ jobs:
             --location \
             --request GET \
             --header "Content-Type: application/json" \
-            http://localhost:${{ job.services.project.ports[8080] }}/
+            http://project:8080/
       - name: Test healthz
         run: |
          curl \
@@ -138,7 +137,7 @@ jobs:
             --location \
             --request GET \
             --header "Content-Type: application/json" \
-            http://localhost:${{ job.services.project.ports[8080] }}/healthz
+            http://project:8080/healthz
 
   cleanup:
     name: ECR cleanup
