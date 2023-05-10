@@ -83,7 +83,7 @@ jobs:
       localstack:
         image: localstack/localstack
         ports:
-          - 45667:4566
+          - 4567:4566
         env:
           SERVICES: "s3,dynamodb"
           DEBUG: 1
@@ -113,6 +113,11 @@ jobs:
           AWS_SECRET_KEY: dummy
 
     steps:
+      - name: Test localstack
+        env:
+          table_name: pictureProcess
+        run: |
+          aws dynamodb scan --endpoint-url=http://localstack:4567 --table-name ${{ github.sha }}-$table_name
       - name: Test root
         run: |
          curl \
