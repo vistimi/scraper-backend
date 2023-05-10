@@ -113,13 +113,18 @@ jobs:
           AWS_SECRET_KEY: dummy
 
     steps:
-      - name: Status
+      - name: printf
         run: |
-          echo ${{ job.services.project.name }}
+          echo ${{ job.services.project }}
+          echo ${{ job.services.project.options }}
+      - name: Status localstack
+        run: |
           curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
-          curl -Is http://${{ job.services.localstack.name }}:4566 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://${{ job.services.localstack.hostname }}:4566 | grep HTTP | cut -d ' ' -f2
+      - name: Status localstack
+        run: |
           curl -Is http://localhost:8080 | grep HTTP | cut -d ' ' -f2
-          curl -Is http://${{ job.services.project.name }}:8080 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://${{ job.services.project.hostname }}:8080 | grep HTTP | cut -d ' ' -f2
       - name: Test root
         run: |
          curl \
