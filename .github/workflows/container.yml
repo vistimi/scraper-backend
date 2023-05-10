@@ -142,7 +142,8 @@ jobs:
   cleanup:
     name: ECR cleanup
     runs-on: ubuntu-latest
-    needs: container
+    needs: [ecr, container]
+    if: ${{ always() && contains(join(needs.ecr.result, ','), 'success') }}
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
@@ -172,7 +173,7 @@ jobs:
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
           fi
       
-      - name: Create ECR repository
+      - name: Delete ECR repository
         run: |
           aws ecr delete-repository \
             --repository-name $ECR_REPOSITORY \
