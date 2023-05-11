@@ -120,11 +120,11 @@ jobs:
       - name: Status localstack
         run: |
           curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
-          curl -Is http://${{ job.services.localstack.hostname }}:4566 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://localstack:4566 | grep HTTP | cut -d ' ' -f2
       - name: Status localstack
         run: |
           curl -Is http://localhost:8080 | grep HTTP | cut -d ' ' -f2
-          curl -Is http://${{ job.services.project.hostname }}:8080 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://project:8080 | grep HTTP | cut -d ' ' -f2
       - name: Test root
         run: |
          curl \
