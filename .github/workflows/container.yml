@@ -91,8 +91,8 @@ jobs:
         #   DEFAULT_REGION: ${{ vars.AWS_REGION }}
         #   AWS_ACCESS_KEY_ID: dummy
         #   AWS_SECRET_ACCESS_KEY: dummy
-        options: >-
-          --name localstack
+        # options: >-
+        #   --name localstack
       project:
         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
@@ -113,28 +113,22 @@ jobs:
           AWS_PROFILE: dummy
           AWS_ACCESS_KEY: dummy
           AWS_SECRET_KEY: dummy
-        options: >-
-          --name project
+        # options: >-
+        #   --name project
 
     steps:
-      - name: printf
-        run: |
-          echo ${{ job.services.project.network }}
-      - name: printf
-        run: |
-          echo ${{ job.services.project.alias }}
       - name: Status localstack
         run: |
-          curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://localhost:4566 | grep HTTP
       - name: Status localstack
         run: |
-          curl -Is http://localstack:4566 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://localstack:4566 | grep HTTP
       - name: Status localstack
         run: |
-          curl -Is http://localhost:8080 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://localhost:8080 | grep HTTP
       - name: Status localstack
         run: |
-          curl -Is http://project:8080 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://project:8080 | grep HTTP
       - name: Test root
         run: |
          curl \

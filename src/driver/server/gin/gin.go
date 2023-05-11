@@ -26,6 +26,7 @@ func (d DriverServerGin) Router() *gin.Engine {
 	router.Use(cors.Default())
 
 	// health check
+	router.Any("/", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 	router.Any("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 
 	router.GET("/image/file/:origin/:name/:extension", wrapperDataHandlerURI(d.ReadPictureFile))
