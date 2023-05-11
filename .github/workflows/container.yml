@@ -100,7 +100,7 @@ jobs:
           - 8080:8080
         env:
           CLOUD_HOST: localstack
-          LOCALSTACK_URI: http://${{ job.services.localstack.name }}:4566
+          LOCALSTACK_URI: http://localhost:4566
           COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
@@ -115,10 +115,10 @@ jobs:
     steps:
       - name: printf
         run: |
-          echo ${{ job.services.project }}
+          echo ${{ job.services.project.network }}
       - name: printf
         run: |
-          echo ${{ job.services.project.options }}
+          echo ${{ job.services.project.alias }}
       - name: Status localstack
         run: |
           curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
@@ -140,7 +140,7 @@ jobs:
             --location \
             --request GET \
             --header "Content-Type: application/json" \
-            http://${{ job.services.project.name }}:8080/
+            http://localhost:8080/
       - name: Test healthz
         run: |
          curl \
@@ -150,12 +150,12 @@ jobs:
             --location \
             --request GET \
             --header "Content-Type: application/json" \
-            http://${{ job.services.project.name }}:8080/healthz
+            http://localhost:8080/healthz
       - name: Test localstack
         env:
           table_name: pictureProcess
         run: |
-          aws dynamodb scan --endpoint-url=http://${{ job.services.localstack.name }}:4566 --table-name ${{ github.sha }}-pictureProcess
+          aws dynamodb scan --endpoint-url=http://localhost:4566 --table-name ${{ github.sha }}-pictureProcess
 
   cleanup:
     name: ECR cleanup
