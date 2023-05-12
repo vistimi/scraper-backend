@@ -229,7 +229,7 @@ jobs:
           --sort DESC \
           --query 'taskDefinitionArns[0]' \
           --output text)
-          i=0
+
           for task in $TASKS; do
               tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json) || exit 1
               echo "tasksDescription=$tasksDescription"
@@ -238,16 +238,16 @@ jobs:
               echo "Waiting for task $task to be RUNNING, currently $latestStatus"
               echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
               
-              while [[ $latestStatus != "RUNNING" && taskDefinitionArn != $LATEST_TASK_DEFINITION_ARN ]]
-              do
+              i=0
+              while [[ $latestStatus != "RUNNING" && taskDefinitionArn != $LATEST_TASK_DEFINITION_ARN ]]; do
                 tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
                 latestStatus=$(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
                 taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
                 echo "Waiting for task $task to be RUNNING, currently $latestStatus"
                 echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
                 sleep 10s
-              done
 
-              if [ $i -gt 30 ]; then exit 1; fi
-              i=$((i+1))
+                if [ $i -gt 30  || $latestStatus == "STOPPED"]; then exit 1; fi
+                i=$((i+1))
+              done
           done
