@@ -247,7 +247,7 @@ jobs:
                 echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
                 sleep 10s
 
-                if [ $i -gt 30  || $latestStatus == "STOPPED"]; then exit 1; fi
+                if [ $i -gt 3 ] || [ "$latestStatus" = "STOPPED" ]; then exit 1; fi
                 i=$((i+1))
               done
           done
