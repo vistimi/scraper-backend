@@ -85,6 +85,7 @@ jobs:
           UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }}
           UNSPLASH_PUBLIC_KEY=${{ secrets.UNSPLASH_PUBLIC_KEY }}
           PEXELS_PUBLIC_KEY=${{ secrets.PEXELS_PUBLIC_KEY }}
+          AWS_REGION=${{ vars.AWS_REGION }}
           EOF
           aws s3 cp .env s3://$BUCKET_ENV/$ENV_FILE_NAME
 

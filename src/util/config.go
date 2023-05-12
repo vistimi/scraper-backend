@@ -9,6 +9,7 @@ import (
 	"scraper-backend/src/driver/database/dynamodb"
 	"scraper-backend/src/driver/storage/bucket"
 
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -84,13 +85,18 @@ func NewConfig() (*Config, error) {
 
 	switch env {
 	case "aws":
-		awsConfig, err := client.NewConfigAws()
+		awsRegion := GetEnvVariable("AWS_REGION")
+		optFnsRegion := func(o *awsConfig.LoadOptions) error {
+			o.Region = awsRegion
+			return nil
+		}
+		awsConfig, err := client.NewConfigAws(optFnsRegion)
 		if err != nil {
 			return nil, err
 		}
 
-		AwsS3Client = bucket.S3Client(awsConfig)
-		AwsDynamodbClient = dynamodb.DynamodbClient(awsConfig)
+		AwsS3Client = bucket.S3Client(*awsConfig)
+		AwsDynamodbClient = dynamodb.DynamodbClient(*awsConfig)
 	case "localstack":
 		urlLocalstack := GetEnvVariable("LOCALSTACK_URI")
 		awsRegion := GetEnvVariable("AWS_REGION")
