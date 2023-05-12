@@ -6,36 +6,26 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-func NewConfigLocalstack(url, awsRegion, accessKeyID, secretAccessKey string) (aws.Config, error) {
-
+func NewConfigLocalstack(url string, optFns ...func(*config.LoadOptions) error) (aws.Config, error) {
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		if url != "" {
 			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           url,
-				SigningRegion: awsRegion,
+				PartitionID: "aws",
+				URL:         url,
+				// SigningRegion: awsRegion,
 			}, nil
 		}
 
 		// returning EndpointNotFoundError will allow the service to fallback to its default resolution
 		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
 	})
+	optFns = append(optFns, config.WithEndpointResolverWithOptions(customResolver))
 
-	return config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(awsRegion),
-		config.WithEndpointResolverWithOptions(customResolver),
-		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
-			Value: aws.Credentials{
-				AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey, SessionToken: "dummy",
-				Source: "Hard-coded credentials; values are irrelevant for local DynamoDB",
-			},
-		}),
-	)
+	return config.LoadDefaultConfig(context.TODO(), optFns...)
 }
 
 func convertKeyType(keyType string) types.ScalarAttributeType {

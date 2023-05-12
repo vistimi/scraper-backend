@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,6 +16,5 @@ func NewConfigAws(optFns ...func(*config.LoadOptions) error) (*aws.Config, error
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("%+v",cfg)
 	return &cfg, err
 }

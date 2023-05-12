@@ -9,7 +9,9 @@ import (
 	"scraper-backend/src/driver/database/dynamodb"
 	"scraper-backend/src/driver/storage/bucket"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	awsCredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	awsDynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -36,7 +38,10 @@ type Config struct {
 
 func NewConfig() (*Config, error) {
 	commonName := GetEnvVariable("COMMON_NAME")
-	env := GetEnvVariable("CLOUD_HOST")
+	cloudHost := GetEnvVariable("CLOUD_HOST")
+	awsRegion := GetEnvVariable("AWS_REGION")
+	accessKeyID := GetEnvVariable("AWS_ACCESS_KEY")
+	secretAccessKey := GetEnvVariable("AWS_SECRET_KEY")
 
 	var AwsS3Client *awsS3.Client
 	var AwsDynamodbClient *awsDynamodb.Client
@@ -83,26 +88,35 @@ func NewConfig() (*Config, error) {
 
 	s3BucketNamePictures := commonName + "-" + *configYml.Buckets["env"].Name
 
-	switch env {
+	switch cloudHost {
 	case "aws":
-		awsRegion := GetEnvVariable("AWS_REGION")
-		optFnsRegion := func(o *awsConfig.LoadOptions) error {
-			o.Region = awsRegion
-			return nil
-		}
-		awsConfig, err := client.NewConfigAws(optFnsRegion)
+		optFnsRegion := awsConfig.WithRegion(awsRegion)
+		optFnsCredentials := awsConfig.WithCredentialsProvider(awsCredentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""))
+
+		// sess, err := session.NewSession(&aws.Config{
+		// 	Region:      aws.String("us-west-2"),
+		// 	Credentials: credentials.NewStaticCredentials(conf.AWS_ACCESS_KEY_ID, conf.AWS_SECRET_ACCESS_KEY, ""),
+		// })
+
+		awsConfig, err := client.NewConfigAws(optFnsRegion, optFnsCredentials)
 		if err != nil {
 			return nil, err
 		}
+
+		fmt.Printf("%+#v\n", awsConfig)
 
 		AwsS3Client = bucket.S3Client(*awsConfig)
 		AwsDynamodbClient = dynamodb.DynamodbClient(*awsConfig)
 	case "localstack":
 		urlLocalstack := GetEnvVariable("LOCALSTACK_URI")
-		awsRegion := GetEnvVariable("AWS_REGION")
-		accessKeyID := GetEnvVariable("AWS_ACCESS_KEY")
-		secretAccessKey := GetEnvVariable("AWS_SECRET_KEY")
-		awsConfig, err := client.NewConfigLocalstack(urlLocalstack, awsRegion, accessKeyID, secretAccessKey)
+		optFnsRegion := awsConfig.WithRegion(awsRegion)
+		optFnsCredentials := awsConfig.WithCredentialsProvider(awsCredentials.StaticCredentialsProvider{
+			Value: aws.Credentials{
+				AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey, SessionToken: "dummy",
+				Source: "Hard-coded credentials; values are irrelevant for local DynamoDB",
+			},
+		})
+		awsConfig, err := client.NewConfigLocalstack(urlLocalstack, optFnsRegion, optFnsCredentials)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +189,7 @@ func NewConfig() (*Config, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("env variable not valid: %s", env)
+		return nil, fmt.Errorf("cloud host variable not valid: %s", cloudHost)
 	}
 
 	config := Config{
