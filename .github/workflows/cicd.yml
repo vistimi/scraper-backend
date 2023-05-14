@@ -49,7 +49,7 @@ jobs:
     environment: ${{ inputs.aws-account-name }}
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
-      ENV_FILE_NAME: "production.env"
+      ENV_FILE_NAME: "${GITHUB_REF#refs/heads/}.env"
       AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
 
     steps:
@@ -65,6 +65,7 @@ jobs:
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
+          S3 file = s3://$BUCKET_ENV/$ENV_FILE_NAME\n \
           "
 
       - name: setup AWS CLI
