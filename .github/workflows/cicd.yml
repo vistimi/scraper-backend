@@ -49,7 +49,7 @@ jobs:
     environment: ${{ inputs.aws-account-name }}
     env:
       BUCKET_ENV: ${{ inputs.common-name }}-env
-      ENV_FILE_NAME: "${GITHUB_REF#refs/heads/}.env"
+      BRANCH: ${{ github.head_ref || github.ref_name }}
       AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
 
     steps:
@@ -60,12 +60,12 @@ jobs:
         run: |
           printf " \
           AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
-          ENV_FILE_NAME = $ENV_FILE_NAME\n \
+          BRANCH = $BRANCH\n \
           IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
-          S3 file = s3://$BUCKET_ENV/$ENV_FILE_NAME\n \
+          S3 file = s3://$BUCKET_ENV/$BRANCH.env\n \
           "
 
       - name: setup AWS CLI
@@ -90,7 +90,7 @@ jobs:
           AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
           EOF
-          aws s3 cp .env s3://$BUCKET_ENV/$ENV_FILE_NAME
+          aws s3 cp .env s3://$BUCKET_ENV/$BRANCH.env
 
   ecr:
     name: ECR
