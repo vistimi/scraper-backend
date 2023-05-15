@@ -41,7 +41,7 @@ jobs:
         with:
           go-version: "1.18.3" # The Go version to download (if necessary) and use.
       - name: build
-        run: go build src/main.go
+        run: go build src/main.go; exit 1
 
   s3-env:
     name: S3 env
