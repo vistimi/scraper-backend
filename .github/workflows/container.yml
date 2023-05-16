@@ -79,7 +79,7 @@ jobs:
     name: Container check
     needs: ecr
     runs-on: ubuntu-latest
-    # container: golang:1.19.0-alpine
+    container: ubuntu # golang:1.19.0-alpine # connect the workflow steps to the network
     environment: KookaS
     services:
       test1:
@@ -118,12 +118,19 @@ jobs:
         #   --name project
 
     steps:
+      - name: inputs.task-desired-count
+        run: |
+          apt-get update; apt-get install curl -y
       - name: Status localstack
         run: |
           curl -Is http://test1:4566 | grep HTTP | cut -d ' ' -f2
+          echo testtt
+          curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
       - name: Status project
         run: |
           curl -Is http://test2:8080 | grep HTTP | cut -d ' ' -f2
+          echo testtt
+          curl -Is http://localhost:8080 | grep HTTP | cut -d ' ' -f2
 
       - name: Test root
         run: |
