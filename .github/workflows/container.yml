@@ -82,7 +82,7 @@ jobs:
     container: ubuntu # connect the workflow steps to the network
     environment: KookaS
     services:
-      test1:
+      local-cloud:
         image: localstack/localstack
         # ports:
         #   - 4566:4566
@@ -94,7 +94,7 @@ jobs:
         #   AWS_SECRET_ACCESS_KEY: dummy
         # options: >-
         #   --name localstack
-      test2:
+      local-backend:
         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
@@ -103,7 +103,7 @@ jobs:
         #   - 8080:8080
         env:
           CLOUD_HOST: localstack
-          LOCALSTACK_URI: http://test1:4566
+          LOCALSTACK_URI: http://local-cloud:4566
           COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
@@ -123,22 +123,22 @@ jobs:
           apt update
           apt install curl unzip -y -q
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip -q
+          unzip -qq awscliv2.zip
           ./aws/install
       - name: Status localstack
         run: |
-          curl -Is http://test1:4566 | grep HTTP
+          curl -Is http://local-cloud:4566 | grep HTTP
       - name: Status root
         run: |
-          curl -Is http://test2:8080/ | grep HTTP
+          curl -Is http://local-backend:8080/ | grep HTTP
       - name: Status healthz
         run: |
-          curl -Is http://test2:8080/healthz | grep HTTP
+          curl -Is http://local-backend:8080/healthz | grep HTTP
       - name: Status localstack table
         env:
           table_name: pictureProcess
         run: |
-          aws dynamodb scan --endpoint-url=http://test1:4566 --region=us-east-1 --table-name ${{ github.sha }}-pictureProcess
+          aws dynamodb scan --endpoint-url=http://local-cloud:4566 --region=us-east-1 --table-name ${{ github.sha }}-pictureProcess
 
   cleanup:
     name: ECR cleanup
