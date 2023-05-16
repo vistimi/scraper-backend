@@ -79,12 +79,13 @@ jobs:
     name: Container check
     needs: ecr
     runs-on: ubuntu-latest
+    # container: golang:1.19.0-alpine
     environment: KookaS
     services:
-      localstack:
+      test1:
         image: localstack/localstack
-        ports:
-          - 4566:4566
+        # ports:
+        #   - 4566:4566
         # env:
         #   SERVICES: "s3,dynamodb"
         #   DEBUG: 1
@@ -93,16 +94,16 @@ jobs:
         #   AWS_SECRET_ACCESS_KEY: dummy
         # options: >-
         #   --name localstack
-      project:
+      test2:
         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
-        ports:
-          - 8080:8080
+        # ports:
+        #   - 8080:8080
         env:
           CLOUD_HOST: localstack
-          LOCALSTACK_URI: http://localhost:4566
+          LOCALSTACK_URI: http://test1:4566
           COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123

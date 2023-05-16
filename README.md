@@ -16,7 +16,7 @@ docker network create scraper-net
 docker network ls
 
 # docker images
-docker run --rm -it --net scraper-net --name scraper-localstack localstack/localstack
+docker run --rm -it --net scraper-net --name scraper-localstack --network-alias test1 localstack/localstack
 ```
 
 To check the tables with aws cli:
@@ -29,7 +29,7 @@ aws dynamodb scan --endpoint-url=http://scraper-localstack:4566 --table-name scr
 #### Backend with Docker
 ```shell
 sudo docker build -t scraper-backend .
-sudo docker run --rm -it --net scraper-net --name scraper-backend --env-file .devcontainer/devcontainer.env scraper-backend
+sudo docker run --rm -it --net scraper-net --name scraper-backend --env-file .devcontainer/devcontainer.env --network-alias test2 scraper-backend
 ```
 
 #### Backend without docker
