@@ -120,10 +120,10 @@ jobs:
     steps:
       - name: Status localstack
         run: |
-          curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
-      - name: Status localstack
+          curl -Is http://test1:4566 | grep HTTP | cut -d ' ' -f2
+      - name: Status project
         run: |
-          curl -Is http://localhost:8080 | grep HTTP | cut -d ' ' -f2
+          curl -Is http://test2:8080 | grep HTTP | cut -d ' ' -f2
 
       - name: Test root
         run: |
@@ -134,8 +134,8 @@ jobs:
           #     --location \
           #     --request GET \
           #     --header "Content-Type: application/json" \
-          #     http://localhost:8080/
-          curl -Is http://localhost:8080/ | grep HTTP
+          #     http://test2:8080/
+          curl -Is http://test2:8080/ | grep HTTP
       - name: Test healthz
         run: |
           #  curl \
@@ -145,13 +145,13 @@ jobs:
           #     --location \
           #     --request GET \
           #     --header "Content-Type: application/json" \
-          #     http://localhost:8080/healthz
-          curl -Is http://localhost:8080/healthz | grep HTTP
+          #     http://test2:8080/healthz
+          curl -Is http://test2:8080/healthz | grep HTTP
       - name: Test localstack
         env:
           table_name: pictureProcess
         run: |
-          aws dynamodb scan --endpoint-url=http://localhost:4566 --region=us-east-1 --table-name ${{ github.sha }}-pictureProcess
+          aws dynamodb scan --endpoint-url=http://test1:4566 --region=us-east-1 --table-name ${{ github.sha }}-pictureProcess
 
   cleanup:
     name: ECR cleanup
