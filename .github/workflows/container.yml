@@ -120,10 +120,10 @@ jobs:
     steps:
       - name: Setup
         run: |
-          apt-get update
-          apt-get install curl unzip -y
+          apt update
+          apt install curl unzip -y -q
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip -q
+          unzip awscliv2.zip -qq
           ./aws/install
       - name: Status localstack
         run: |
