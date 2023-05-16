@@ -118,43 +118,23 @@ jobs:
         #   --name project
 
     steps:
-      - name: inputs.task-desired-count
+      - name: Setup
         run: |
-          apt-get update; apt-get install curl -y
+          apt-get update
+          apt-get install curl -y
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
       - name: Status localstack
         run: |
-          curl -Is http://test1:4566 | grep HTTP | cut -d ' ' -f2
-          echo testtt
-          curl -Is http://localhost:4566 | grep HTTP | cut -d ' ' -f2
-      - name: Status project
+          curl -Is http://test1:4566 | grep HTTP
+      - name: Status root
         run: |
-          curl -Is http://test2:8080 | grep HTTP | cut -d ' ' -f2
-          echo testtt
-          curl -Is http://localhost:8080 | grep HTTP | cut -d ' ' -f2
-
-      - name: Test root
-        run: |
-          #  curl \
-          #     --fail \
-          #     --silent \
-          #     --show-error \
-          #     --location \
-          #     --request GET \
-          #     --header "Content-Type: application/json" \
-          #     http://test2:8080/
           curl -Is http://test2:8080/ | grep HTTP
-      - name: Test healthz
+      - name: Status healthz
         run: |
-          #  curl \
-          #     --fail \
-          #     --silent \
-          #     --show-error \
-          #     --location \
-          #     --request GET \
-          #     --header "Content-Type: application/json" \
-          #     http://test2:8080/healthz
           curl -Is http://test2:8080/healthz | grep HTTP
-      - name: Test localstack
+      - name: Status localstack table
         env:
           table_name: pictureProcess
         run: |
