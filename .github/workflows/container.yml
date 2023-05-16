@@ -77,10 +77,15 @@ jobs:
   # Container network where we can access with the service name and the port
   container:
     name: Container check
-    needs: ecr
+    needs: [ecr]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
     environment: KookaS
+    env:
+      AWS_REGION: us-east-1
+      AWS_PROFILE: dummy
+      AWS_ACCESS_KEY: dummy
+      AWS_SECRET_KEY: dummy
     services:
       local-cloud:
         image: localstack/localstack
@@ -110,10 +115,10 @@ jobs:
           UNSPLASH_PRIVATE_KEY: 123
           UNSPLASH_PUBLIC_KEY: 123
           PEXELS_PUBLIC_KEY: 123
-          AWS_REGION: us-east-1
-          AWS_PROFILE: dummy
-          AWS_ACCESS_KEY: dummy
-          AWS_SECRET_KEY: dummy
+          AWS_REGION: $AWS_REGION
+          AWS_PROFILE: $AWS_PROFILE
+          AWS_ACCESS_KEY: $AWS_ACCESS_KEY
+          AWS_SECRET_KEY: $AWS_SECRET_KEY
         # options: >-
         #   --name project
 
@@ -125,6 +130,14 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
+
+      - name: setup AWS CLI
+        run: |
+          aws --version
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY
+          aws configure set aws_secret_access_key $AWS_SECRET_KEY
+          aws configure set region $AWS_REGION
+
       - name: Status localstack
         run: |
           curl -Is http://local-cloud:4566 | grep HTTP
