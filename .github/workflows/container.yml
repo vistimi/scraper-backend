@@ -79,7 +79,7 @@ jobs:
     name: Container check
     needs: ecr
     runs-on: ubuntu-latest
-    container: ubuntu # golang:1.19.0-alpine # connect the workflow steps to the network
+    container: ubuntu # connect the workflow steps to the network
     environment: KookaS
     services:
       test1:
@@ -121,7 +121,7 @@ jobs:
       - name: Setup
         run: |
           apt-get update
-          apt-get install curl -y
+          apt-get install curl unzip -y
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install
