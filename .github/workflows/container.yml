@@ -188,6 +188,7 @@ jobs:
           aws configure set region $AWS_REGION
 
       - name: create tables
+        shell: bash
         run: |
           echo $(yq eval '.dynamodb.*.name' config/config.yml)
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
@@ -261,6 +262,7 @@ jobs:
 
       - name: Delete Dynamodb tables
         if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
+        shell: bash
         run: |
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
