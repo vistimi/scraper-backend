@@ -93,7 +93,7 @@ jobs:
       local-cloud:
         image: localstack/localstack
       local-backend:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/$COMMON_NAME:${{ needs.ecr.outputs.IMAGE_TAG }}
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
@@ -148,7 +148,7 @@ jobs:
     environment: KookaS
     services:
       local-backend:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/$COMMON_NAME:${{ needs.ecr.outputs.IMAGE_TAG }}
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
