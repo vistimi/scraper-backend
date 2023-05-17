@@ -189,9 +189,7 @@ jobs:
       - name: create tables
         shell: bash
         run: |
-          echo $(yq eval '.dynamodb.*.name' config/config.yml)
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
-          echo $names
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
@@ -199,18 +197,18 @@ jobs:
           i=0
           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
           do
-            echo "aws dynamodb create-table \
+            aws dynamodb create-table \
               --region $AWS_REGION \
               --table-name $COMMON_NAME-${names[$i]} \
               --attribute-definitions AttributeName=${primaryKeyNames[$i]},AttributeType=${primaryKeyTypes[$i]} AttributeName=${sortKeyNames[$i]},AttributeType=${sortKeyTypes[$i]}\
               --key-schema AttributeName=${primaryKeyNames[$i]},KeyType=HASH AttributeName=${sortKeyNames[$i]},KeyType=RANGE \
-              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5"
+              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
             i=$((i+1))
           done
 
       - name: Status dynamodb table
         run: |
-          aws dynamodb list-tables --region=$AWS_REGION
+          aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]'
       - name: Status root
         run: |
           curl -Is http://local-backend:8080/ | grep HTTP
@@ -262,6 +260,7 @@ jobs:
         if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
         shell: bash
         run: |
+          aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]'
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
