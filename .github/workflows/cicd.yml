@@ -61,7 +61,6 @@ jobs:
           printf " \
           AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
           BRANCH = $BRANCH\n \
-          IMAGES_BUCKET = $BUCKET_ENV\n \
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
@@ -80,7 +79,6 @@ jobs:
           cat <<EOF > .env
           CLOUD_HOST=aws
           COMMON_NAME=$COMMON_NAME
-          IMAGES_BUCKET=$BUCKET_ENV
           FLICKR_PRIVATE_KEY=${{ secrets.FLICKR_PRIVATE_KEY }}
           FLICKR_PUBLIC_KEY=${{ secrets.FLICKR_PUBLIC_KEY }}
           UNSPLASH_PRIVATE_KEY=${{ secrets.UNSPLASH_PRIVATE_KEY }}
