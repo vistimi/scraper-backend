@@ -80,7 +80,7 @@ jobs:
 
   # Container network where we can access with the service name and the port
   localstack:
-    name: Container check with localstack setup
+    name: Container check localstack
     needs: [ecr]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
@@ -142,7 +142,7 @@ jobs:
           curl -Is http://local-backend:8080/healthz | grep HTTP
 
   dynamodb:
-    name: Container check with dynamodb
+    name: Container check dynamodb
     needs: [ecr]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
@@ -173,7 +173,7 @@ jobs:
       - name: Setup
         run: |
           apt update
-          apt install curl unzip -y -q
+          apt install curl unzip wget -y -q
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
