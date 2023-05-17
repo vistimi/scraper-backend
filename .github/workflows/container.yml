@@ -189,22 +189,22 @@ jobs:
 
       - name: create tables
         run: |
-          ls -la
-          cat config/config.yml
+          echo $(yq eval '.dynamodb.*.name' config/config.yml)
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
+          echo $names
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
           sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
-          i=1
+          i=0
           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
           do
-            aws dynamodb create-table \
+            echo "aws dynamodb create-table \
               --region $AWS_REGION \
               --table-name $COMMON_NAME-${names[$i]} \
               --attribute-definitions AttributeName=${primaryKeyNames[$i]},AttributeType=${primaryKeyTypes[$i]} AttributeName=${sortKeyNames[$i]},AttributeType=${sortKeyTypes[$i]}\
               --key-schema AttributeName=${primaryKeyNames[$i]},KeyType=HASH AttributeName=${sortKeyNames[$i]},KeyType=RANGE \
-              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5"
             i=$((i+1))
           done
 
@@ -267,7 +267,7 @@ jobs:
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
           sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
-          i=1
+          i=0
           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
           do
             aws dynamodb delete-table \
