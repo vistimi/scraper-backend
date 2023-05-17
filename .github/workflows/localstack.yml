@@ -1,4 +1,4 @@
-name: Container
+name: Localstack
 
 on:
   push:
