@@ -208,7 +208,8 @@ jobs:
 
       - name: Status dynamodb table
         run: |
-          aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]'
+          tables=$(aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]')
+          if [ "$tables" = "[]" ]; then exit 1; fi
       - name: Status root
         run: |
           curl -Is http://local-backend:8080/ | grep HTTP
@@ -260,7 +261,6 @@ jobs:
         if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
         shell: bash
         run: |
-          aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]'
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
