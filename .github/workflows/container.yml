@@ -7,6 +7,7 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 env:
+  COMMON_NAME: ${{ github.sha }}
   AWS_REGION: ${{ vars.AWS_REGION }}
   AWS_PROFILE: ${{ vars.AWS_PROFILE }}
   AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
@@ -20,7 +21,6 @@ jobs:
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
-      ECR_REPOSITORY: ${{ github.sha }}
       DOCKER_FOLDER_PATH: Dockerfile
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
@@ -33,8 +33,7 @@ jobs:
       - name: Display non-sensitive variables
         run: |
           printf " \
-          GITHUB_SHA = ${{ github.sha }} \n \
-          ECR_REPOSITORY = $ECR_REPOSITORY\n \
+          COMMON_NAME = $COMMON_NAME \n \
           "
 
       - name: setup AWS CLI
@@ -55,7 +54,7 @@ jobs:
       - name: Create ECR repository
         run: |
           aws ecr create-repository \
-            --repository-name $ECR_REPOSITORY \
+            --repository-name $COMMON_NAME \
             --image-scanning-configuration scanOnPush=true \
             --region $AWS_REGION \
             --output text \
@@ -66,7 +65,7 @@ jobs:
         env:
           IMAGE_TAG: "latest"
         run: |
-          export ECR_URI=$(aws ecr describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
+          export ECR_URI=$(aws ecr describe-repositories --repository-names $COMMON_NAME --output text --query "repositories[].[repositoryUri]")
           echo "ECR_URI= $ECR_URI"
           docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
           docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
@@ -94,14 +93,14 @@ jobs:
       local-cloud:
         image: localstack/localstack
       local-backend:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/$COMMON_NAME:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://local-cloud:4566
-          COMMON_NAME: ${{ github.sha }}
+          COMMON_NAME: $COMMON_NAME
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
           UNSPLASH_PRIVATE_KEY: 123
@@ -149,13 +148,13 @@ jobs:
     environment: KookaS
     services:
       local-backend:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/$COMMON_NAME:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         env:
-          CLOUD_HOST: AWS
-          COMMON_NAME: ${{ github.sha }}
+          CLOUD_HOST: aws
+          COMMON_NAME: $COMMON_NAME
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
           UNSPLASH_PRIVATE_KEY: 123
@@ -227,7 +226,6 @@ jobs:
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
-      ECR_REPOSITORY: ${{ github.sha }}
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
       ECR_LOGIN_PASSWORD: ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }}
@@ -254,7 +252,7 @@ jobs:
       - name: Delete ECR repository
         run: |
           aws ecr delete-repository \
-            --repository-name $ECR_REPOSITORY \
+            --repository-name $COMMON_NAME \
             --force \
             --region $AWS_REGION \
             --output text \
