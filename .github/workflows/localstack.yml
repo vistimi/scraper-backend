@@ -100,7 +100,7 @@ jobs:
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://local-cloud:4566
-          COMMON_NAME: $COMMON_NAME
+          COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
           UNSPLASH_PRIVATE_KEY: 123
