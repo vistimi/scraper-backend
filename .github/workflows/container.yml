@@ -7,6 +7,7 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 env:
+  COMMON_NAME: ${{ github.sha }}
   AWS_REGION: ${{ vars.AWS_REGION }}
   AWS_PROFILE: ${{ vars.AWS_PROFILE }}
   AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
@@ -20,7 +21,6 @@ jobs:
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
-      ECR_REPOSITORY: ${{ github.sha }}
       DOCKER_FOLDER_PATH: Dockerfile
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
@@ -33,8 +33,7 @@ jobs:
       - name: Display non-sensitive variables
         run: |
           printf " \
-          GITHUB_SHA = ${{ github.sha }} \n \
-          ECR_REPOSITORY = $ECR_REPOSITORY\n \
+          COMMON_NAME = $COMMON_NAME \n \
           "
 
       - name: setup AWS CLI
@@ -55,7 +54,7 @@ jobs:
       - name: Create ECR repository
         run: |
           aws ecr create-repository \
-            --repository-name $ECR_REPOSITORY \
+            --repository-name $COMMON_NAME \
             --image-scanning-configuration scanOnPush=true \
             --region $AWS_REGION \
             --output text \
@@ -66,7 +65,7 @@ jobs:
         env:
           IMAGE_TAG: "latest"
         run: |
-          export ECR_URI=$(aws ecr describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
+          export ECR_URI=$(aws ecr describe-repositories --repository-names $COMMON_NAME --output text --query "repositories[].[repositoryUri]")
           echo "ECR_URI= $ECR_URI"
           docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
           docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
@@ -80,7 +79,7 @@ jobs:
 
   # Container network where we can access with the service name and the port
   localstack:
-    name: Container check with localstack setup
+    name: Container check localstack
     needs: [ecr]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
@@ -142,7 +141,7 @@ jobs:
           curl -Is http://local-backend:8080/healthz | grep HTTP
 
   dynamodb:
-    name: Container check with dynamodb
+    name: Container check dynamodb
     needs: [ecr]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
@@ -154,7 +153,7 @@ jobs:
           username: AWS
           password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
         env:
-          CLOUD_HOST: AWS
+          CLOUD_HOST: aws
           COMMON_NAME: ${{ github.sha }}
           FLICKR_PRIVATE_KEY: 123
           FLICKR_PUBLIC_KEY: 123
@@ -173,7 +172,7 @@ jobs:
       - name: Setup
         run: |
           apt update
-          apt install curl unzip -y -q
+          apt install curl unzip wget -y -q
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
@@ -188,13 +187,14 @@ jobs:
           aws configure set region $AWS_REGION
 
       - name: create tables
+        shell: bash
         run: |
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
           sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
-          i=1
+          i=0
           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
           do
             aws dynamodb create-table \
@@ -208,7 +208,8 @@ jobs:
 
       - name: Status dynamodb table
         run: |
-          aws dynamodb list-tables --region=$AWS_REGION
+          tables=$(aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]')
+          if [ "$tables" = "[]" ]; then exit 1; fi
       - name: Status root
         run: |
           curl -Is http://local-backend:8080/ | grep HTTP
@@ -217,14 +218,13 @@ jobs:
           curl -Is http://local-backend:8080/healthz | grep HTTP
 
   cleanup:
-    name: ECR cleanup
+    name: Cleanup
     runs-on: ubuntu-latest
     needs: [ecr, localstack, dynamodb]
     if: ${{ always() && contains(join(needs.ecr.result, ','), 'success') }}
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
-      ECR_REPOSITORY: ${{ github.sha }}
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
       ECR_LOGIN_PASSWORD: ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }}
@@ -251,21 +251,22 @@ jobs:
       - name: Delete ECR repository
         run: |
           aws ecr delete-repository \
-            --repository-name $ECR_REPOSITORY \
+            --repository-name $COMMON_NAME \
             --force \
             --region $AWS_REGION \
             --output text \
             --query 'repository.registryId'
 
       - name: Delete Dynamodb tables
-        if: ${{ always() && contains(join(needs.ecr.result, ','), 'success') }}
+        if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
+        shell: bash
         run: |
           names=($(yq eval '.dynamodb.*.name' config/config.yml))
           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
           sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
-          i=1
+          i=0
           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
           do
             aws dynamodb delete-table \
