@@ -61,7 +61,7 @@ jobs:
           sudo apt install wget -y -q
           wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
-          echo "BUCKET_ENV=${{ inputs.common-name }}-$(yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
+          echo "BUCKET_ENV=${{ inputs.common-name }}-$(sudo yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
 
       - name: Display non-sensitive variables
         run: |
