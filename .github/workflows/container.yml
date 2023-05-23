@@ -113,8 +113,8 @@ jobs:
     steps:
       - name: Setup
         run: |
-          apt update
-          apt install curl unzip -y -q
+          apt update -qq
+          apt install curl unzip -y -qq
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
@@ -169,8 +169,8 @@ jobs:
 
       - name: Setup
         run: |
-          apt update
-          apt install curl unzip wget -y -q
+          apt update -qq
+          apt install curl unzip wget -y -qq
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install

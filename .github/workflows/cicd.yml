@@ -57,9 +57,9 @@ jobs:
 
       - name: Setup
         run: |
-          sudo apt update
-          sudo apt install wget -y -q
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          # sudo apt update -qq
+          # sudo apt install wget -y -qq
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
           echo "BUCKET_ENV=${{ inputs.common-name }}-$(sudo yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
 
