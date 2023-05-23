@@ -36,32 +36,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup
-        run: |
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-          chmod +x /usr/bin/yq
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18.3" # The Go version to download (if necessary) and use.
       - name: build
         run: go build src/main.go
-      - name: Save bucket env extension
-        run: |
-          echo "BUCKET_ENV_EXTENSION=$(yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
 
   s3-env:
     name: S3 env
     runs-on: ubuntu-latest
     environment: ${{ inputs.aws-account-name }}
     env:
-      BUCKET_ENV: ${{ inputs.common-name }}-${{ needs.build.outputs.BUCKET_ENV_EXTENSION }}
       BRANCH: ${{ github.head_ref || github.ref_name }}
       AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Setup
+        run: |
+          apt update
+          apt install wget -y -q
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          chmod +x /usr/bin/yq
+          echo "BUCKET_ENV=${{ inputs.common-name }}-$(yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
 
       - name: Display non-sensitive variables
         run: |
