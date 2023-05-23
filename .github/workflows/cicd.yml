@@ -56,12 +56,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup
+        id: setup
         run: |
           # sudo apt update -qq
           # sudo apt install wget -y -qq
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -qq -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
           echo "BUCKET_ENV=${{ inputs.common-name }}-$(sudo yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
+          echo BUCKET_ENV = $BUCKET_ENV
 
       - name: Display non-sensitive variables
         run: |
@@ -71,7 +73,7 @@ jobs:
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
-          S3 file = s3://$BUCKET_ENV/$BRANCH.env\n \
+          S3 file = s3://${{ steps.rsetup.outputs.BUCKET_ENV }}/$BRANCH.env\n \
           "
 
       - name: setup AWS CLI
@@ -95,7 +97,7 @@ jobs:
           AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
           EOF
-          aws s3 cp .env s3://$BUCKET_ENV/$BRANCH.env
+          aws s3 cp .env s3://${{ steps.rsetup.outputs.BUCKET_ENV }}/$BRANCH.env
 
   ecr:
     name: ECR
