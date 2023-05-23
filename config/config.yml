@@ -39,3 +39,5 @@ dynamodb:
 buckets:
   env:
     name: env
+  picture:
+    name: picture

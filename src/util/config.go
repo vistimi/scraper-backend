@@ -86,7 +86,7 @@ func NewConfig() (*Config, error) {
 	TableUserPrimaryKeyType := *configYml.Databases["tableUser"].PrimaryKeyType
 	TableUserSortKeyType := *configYml.Databases["tableUser"].SortKeyType
 
-	s3BucketNamePictures := commonName + "-" + *configYml.Buckets["env"].Name
+	s3BucketNamePictures := commonName + "-" + *configYml.Buckets["picture"].Name
 
 	switch cloudHost {
 	case "aws":
