@@ -112,6 +112,9 @@ jobs:
           AWS_SECRET_KEY: $AWS_SECRET_KEY
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
       - name: Setup
         id: setup
         run: |
@@ -182,8 +185,7 @@ jobs:
           ./aws/install
           wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq
           chmod +x /usr/bin/yq
-          echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT
-          
+          echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT          
 
       - name: setup AWS CLI
         run: |
