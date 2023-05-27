@@ -21,7 +21,7 @@ type DriverServerGin struct {
 }
 
 // TODO: check Body and URI match path
-func (d DriverServerGin) Router() *gin.Engine {
+func (d DriverServerGin) Router(port int) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
@@ -72,7 +72,7 @@ func (d DriverServerGin) Router() *gin.Engine {
 	router.POST("/search/pexels/:quality", wrapperJSONHandlerURI(d.SearchPhotosPexels))
 
 	// start the backend
-	router.Run("0.0.0.0:8080")
+	router.Run(fmt.Sprintf("0.0.0.0:%d", port))
 	return router
 }
 

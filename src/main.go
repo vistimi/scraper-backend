@@ -21,5 +21,5 @@ func main() {
 	controllerUnsplash := controller.ConstructorUnsplash(*config, controllerPicture, constrollerTag, constrollerUser)
 
 	server := server.Contructor(controllerPicture, constrollerTag, constrollerUser, controllerFlickr, controllerPexels, controllerUnsplash)
-	server.Router()
+	server.Router(config.Port)
 }

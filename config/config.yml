@@ -1,3 +1,5 @@
+port: 8080
+
 dynamodb:
   tablePictureProcess:
     name: pictureProcess
@@ -37,7 +39,5 @@ dynamodb:
     sortKeyType: B
 
 buckets:
-  env:
-    name: env
   picture:
     name: picture
