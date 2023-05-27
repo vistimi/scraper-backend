@@ -3,16 +3,8 @@ name: CI/CD
 on:
   workflow_dispatch:
     inputs:
-      aws-account-id:
-        description: "AWS Account ID"
-        required: true
-        type: string
       aws-account-name:
         description: "AWS Account Name"
-        required: true
-        type: string
-      aws-region:
-        description: "AWS Region to launch the instance"
         required: true
         type: string
       common-name:
@@ -26,8 +18,8 @@ on:
 
 env:
   AWS_ACCOUNT_NAME: ${{ inputs.aws-account-name }}
-  AWS_ACCOUNT_ID: ${{ inputs.aws-account-id }}
-  AWS_REGION: ${{ inputs.aws-region }}
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
   COMMON_NAME: ${{ inputs.common-name }}
 
 jobs:
@@ -50,21 +42,13 @@ jobs:
     env:
       BRANCH: ${{ github.head_ref || github.ref_name }}
       AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
+      BUCKET_ENV: ${{ inputs.common-name }}-env
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup
-        id: setup
-        run: |
-          # sudo apt update -qq
-          # sudo apt install wget -y -qq
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -qq -O /usr/bin/yq
-          sudo chmod +x /usr/bin/yq
-          echo "BUCKET_ENV=${{ inputs.common-name }}-$(sudo yq eval '.buckets.env.name' config/config.yml)" >> $GITHUB_OUTPUT
-
-      - name: Display non-sensitive variables
+      - name: Display
         run: |
           printf " \
           AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
@@ -72,7 +56,7 @@ jobs:
           AWS_REGION = $AWS_REGION\n \
           AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
           AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
-          S3 file = s3://${{ steps.setup.outputs.BUCKET_ENV }}/$BRANCH.env\n \
+          S3 file = s3://$BUCKET_ENV/$BRANCH.env\n \
           "
 
       - name: setup AWS CLI
@@ -96,7 +80,7 @@ jobs:
           AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
           EOF
-          aws s3 cp .env s3://${{ steps.setup.outputs.BUCKET_ENV }}/$BRANCH.env
+          aws s3 cp .env s3://$BUCKET_ENV/$BRANCH.env
 
   ecr:
     name: ECR
