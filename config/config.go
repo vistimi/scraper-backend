@@ -8,7 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ConfigDynamodb struct {
+type Config struct {
+	Port      *int                           `mapstructure:"port"`
 	Databases map[string]ConfigDynamodbTable `mapstructure:"dynamodb"`
 	Buckets   map[string]ConfigS3Bucket      `mapstructure:"buckets"`
 }
@@ -25,13 +26,13 @@ type ConfigS3Bucket struct {
 	Name *string `mapstructure:"name"`
 }
 
-func ReadConfigFile(path string) (*ConfigDynamodb, error) {
+func ReadConfigFile(path string) (*Config, error) {
 	f, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var c ConfigDynamodb
+	var c Config
 	var raw interface{}
 
 	if err := yaml.Unmarshal(f, &raw); err != nil {

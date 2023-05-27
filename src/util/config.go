@@ -25,6 +25,7 @@ type AwsDynamodbTable struct {
 }
 
 type Config struct {
+	Port                              int
 	AwsS3Client                       *awsS3.Client
 	S3BucketNamePictures              string
 	AwsDynamodbClient                 *awsDynamodb.Client
@@ -54,6 +55,8 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	port := *configYml.Port
 
 	TablePictureProcessName := commonName + "-" + *configYml.Databases["tablePictureProcess"].Name
 	TablePictureProcessPrimaryKeyName := *configYml.Databases["tablePictureProcess"].PrimaryKeyName
@@ -193,6 +196,7 @@ func NewConfig() (*Config, error) {
 	}
 
 	config := Config{
+		Port:                 port,
 		AwsS3Client:          AwsS3Client,
 		S3BucketNamePictures: s3BucketNamePictures,
 		AwsDynamodbClient:    AwsDynamodbClient,
