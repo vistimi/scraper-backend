@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
     types: [opened, edited, synchronize, reopened]
+    branches: [master]
 
 env:
   COMMON_NAME: ${{ github.sha }}
@@ -16,7 +17,7 @@ env:
 
 jobs:
   ecr:
-    name: ECR create
+    name: setup ECR
     runs-on: ubuntu-latest
     environment: KookaS
     env:
@@ -115,7 +116,7 @@ jobs:
         id: setup
         run: |
           apt update -qq
-          apt install curl unzip -y -qq
+          apt install curl unzip wget -y -qq
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
