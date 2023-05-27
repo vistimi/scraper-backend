@@ -93,7 +93,7 @@ jobs:
     services:
       local-cloud:
         image: localstack/localstack
-      local-backend:
+      local-project:
         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
@@ -139,10 +139,10 @@ jobs:
           aws dynamodb list-tables --endpoint-url=http://local-cloud:4566 --region=us-east-1
       - name: Status root
         run: |
-          curl -Is http://local-backend:${{ steps.setup.outputs.PORT }}/ | grep HTTP
+          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}/ | grep HTTP
       - name: Status healthz
         run: |
-          curl -Is http://local-backend:${{ steps.setup.outputs.PORT }}/healthz | grep HTTP
+          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}/healthz | grep HTTP
 
   dynamodb:
     name: Container check dynamodb
@@ -151,7 +151,7 @@ jobs:
     container: ubuntu # connect the workflow steps to the network
     environment: KookaS
     services:
-      local-backend:
+      local-project:
         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ github.sha }}:${{ needs.ecr.outputs.IMAGE_TAG }}
         credentials:
           username: AWS
@@ -218,10 +218,10 @@ jobs:
           if [ "$tables" = "[]" ]; then exit 1; fi
       - name: Status root
         run: |
-          curl -Is http://local-backend:${{ steps.setup.outputs.PORT }}/ | grep HTTP
+          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}/ | grep HTTP
       - name: Status healthz
         run: |
-          curl -Is http://local-backend:${{ steps.setup.outputs.PORT }}/healthz | grep HTTP
+          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}/healthz | grep HTTP
 
   cleanup:
     name: Cleanup
