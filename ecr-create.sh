@@ -14,6 +14,11 @@ done
 # fail if unset variable
 set -u
 
+# log
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>$LOG_FILE 2>&1
+
 # setup AWS CLI
 aws --version
 aws configure set aws_access_key_id $AWS_ACCESS_KEY
