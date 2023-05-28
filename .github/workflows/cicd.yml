@@ -42,7 +42,7 @@ jobs:
     env:
       BRANCH: ${{ github.head_ref || github.ref_name }}
       AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
-      BUCKET_ENV: ${{ inputs.common-name }}-env
+      BUCKET_ENV: ${{ inputs.common-name }}-env # TODO: hardcoded extension here
 
     steps:
       - name: Checkout
@@ -116,12 +116,21 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
+      - name: Get ECR login password
+        id: get-login-password
+        run: |
+          if [[ $AWS_CLI_SERVICE == ecr ]]; then
+            echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+            echo "ECR_LOGIN_PASSWORD=$(aws ecr-public get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+          fi
+
       - name: login to ECR
         run: |
           if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            docker login --username AWS --password ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }} $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
           elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+            docker login --username AWS --password ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }} public.ecr.aws
           fi
 
       - name: Build, tag, and push image to Amazon ECR
@@ -167,33 +176,6 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
-
-      # - name: create json task definition
-      #   run: |
-      #     TASK_DEFINITION=$(aws ecs describe-task-definition \
-      #       --task-definition $COMMON_NAME \
-      #       --query 'taskDefinition' \
-      #       --output json)
-      #     cat << EOF > task_definition.json
-      #     {
-      #       "containerDefinitions": $(jq  '.containerDefinitions' <<< $TASK_DEFINITION),
-      #       "executionRoleArn": $(jq  '.executionRoleArn' <<< $TASK_DEFINITION),
-      #       "taskRoleArn": $(jq  '.taskRoleArn' <<< $TASK_DEFINITION),
-      #       "family": $(jq  '.family' <<< $TASK_DEFINITION),
-      #       "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $TASK_DEFINITION),
-      #       "memory": $(jq  '.memory' <<< $TASK_DEFINITION),
-      #       "cpu": $(jq  '.cpu' <<< $TASK_DEFINITION)
-      #     }
-      #     EOF
-      #     cat task_definition.json
-
-      # - name: Fill in the new image ID in the Amazon ECS task definition
-      #   id: task-def
-      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-      #   with:
-      #     task-definition: task_definition.json
-      #     container-name: ${{ inputs.common-name }}
-      #     image: ${{ needs.ecr.outputs.IMAGE_TAG }}
 
       - name: Update service
         run: |

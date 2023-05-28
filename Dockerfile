@@ -29,10 +29,9 @@ RUN addgroup --gid $USER_GID $USER_NAME \
 USER $USER_NAME
 
 WORKDIR /usr/app
+COPY --from=builder-workflow /usr/tmp/scraper /usr/tmp/config /.
 
-COPY --from=builder-workflow /usr/tmp/scraper /usr/app/scraper
-COPY --from=builder-workflow /usr/tmp/config /usr/app/config
-
+# TODO: port as arg
 EXPOSE 8080
 
 CMD ["./scraper"]
