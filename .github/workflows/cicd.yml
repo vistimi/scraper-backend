@@ -168,32 +168,32 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
           aws configure set region $AWS_REGION
 
-      - name: create json task definition
-        run: |
-          TASK_DEFINITION=$(aws ecs describe-task-definition \
-            --task-definition $COMMON_NAME \
-            --query 'taskDefinition' \
-            --output json)
-          cat << EOF > task_definition.json
-          {
-            "containerDefinitions": $(jq  '.containerDefinitions' <<< $TASK_DEFINITION),
-            "executionRoleArn": $(jq  '.executionRoleArn' <<< $TASK_DEFINITION),
-            "taskRoleArn": $(jq  '.taskRoleArn' <<< $TASK_DEFINITION),
-            "family": $(jq  '.family' <<< $TASK_DEFINITION),
-            "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $TASK_DEFINITION),
-            "memory": $(jq  '.memory' <<< $TASK_DEFINITION),
-            "cpu": $(jq  '.cpu' <<< $TASK_DEFINITION)
-          }
-          EOF
-          cat task_definition.json
+      # - name: create json task definition
+      #   run: |
+      #     TASK_DEFINITION=$(aws ecs describe-task-definition \
+      #       --task-definition $COMMON_NAME \
+      #       --query 'taskDefinition' \
+      #       --output json)
+      #     cat << EOF > task_definition.json
+      #     {
+      #       "containerDefinitions": $(jq  '.containerDefinitions' <<< $TASK_DEFINITION),
+      #       "executionRoleArn": $(jq  '.executionRoleArn' <<< $TASK_DEFINITION),
+      #       "taskRoleArn": $(jq  '.taskRoleArn' <<< $TASK_DEFINITION),
+      #       "family": $(jq  '.family' <<< $TASK_DEFINITION),
+      #       "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $TASK_DEFINITION),
+      #       "memory": $(jq  '.memory' <<< $TASK_DEFINITION),
+      #       "cpu": $(jq  '.cpu' <<< $TASK_DEFINITION)
+      #     }
+      #     EOF
+      #     cat task_definition.json
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task_definition.json
-          container-name: ${{ inputs.common-name }}
-          image: ${{ needs.ecr.outputs.IMAGE_TAG }}
+      # - name: Fill in the new image ID in the Amazon ECS task definition
+      #   id: task-def
+      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
+      #   with:
+      #     task-definition: task_definition.json
+      #     container-name: ${{ inputs.common-name }}
+      #     image: ${{ needs.ecr.outputs.IMAGE_TAG }}
 
       - name: Update service
         run: |
