@@ -34,13 +34,13 @@ elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
   docker login --username AWS --password $ECR_LOGIN_PASSWORD public.ecr.aws
 fi
 
-# # Create ECR repository
-# aws ecr create-repository \
-#   --repository-name $COMMON_NAME \
-#   --image-scanning-configuration scanOnPush=true \
-#   --region $AWS_REGION \
-#   --output text \
-#   --query 'repository.repositoryUri'
+# Create ECR repository
+aws ecr create-repository \
+  --repository-name $COMMON_NAME \
+  --image-scanning-configuration scanOnPush=true \
+  --region $AWS_REGION \
+  --output text \
+  --query 'repository.repositoryUri'
 
 # Build, tag, and push image to Amazon ECR
 export ECR_URI=$(aws ecr describe-repositories --repository-names $COMMON_NAME --output text --query "repositories[].[repositoryUri]")
