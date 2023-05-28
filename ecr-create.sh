@@ -45,6 +45,7 @@ export ECR_URI=$(aws ecr describe-repositories --repository-names $COMMON_NAME -
 echo "ECR_URI= $ECR_URI"
 echo 'build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .'
 docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
+echo $(docker images -q $ECR_URI/$IMAGE_TAG)
 echo 'docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG'
 docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
 docker push $ECR_URI:$IMAGE_TAG
