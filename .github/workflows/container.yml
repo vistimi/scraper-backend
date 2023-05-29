@@ -91,10 +91,8 @@ jobs:
           ./$SCRIPT_NAME LOG_FILE=log.out AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH
           echo Logs:\n\n
           cat log.out
-          if grep -i error log.out; then
-              echo Errors:\n\n
-              grep -i error log.out | sed 's/$/\n/'
-              exit 1
+          if grep -ni error log.out | sed 's/$/\n/'; then
+              exit 10
           fi
           
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
