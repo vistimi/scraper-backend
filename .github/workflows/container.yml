@@ -89,9 +89,10 @@ jobs:
           # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
           chmod +x $SCRIPT_NAME
 
-          ./$SCRIPT_NAME LOG_FILE=$LOG_FILE ECR_CREATE=false AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH
+          ./$SCRIPT_NAME LOG_FILE=$LOG_FILE ECR_CREATE=true AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH
+          cat $LOG_FILE
 
-          echo LOGS: && cat $LOG_FILE
+          # echo LOGS: && cat $LOG_FILE
           # echo ERRORS:
           # grep -ni error $LOG_FILE | sed 's/$/\n/'
           # if [ -n "$(grep -i error $LOG_FILE)" ]; then
