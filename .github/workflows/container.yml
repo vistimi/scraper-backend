@@ -29,6 +29,7 @@ jobs:
       DOCKER_FOLDER_PATH: Dockerfile
       IMAGE_TAG: "latest"
       SCRIPT_NAME: ecr-setup.sh
+      LOG_FILE: log.out
       GH_REPO_PATH: https://raw.githubusercontent.com/$GH_ORG/$GH_REPO/$GH_BRANCH
     outputs:
       IMAGE_TAG: ${{ steps.script.outputs.IMAGE_TAG }}
@@ -89,7 +90,7 @@ jobs:
           chmod +x $SCRIPT_NAME
 
           ./$SCRIPT_NAME \
-            LOG_FILE=log.out \
+            LOG_FILE=$LOG_FILE \
             AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
             AWS_SECRET_KEY=$AWS_SECRET_KEY \
             AWS_REGION=$AWS_REGION \
@@ -99,11 +100,13 @@ jobs:
             IMAGE_TAG=$IMAGE_TAG \
             DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH
 
-          echo Logs:\n\n
-          cat log.out
-          if grep -ni error log.out | sed 's/$/\n/'; then
+          echo LOGS: && cat $LOG_FILE
+          echo ERRORS:
+          if grep -ni error $LOG_FILE | sed 's/$/\n/'; then
               # exit 10
               echo testtttttttttttttttt
+          else
+              echo "No errors found"
           fi
           
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
