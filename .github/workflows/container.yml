@@ -88,12 +88,14 @@ jobs:
           # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
           
           chmod +x $SCRIPT_NAME
-          eval res=$(./$SCRIPT_NAME LOG_FILE=log.out AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
-          if [[ $(grep -qi error log.out) -e 0 ]]; then
-              echo "Error grep"
-          fi
-
+          ./$SCRIPT_NAME LOG_FILE=log.out AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH
+          echo Logs:\n\n
           cat log.out
+          if grep -i error log.out; then
+              echo Errors:\n\n
+              grep -i error log.out | sed 's/$/\n/'
+              exit 1
+          fi
           
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "ECR_LOGIN_PASSWORD=$(awk -F= '{print $2}' <<< $(grep -E 'ECR_LOGIN_PASSWORD=.*' <<< $res))" >> $GITHUB_OUTPUT
