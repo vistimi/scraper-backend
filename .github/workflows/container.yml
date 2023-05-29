@@ -92,10 +92,10 @@ jobs:
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE ECR_CREATE=false AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
           # cat $LOG_FILE
           echo $res
-          if [ $res -ne 0 ]; then
-            echo "Errors found"
-            # exit 10
-          fi
+          # if [ $res -ne 0 ]; then
+          #   echo "Errors found"
+          #   # exit 10
+          # fi
 
           # echo LOGS: && cat $LOG_FILE
           # echo ERRORS:
