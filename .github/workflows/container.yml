@@ -89,8 +89,8 @@ jobs:
           
           chmod +x $SCRIPT_NAME
           eval res=$(./$SCRIPT_NAME LOG_FILE=log.out AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID AWS_CLI_SERVICE=ecr COMMON_NAME=$COMMON_NAME IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
-          if [[ $res =~ errori ]]; then
-              echo "Error"
+          if [[ $(grep -qi error log.out) -e 0 ]]; then
+              echo "Error grep"
           fi
 
           cat log.out
