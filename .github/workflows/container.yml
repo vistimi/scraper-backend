@@ -104,10 +104,10 @@ jobs:
           echo LOGS: && cat $LOG_FILE
           echo ERRORS:
           grep -ni error $LOG_FILE | sed 's/$/\n/'
-          if [ -n "$(grep -ni error $LOG_FILE)" ]; then
-            echo "Errors found"
-            # exit 10
-          fi
+          # if [ -n "$(grep -i error $LOG_FILE)" ]; then
+          #   echo "Errors found"
+          #   # exit 10
+          # fi
           echo "No errors found"
 
       - name: Get ECR login password
