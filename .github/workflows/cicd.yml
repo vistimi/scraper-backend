@@ -120,76 +120,22 @@ jobs:
     env:
       IMAGE_TAG: ${{ needs.ecr.outputs.IMAGE_TAG }}
       DESIRED_COUNT: ${{ inputs.task-desired-count }}
+      SCRIPT_NAME: ecs-set.sh
+      LOG_FILE: log.out
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Display variables
+      - name: run script
+        id: script
         run: |
-          printf " \
-          AWS_REGION = $AWS_REGION\n \
-          IMAGE_TAG = $IMAGE_TAG\n \
-          "
+          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
+          chmod +x $SCRIPT_NAME
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set region $AWS_REGION
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME)
 
-      - name: Update service
-        run: |
-          LATEST_TASK_ARN=$(aws ecs list-task-definitions \
-            --region $AWS_REGION \
-            --family-prefix $COMMON_NAME \
-            --sort DESC \
-            --query 'taskDefinitionArns[0]' \
-            --output text)
-          aws ecs update-service \
-            --cluster $COMMON_NAME \
-            --service $COMMON_NAME \
-            --force-new-deployment \
-            --region $AWS_REGION \
-            --task-definition $LATEST_TASK_ARN \
-            --desired-count $DESIRED_COUNT \
-            --output json
-
-      - name: Wait for tasks
-        run: |
-          sleep 30s
-          TASKS=$(aws ecs list-tasks \
-          --region $AWS_REGION \
-          --cluster $COMMON_NAME \
-          --query 'taskArns[]' \
-          --output text)
-          echo $TASKS
-          LATEST_TASK_DEFINITION_ARN=$(aws ecs list-task-definitions \
-          --region $AWS_REGION \
-          --family-prefix $COMMON_NAME \
-          --sort DESC \
-          --query 'taskDefinitionArns[0]' \
-          --output text)
-
-          for task in $TASKS; do
-              tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json) || exit 1
-              echo "tasksDescription=$tasksDescription"
-              latestStatus=$(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
-              taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
-              echo "Waiting for task $task to be RUNNING, currently $latestStatus"
-              echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
-              
-              i=0
-              while [[ $latestStatus != "RUNNING" && taskDefinitionArn != $LATEST_TASK_DEFINITION_ARN ]]; do
-                tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
-                latestStatus=$(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
-                taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
-                echo "Waiting for task $task to be RUNNING, currently $latestStatus"
-                echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
-                sleep 10s
-
-                if [ $i -gt 30 ] || [ "$latestStatus" = "STOPPED" ]; then exit 1; fi
-                i=$((i+1))
-              done
-          done
+          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          if [ -n "$(grep -i error $LOG_FILE)" ]; then
+            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
+          fi

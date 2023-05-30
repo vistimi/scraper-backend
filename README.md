@@ -64,12 +64,6 @@ Create a local.env file:
 
 CLOUD_HOST is either `aws`, `localstack`
 
-## linter
-
-https://github.com/mgechev/revive
-
-    revive -config revive.toml
-
 ## Dependencies
 
     go mod tidy
