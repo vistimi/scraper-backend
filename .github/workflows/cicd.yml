@@ -17,10 +17,16 @@ on:
         type: string
 
 env:
+  COMMON_NAME: ${{ inputs.common-name }}
   AWS_ACCOUNT_NAME: ${{ inputs.aws-account-name }}
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  COMMON_NAME: ${{ inputs.common-name }}
+  AWS_REGION: ${{ vars.AWS_REGION }}  
+  AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+  AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+  GH_ORG: KookaS
+  GH_REPO: infrastructure-modules
+  GH_BRANCH: dynamodb
+  GH_SCRIPT_PATH: .github/workflows
 
 jobs:
   build:
@@ -41,7 +47,6 @@ jobs:
     environment: ${{ inputs.aws-account-name }}
     env:
       BRANCH: ${{ github.head_ref || github.ref_name }}
-      AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
       BUCKET_ENV: ${{ inputs.common-name }}-env # TODO: hardcoded extension here
 
     steps:
@@ -104,7 +109,7 @@ jobs:
           # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
           chmod +x $SCRIPT_NAME
 
-          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=true IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=false IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
           echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
           if [ -n "$(grep -i error $LOG_FILE)" ]; then
@@ -118,7 +123,6 @@ jobs:
       name: ${{ inputs.aws-account-name }}
     needs: [ecr, s3-env]
     env:
-      IMAGE_TAG: ${{ needs.ecr.outputs.IMAGE_TAG }}
       DESIRED_COUNT: ${{ inputs.task-desired-count }}
       SCRIPT_NAME: ecs-set.sh
       LOG_FILE: log.out
