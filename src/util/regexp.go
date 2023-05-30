@@ -1,9 +1,10 @@
 package util
 
 import (
-	"golang.org/x/exp/slices"
 	"fmt"
 	"regexp"
+
+	"golang.org/x/exp/slices"
 )
 
 // Find index of arrayNeedle matching one arrayRegExp

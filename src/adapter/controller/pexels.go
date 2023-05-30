@@ -147,7 +147,7 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 				}
 				tags := []controllerModel.PictureTag{
 					{
-						ID: model.NewUUID(),
+						ID:           model.NewUUID(),
 						Name:         strings.ToLower(searchedTag.Name),
 						CreationDate: now,
 						OriginName:   origin,
@@ -156,7 +156,7 @@ func (c *ControllerPexels) SearchPhotos(ctx context.Context, quality string) err
 				}
 				sizes := []controllerModel.PictureSize{
 					{
-						ID: pictureSizeID,
+						ID:           pictureSizeID,
 						CreationDate: now,
 						Box:          box,
 					},

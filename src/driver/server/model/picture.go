@@ -135,10 +135,10 @@ func (b Box) DriverUnmarshal() controllerModel.Box {
 }
 
 type PictureTag struct {
-	ID             model.UUID      `json:"id"`
-	Name           string          `json:"name,omitempty"`
-	CreationDate   time.Time       `json:"creationDate,omitempty"`
-	OriginName     string          `json:"originName,omitempty"`
+	ID             model.UUID                     `json:"id"`
+	Name           string                         `json:"name,omitempty"`
+	CreationDate   time.Time                      `json:"creationDate,omitempty"`
+	OriginName     string                         `json:"originName,omitempty"`
 	BoxInformation model.Nullable[BoxInformation] `json:"boxInformation,omitempty"`
 }
 

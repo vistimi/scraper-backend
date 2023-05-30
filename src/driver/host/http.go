@@ -12,7 +12,7 @@ import (
 )
 
 type Request struct {
-	Host string
+	Host   string
 	Args   map[string]string
 	Header map[string][]string
 }
@@ -36,12 +36,12 @@ func (request *Request) ExecuteGET() (response []byte, ret error) {
 
 	url := request.URL()
 	client := http.Client{}
-	req , err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header = request.Header
-	res , err := client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func GetFile(URL string) ([]byte, error) {
 func DownloadFile(URL string, fileName string) error {
 	//Get the response bytes from the url
 	buffer, err := GetFile(URL)
-	
+
 	//Create a empty file
 	file, err := os.Create(fileName)
 	if err != nil {

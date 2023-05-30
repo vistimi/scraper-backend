@@ -60,7 +60,7 @@ func (d DriverServerGin) ReadTags(ctx context.Context) ([]serverModel.Tag, error
 	for _, controllerTag := range controllerTags {
 		var serverTag serverModel.Tag
 		serverTag.DriverMarshal(controllerTag)
-		serverTags= append(serverTags, serverTag)
+		serverTags = append(serverTags, serverTag)
 	}
 	return serverTags, nil
 }
@@ -74,7 +74,7 @@ func (d DriverServerGin) ReadTagsBlocked(ctx context.Context) ([]serverModel.Tag
 	for _, controllerTag := range controllerTags {
 		var serverTag serverModel.Tag
 		serverTag.DriverMarshal(controllerTag)
-		serverTags= append(serverTags, serverTag)
+		serverTags = append(serverTags, serverTag)
 	}
 	return serverTags, nil
 }

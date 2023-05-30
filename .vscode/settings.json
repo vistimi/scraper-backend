@@ -1,4 +1,5 @@
 {
+  "go.lintTool": "staticcheck",
   "go.testTimeout": "30s",
   "editor.tabSize": 4,
   "terminal.integrated.scrollback": 1000,
