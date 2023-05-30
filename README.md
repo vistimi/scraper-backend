@@ -60,29 +60,28 @@ AWS_REGION=us-west-1
 AWS_PROFILE=KookaS
 AWS_ACCESS_KEY=***
 AWS_SECRET_KEY=***
-
-GITHUB_TOKEN=***
 ```
 
 CLOUD_HOST is either `aws`, `localstack`
 
 # Github
 
-- Create an environment with your username
-- add the following variables:
-- add the following secrets:
-```
-test
-```
+Repo secrets:
+- FLICKR_PRIVATE_KEY
+- FLICKR_PUBLIC_KEY
+- GH_INFRA_TOKEN
+- PEXELS_PUBLIC_KEY
+- UNSPLASH_PRIVATE_KEY
+- UNSPLASH_PUBLIC_KEY
 
-:warning: The `GITHUB_TOKEN` is a default name
-In [Github](https://github.com/settings/personal-access-tokens/new):
-  
-```
-Select repositories: [infrastructure-modules]
-Contents: Read-only
-Metadata: Read-only
-```
+Environment secrets:
+- AWS_ACCESS_KEY
+- AWS_SECRET_KEY
+
+Environment variables:
+- AWS_REGION
+- AWS_ACCOUNT_ID
+- AWS_PROFILE
 
 # Code
 
