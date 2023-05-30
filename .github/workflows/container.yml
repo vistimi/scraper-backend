@@ -18,6 +18,9 @@ env:
   GH_REPO: infrastructure-modules
   GH_BRANCH: dynamodb
   GH_SCRIPT_PATH: .github/workflows
+  ECHO_RED: 41
+  ECHO_GREEN: 42
+  ECHO_BLUE: 46
 
 jobs:
   ecr:
@@ -47,9 +50,9 @@ jobs:
 
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=true IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
-          echo -e '\033[44mLOGS\033[0m'; cat $LOG_FILE
+          echo -e '\033[$ECHO_BLUEmLOGS\033[0m'; cat $LOG_FILE
           if [ -n "$(grep -i error $LOG_FILE)" ]; then
-            echo -e '\033[41mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
+            echo -e '\033[$ECHO_REDmERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
 
       - name: Get ECR login password
@@ -236,9 +239,9 @@ jobs:
 
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr)
 
-          echo -e '\033[44mLOGS\033[0m'; cat $LOG_FILE
+          echo -e '\033[$ECHO_BLUEmLOGS\033[0m'; cat $LOG_FILE
           if [ -n "$(grep -i error $LOG_FILE)" ]; then
-            echo -e '\033[41mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
+            echo -e '\033[$ECHO_REDmERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
 
       - name: Delete Dynamodb tables

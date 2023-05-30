@@ -40,9 +40,12 @@ aws ecs update-service \
   --task-definition $LATEST_TASK_ARN \
   --desired-count $DESIRED_COUNT \
   --output json
+aws ecs wait services-stable \
+    --cluster $COMMON_NAME \
+    --services $COMMON_NAME
 
 # Wait for tasks
-# sleep 30s
+# sleep 10s
 export TASKS=$(aws ecs list-tasks \
 --region $AWS_REGION \
 --cluster $COMMON_NAME \
