@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  project:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        - USERNAME=$USERNAME
+      target: runner
+    env_file: devcontainer.env
+    command: sleep infinity
+    user: $USERNAME
+    # ports:
+    #   - 8080:8080
+    depends_on:
+      - localstack
+    networks:
+      - scraper-network
+    volumes:
+      # Mounts the project folder to '/workspace'. While this file is in .devcontainer,
+      # mounts are relative to the first file in the list, which is a level up.
+      - .:/workspace:cached
+
+  localstack:
+    image: localstack/localstack
+    # ports:
+    #   - 4566:4566
+    restart: unless-stopped
+    networks:
+      - scraper-network
+
+networks:
+  scraper-network:
+    driver: bridge

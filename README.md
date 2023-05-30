@@ -28,8 +28,7 @@ aws dynamodb scan --endpoint-url=http://scraper-localstack:4566 --table-name scr
 
 #### Backend with Docker
 ```shell
-sudo docker build -t scraper-backend .
-sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
+sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
 #### Backend without docker
