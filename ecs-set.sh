@@ -54,7 +54,7 @@ export TASKS=$(aws ecs list-tasks \
 
 echo Wait for tasks $TASKS
 
-aws ecs wait tasks-running \
+aws ecs wait services-stable \
   --region $AWS_REGION \
   --cluster $COMMON_NAME \
   --tasks $TASKS
