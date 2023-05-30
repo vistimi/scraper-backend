@@ -16,8 +16,10 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   GH_ORG: KookaS
   GH_REPO: infrastructure-modules
-  GH_BRANCH: dynamodb
+  GH_BRANCH: master
   GH_SCRIPT_PATH: .github/workflows
+  GH_REPO_PATH: https://raw.githubusercontent.com/$GH_ORG/$GH_REPO/$GH_BRANCH/$GH_SCRIPT_PATH
+  AWS_CLI_SERVICE: ecr  # private
 
 jobs:
   ecr:
@@ -25,12 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: KookaS
     env:
-      AWS_CLI_SERVICE: ecr  # private
-      DOCKER_FOLDER_PATH: Dockerfile
-      IMAGE_TAG: "latest"
       SCRIPT_NAME: ecr-set.sh
       LOG_FILE: log.out
-      GH_REPO_PATH: https://raw.githubusercontent.com/$GH_ORG/$GH_REPO/$GH_BRANCH
+      DOCKER_FOLDER_PATH: Dockerfile
+      IMAGE_TAG: "latest"
     outputs:
       IMAGE_TAG: ${{ steps.get-output.outputs.IMAGE_TAG }}
       ECR_LOGIN_PASSWORD: ${{ steps.get-output.outputs.ECR_LOGIN_PASSWORD }}
@@ -39,11 +39,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
   
-      - name: run script
+      - name: Run script
         id: script
         run: |
-          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
-          chmod +x $SCRIPT_NAME
+          curl -H 'Authorization: token ${GITHUB_TOKEN}' -H "Cache-Control: no-cache" -o $SCRIPT_NAME $GH_REPO_PATH/SCRIPT_NAME && chmod +x $SCRIPT_NAME
 
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=true IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
@@ -217,7 +216,6 @@ jobs:
     if: ${{ always() && contains(join(needs.ecr.result, ','), 'success') }}
     environment: KookaS
     env:
-      AWS_CLI_SERVICE: ecr  # private
       SCRIPT_NAME: ecr-clean.sh
       LOG_FILE: log.out
     outputs:
@@ -225,14 +223,10 @@ jobs:
       ECR_LOGIN_PASSWORD: ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: run script
+      - name: Run script
         id: script
         run: |
-          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
-          chmod +x $SCRIPT_NAME
+          curl -H 'Authorization: token ${GITHUB_TOKEN}' -H "Cache-Control: no-cache" -o $SCRIPT_NAME $GH_REPO_PATH/SCRIPT_NAME && chmod +x $SCRIPT_NAME
 
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr)
 
