@@ -12,30 +12,19 @@ VSCode and Docker
 
 ## Run
 
-Run in devcontainer the backend and spawn in an other terminal localstack.
+Run first localstack and then backend in different terminals
 
+#### localstack
 ```shell
-# network
-docker network create scraper-net
-docker network ls
-
-# docker images
-docker run --rm -it --net scraper-net --name scraper-localstack --network-alias localstack localstack/localstack
+docker network create scraper-net; docker run --rm -it --net scraper-net --name scraper-localstack --network-alias localstack localstack/localstack
 ```
+#### Run backend with docker
 
-To check the tables with aws cli:
-    
-```shell
-aws --endpoint-url=http://scraper-localstack:4566 dynamodb describe-table --table-name scraper-backend-test-pictureProcess
-aws dynamodb scan --endpoint-url=http://scraper-localstack:4566 --table-name scraper-backend-test-pictureProcess
-```
-
-#### Backend with Docker
 ```shell
 sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
-#### Backend without docker
+#### Run backend without docker (devcontainer)
     go run src/main.go
 
 ## Build

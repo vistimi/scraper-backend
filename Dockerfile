@@ -18,15 +18,16 @@ RUN go build -o scraper src/main.go
 # runner
 FROM builder-final AS runner-workflow
 
-ARG USER_NAME=user
-ARG USER_UID=1000
+RUN apk add --no-cache shadow
+ARG USERNAME=user
+ARG USER_UID=1001
 ARG USER_GID=$USER_UID
-RUN apk update && apk add --update sudo
-RUN addgroup --gid $USER_GID $USER_NAME \
-    && adduser --uid $USER_UID -D -G $USER_NAME $USER_NAME \
-    && echo $USER_NAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USER_NAME \
-    && chmod 0440 /etc/sudoers.d/$USER_NAME
-USER $USER_NAME
+RUN addgroup --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+    # # Add sudo support. Omit if you don't need to install software after connecting.
+    # && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    # && chmod 0440 /etc/sudoers.d/$USERNAME
+USER $USERNAME
 
 WORKDIR /usr/app
 COPY --chown=$USERNAME:$USER_GID --from=builder-workflow /usr/tmp/scraper ./
