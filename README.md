@@ -25,12 +25,15 @@ sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-n
 ```
 
 #### Run backend without docker (devcontainer)
-    go run src/main.go
+```shell
+go run src/main.go
+```
 
 ## Build
-
-    go build -o scraper src/main.go
-    ./scraper
+```shell
+go build -o scraper src/main.go
+./scraper
+```
 
 #### Devcontainer
 

@@ -1,10 +1,7 @@
-ARG VARIANT=golang:1.19.0-alpine
-ARG RUNNER=workflow
-
-FROM ${VARIANT} as builder-final
+ARG GO_ALPINE_VARIANT=golang:1.19.0-alpine
 
 # builder
-FROM builder-final AS builder-workflow
+FROM $GO_ALPINE_VARIANT AS builder
 
 WORKDIR /usr/tmp
 
@@ -16,7 +13,7 @@ ENV GIN_MODE=release
 RUN go build -o scraper src/main.go
 
 # runner
-FROM builder-final AS runner-workflow
+FROM $GO_ALPINE_VARIANT AS runner
 
 RUN apk add --no-cache shadow
 ARG USERNAME=user
@@ -30,8 +27,8 @@ RUN addgroup --gid $USER_GID $USERNAME \
 USER $USERNAME
 
 WORKDIR /usr/app
-COPY --chown=$USERNAME:$USER_GID --from=builder-workflow /usr/tmp/scraper ./
-COPY --chown=$USERNAME:$USER_GID --from=builder-workflow /usr/tmp/config/config.yml ./config/config.yml
+COPY --chown=$USERNAME:$USER_GID --from=builder /usr/tmp/scraper ./
+COPY --chown=$USERNAME:$USER_GID --from=builder /usr/tmp/config/config.yml ./config/config.yml
 
 # TODO: port as arg
 EXPOSE 8080
