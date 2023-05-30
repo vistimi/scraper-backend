@@ -1,8 +1,8 @@
 package util
 
 import (
-	"golang.org/x/exp/slices"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"regexp"
 )
 

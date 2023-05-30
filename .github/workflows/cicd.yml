@@ -42,7 +42,7 @@ jobs:
     env:
       BRANCH: ${{ github.head_ref || github.ref_name }}
       AWS_ACCESS_KEY_ENV: ${{ secrets.AWS_ACCESS_KEY }}
-      BUCKET_ENV: ${{ inputs.common-name }}-env
+      BUCKET_ENV: ${{ inputs.common-name }}-env # TODO: hardcoded extension here
 
     steps:
       - name: Checkout
@@ -51,11 +51,7 @@ jobs:
       - name: Display
         run: |
           printf " \
-          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
           BRANCH = $BRANCH\n \
-          AWS_REGION = $AWS_REGION\n \
-          AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
-          AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
           S3 file = s3://$BUCKET_ENV/$BRANCH.env\n \
           "
 
@@ -92,6 +88,8 @@ jobs:
       DOCKER_FOLDER_PATH: Dockerfile
       ECR_REPOSITORY: ${{ inputs.common-name }}
       IMAGE_TAG: "latest"
+      SCRIPT_NAME: ecr-set.sh
+      LOG_FILE: log.out
     needs: [build]
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
@@ -100,45 +98,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Display non-sensitive variables
+      - name: run script
+        id: script
         run: |
-          printf " \
-          AWS_CLI_SERVICE = $AWS_CLI_SERVICE\n \
-          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
-          AWS_REGION = $AWS_REGION\n \
-          ECR_REPOSITORY = $ECR_REPOSITORY\n \
-          "
+          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
+          chmod +x $SCRIPT_NAME
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set region $AWS_REGION
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=true IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
-      - name: login to ECR
-        run: |
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          if [ -n "$(grep -i error $LOG_FILE)" ]; then
+            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        run: |
-          export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
-          echo "ECR_URI= $ECR_URI"
-          # docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_URI/$IMAGE_TAG
-          docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
-          docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
-          docker push $ECR_URI:$IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
-      
-      - name: Wait for image to be available
-        run: |
-          aws ecr wait image-scan-complete --repository-name $ECR_REPOSITORY --image-id imageTag=$IMAGE_TAG
-          aws ecr describe-images --repository-name $ECR_REPOSITORY --image-ids imageTag=$IMAGE_TAG --output json
 
   ecs:
     name: ECS
@@ -149,103 +120,22 @@ jobs:
     env:
       IMAGE_TAG: ${{ needs.ecr.outputs.IMAGE_TAG }}
       DESIRED_COUNT: ${{ inputs.task-desired-count }}
+      SCRIPT_NAME: ecs-set.sh
+      LOG_FILE: log.out
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Display variables
+      - name: run script
+        id: script
         run: |
-          printf " \
-          AWS_REGION = $AWS_REGION\n \
-          IMAGE_TAG = $IMAGE_TAG\n \
-          "
+          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
+          chmod +x $SCRIPT_NAME
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set region $AWS_REGION
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME)
 
-      # - name: create json task definition
-      #   run: |
-      #     TASK_DEFINITION=$(aws ecs describe-task-definition \
-      #       --task-definition $COMMON_NAME \
-      #       --query 'taskDefinition' \
-      #       --output json)
-      #     cat << EOF > task_definition.json
-      #     {
-      #       "containerDefinitions": $(jq  '.containerDefinitions' <<< $TASK_DEFINITION),
-      #       "executionRoleArn": $(jq  '.executionRoleArn' <<< $TASK_DEFINITION),
-      #       "taskRoleArn": $(jq  '.taskRoleArn' <<< $TASK_DEFINITION),
-      #       "family": $(jq  '.family' <<< $TASK_DEFINITION),
-      #       "requiresCompatibilities": $(jq  '.requiresCompatibilities' <<< $TASK_DEFINITION),
-      #       "memory": $(jq  '.memory' <<< $TASK_DEFINITION),
-      #       "cpu": $(jq  '.cpu' <<< $TASK_DEFINITION)
-      #     }
-      #     EOF
-      #     cat task_definition.json
-
-      # - name: Fill in the new image ID in the Amazon ECS task definition
-      #   id: task-def
-      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-      #   with:
-      #     task-definition: task_definition.json
-      #     container-name: ${{ inputs.common-name }}
-      #     image: ${{ needs.ecr.outputs.IMAGE_TAG }}
-
-      - name: Update service
-        run: |
-          LATEST_TASK_ARN=$(aws ecs list-task-definitions \
-            --region $AWS_REGION \
-            --family-prefix $COMMON_NAME \
-            --sort DESC \
-            --query 'taskDefinitionArns[0]' \
-            --output text)
-          aws ecs update-service \
-            --cluster $COMMON_NAME \
-            --service $COMMON_NAME \
-            --force-new-deployment \
-            --region $AWS_REGION \
-            --task-definition $LATEST_TASK_ARN \
-            --desired-count $DESIRED_COUNT \
-            --output json
-
-      - name: Wait for tasks
-        run: |
-          sleep 30s
-          TASKS=$(aws ecs list-tasks \
-          --region $AWS_REGION \
-          --cluster $COMMON_NAME \
-          --query 'taskArns[]' \
-          --output text)
-          echo $TASKS
-          LATEST_TASK_DEFINITION_ARN=$(aws ecs list-task-definitions \
-          --region $AWS_REGION \
-          --family-prefix $COMMON_NAME \
-          --sort DESC \
-          --query 'taskDefinitionArns[0]' \
-          --output text)
-
-          for task in $TASKS; do
-              tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json) || exit 1
-              echo "tasksDescription=$tasksDescription"
-              latestStatus=$(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
-              taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
-              echo "Waiting for task $task to be RUNNING, currently $latestStatus"
-              echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
-              
-              i=0
-              while [[ $latestStatus != "RUNNING" && taskDefinitionArn != $LATEST_TASK_DEFINITION_ARN ]]; do
-                tasksDescription=$(aws ecs describe-tasks --region $AWS_REGION --cluster $COMMON_NAME --tasks $task --query 'tasks[]' --output json)
-                latestStatus=$(jq -r  '.[]|.lastStatus' <<< $tasksDescription)
-                taskDefinitionArn=$(jq -r  '.[]|.taskDefinitionArn' <<< $tasksDescription)
-                echo "Waiting for task $task to be RUNNING, currently $latestStatus"
-                echo "Waiting for task $task to have definition ARN $LATEST_TASK_DEFINITION_ARN, currently $taskDefinitionArn"
-                sleep 10s
-
-                if [ $i -gt 30 ] || [ "$latestStatus" = "STOPPED" ]; then exit 1; fi
-                i=$((i+1))
-              done
-          done
+          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          if [ -n "$(grep -i error $LOG_FILE)" ]; then
+            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
+          fi

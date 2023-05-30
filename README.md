@@ -28,8 +28,7 @@ aws dynamodb scan --endpoint-url=http://scraper-localstack:4566 --table-name scr
 
 #### Backend with Docker
 ```shell
-sudo docker build -t scraper-backend .
-sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
+sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
 #### Backend without docker
@@ -64,12 +63,6 @@ Create a local.env file:
     AWS_SECRET_KEY=dummy
 
 CLOUD_HOST is either `aws`, `localstack`
-
-## linter
-
-https://github.com/mgechev/revive
-
-    revive -config revive.toml
 
 ## Dependencies
 

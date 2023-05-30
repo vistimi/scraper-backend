@@ -1,31 +1,36 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
+
 	"name": "Go",
+	"remoteUser": "user",
+	"containerUser": "user",
 	"build": {
 		"dockerfile": "Dockerfile",
-		"args": {
-			"VARIANT": "mcr.microsoft.com/devcontainers/go:0-1-bullseye",
-			"target": "runner"
-		}
+		"args": {"USERNAME": "user"},
+		"target": "runner"
 	},
+	// // FIXME: docker-compose open permission for this user is missing
+	// "workspaceFolder": "/workspace",
+	// "dockerComposeFile": ["docker-compose.yml"],
+	// "service": "project",
+	// "shutdownAction": "stopCompose",
+
 	// Mount the docker daemon on the container, must run outside the container as well
-	// "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
+	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
 	"runArgs": [
 		"--env-file",
 		".devcontainer/devcontainer.env",
 		"--net",
 		"scraper-net"
 	],
-	// "forwardPorts": [],
-	// "appPort": [],
-	"initializeCommand": "if [ ! \"$(docker network ls | grep scraper-net)\" ]; then docker network create scraper-net; fi",
-	"postStartCommand": "aws configure set aws_access_key_id $AWS_ACCESS_KEY --profile $AWS_PROFILE && aws configure set --profile $AWS_PROFILE aws_secret_access_key $AWS_SECRET_KEY --profile $AWS_PROFILE && aws configure set region $AWS_REGION --profile $AWS_PROFILE && aws configure set output 'text' --profile $AWS_PROFILE && aws configure list && go install github.com/davidrjenni/reftools/cmd/fillstruct@latest",
-	"features": {
-		"ghcr.io/devcontainers/features/aws-cli": "latest"
-	},
+	// "initializeCommand": "if [ ! \"$(docker network ls | grep scraper-net)\" ]; then docker network create scraper-net; fi",
+	"postStartCommand": "aws configure set aws_access_key_id $AWS_ACCESS_KEY --profile $AWS_PROFILE && aws configure set --profile $AWS_PROFILE aws_secret_access_key $AWS_SECRET_KEY --profile $AWS_PROFILE && aws configure set region $AWS_REGION --profile $AWS_PROFILE && aws configure set output 'text' --profile $AWS_PROFILE && aws configure list && echo USER: $(whoami)",
 	"customizations": {
 		"vscode": {
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "bash"
+			},
 			"extensions": [
 				"yzhang.markdown-all-in-one",
 				"golang.go",

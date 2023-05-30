@@ -14,6 +14,10 @@ env:
   AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
   AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  GH_ORG: KookaS
+  GH_REPO: infrastructure-modules
+  GH_BRANCH: dynamodb
+  GH_SCRIPT_PATH: .github/workflows
 
 jobs:
   ecr:
@@ -23,60 +27,41 @@ jobs:
     env:
       AWS_CLI_SERVICE: ecr  # private
       DOCKER_FOLDER_PATH: Dockerfile
+      IMAGE_TAG: "latest"
+      SCRIPT_NAME: ecr-set.sh
+      LOG_FILE: log.out
+      GH_REPO_PATH: https://raw.githubusercontent.com/$GH_ORG/$GH_REPO/$GH_BRANCH
     outputs:
-      IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
-      ECR_LOGIN_PASSWORD: ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }}
+      IMAGE_TAG: ${{ steps.get-output.outputs.IMAGE_TAG }}
+      ECR_LOGIN_PASSWORD: ${{ steps.get-output.outputs.ECR_LOGIN_PASSWORD }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Display non-sensitive variables
+  
+      - name: run script
+        id: script
         run: |
-          printf " \
-          COMMON_NAME = $COMMON_NAME \n \
-          "
+          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
+          chmod +x $SCRIPT_NAME
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set region $AWS_REGION
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=true IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
-      - name: login to ECR
-        run: |
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          if [ -n "$(grep -i error $LOG_FILE)" ]; then
+            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
-      
-      - name: Create ECR repository
-        run: |
-          aws ecr create-repository \
-            --repository-name $COMMON_NAME \
-            --image-scanning-configuration scanOnPush=true \
-            --region $AWS_REGION \
-            --output text \
-            --query 'repository.repositoryUri'
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          IMAGE_TAG: "latest"
-        run: |
-          export ECR_URI=$(aws ecr describe-repositories --repository-names $COMMON_NAME --output text --query "repositories[].[repositoryUri]")
-          echo "ECR_URI= $ECR_URI"
-          docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
-          docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
-          docker push $ECR_URI:$IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Get ECR login password
-        id: get-login-password
+        id: get-output
         run: |
-          echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          if [[ $AWS_CLI_SERVICE == ecr ]]; then
+            echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+            echo "ECR_LOGIN_PASSWORD=$(aws ecr-public get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+          fi
+          
 
   # Container network where we can access with the service name and the port
   localstack:
@@ -233,6 +218,8 @@ jobs:
     environment: KookaS
     env:
       AWS_CLI_SERVICE: ecr  # private
+      SCRIPT_NAME: ecr-clean.sh
+      LOG_FILE: log.out
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
       ECR_LOGIN_PASSWORD: ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }}
@@ -241,29 +228,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: setup AWS CLI
+      - name: run script
+        id: script
         run: |
-          aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set region $AWS_REGION
+          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
+          chmod +x $SCRIPT_NAME
 
-      - name: login to ECR
-        run: |
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr)
+
+          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          if [ -n "$(grep -i error $LOG_FILE)" ]; then 
+            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
-      
-      - name: Delete ECR repository
-        run: |
-          aws ecr delete-repository \
-            --repository-name $COMMON_NAME \
-            --force \
-            --region $AWS_REGION \
-            --output text \
-            --query 'repository.registryId'
 
       - name: Delete Dynamodb tables
         if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
