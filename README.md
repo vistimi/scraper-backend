@@ -2,6 +2,10 @@
 
 Online scraper for building a dataset for ML.
 
+## License
+
+If share pictures, they must be with https://creativecommons.org/licenses/by-sa/2.0/
+
 ## installation
 
 VSCode and Docker
@@ -39,34 +43,48 @@ sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-n
     go build -o scraper src/main.go
     ./scraper
 
-## License
+#### Devcontainer
 
-must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
+```
+CLOUD_HOST=localstack
+URL_LOCALSTACK=http://scraper-localstack:4566
+COMMON_NAME=scraper-backend-test
 
-## Env
+FLICKR_PRIVATE_KEY=***
+FLICKR_PUBLIC_KEY=***
+UNSPLASH_PRIVATE_KEY=***
+UNSPLASH_PUBLIC_KEY=***
+PEXELS_PUBLIC_KEY=***
 
-Create a local.env file:
+AWS_REGION=us-west-1
+AWS_PROFILE=KookaS
+AWS_ACCESS_KEY=***
+AWS_SECRET_KEY=***
 
-    CLOUD_HOST=localstack
-    URL_LOCALSTACK=http://scraper-localstack:4566
-    COMMON_NAME=scraper-backend-test
-    
-    FLICKR_PRIVATE_KEY=***
-    FLICKR_PUBLIC_KEY=***
-    UNSPLASH_PRIVATE_KEY=***
-    UNSPLASH_PUBLIC_KEY=***
-    PEXELS_PUBLIC_KEY=***
-    
-    AWS_REGION=us-east-1
-    AWS_PROFILE=dummy
-    AWS_ACCESS_KEY=dummy
-    AWS_SECRET_KEY=dummy
+GITHUB_TOKEN=***
+```
 
 CLOUD_HOST is either `aws`, `localstack`
 
-## Dependencies
+# Github
 
-    go mod tidy
+- Create an environment with your username
+- add the following variables:
+- add the following secrets:
+```
+test
+```
+
+:warning: The `GITHUB_TOKEN` is a default name
+In [Github](https://github.com/settings/personal-access-tokens/new):
+  
+```
+Select repositories: [infrastructure-modules]
+Contents: Read-only
+Metadata: Read-only
+```
+
+# Code
 
 ## Interfaces
 
