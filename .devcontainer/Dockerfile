@@ -3,12 +3,12 @@ ARG GO_ALPINE_VARIANT=golang:1.19.0-alpine
 ARG PYTHON_ALPINE_VARIANT=python:3.10.5-alpine
 
 #-------------------------
-#    GOLANG BUILDER
+#    BUILDER GOLANG
 #-------------------------
 FROM ${GO_ALPINE_VARIANT} as builder-alpine-go
 
 #-------------------------
-#    PYTHON BUILDER
+#    BUILDER PYTHON
 #-------------------------
 FROM $PYTHON_ALPINE_VARIANT as builder-alpine-python
 
