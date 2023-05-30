@@ -40,6 +40,7 @@ aws ecs update-service \
   --task-definition $LATEST_TASK_ARN \
   --desired-count $DESIRED_COUNT \
   --output json
+echo Wait for service $COMMON_NAME to be stable
 aws ecs wait services-stable \
     --cluster $COMMON_NAME \
     --services $COMMON_NAME
@@ -52,9 +53,9 @@ export TASKS=$(aws ecs list-tasks \
 --query 'taskArns[]' \
 --output text)
 
-echo Wait for tasks $TASKS
+echo Wait for tasks $TASKS to be RUNNING
 
-aws ecs wait services-stable \
+aws ecs wait tasks-running \
   --region $AWS_REGION \
   --cluster $COMMON_NAME \
   --tasks $TASKS
