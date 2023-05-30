@@ -2,36 +2,29 @@
 
 Online scraper for building a dataset for ML.
 
+## License
+
+If share pictures, they must be with https://creativecommons.org/licenses/by-sa/2.0/
+
 ## installation
 
 VSCode and Docker
 
 ## Run
 
-Run in devcontainer the backend and spawn in an other terminal localstack.
+Run first localstack and then backend in different terminals
 
+#### localstack
 ```shell
-# network
-docker network create scraper-net
-docker network ls
-
-# docker images
-docker run --rm -it --net scraper-net --name scraper-localstack --network-alias localstack localstack/localstack
+docker network create scraper-net; docker run --rm -it --net scraper-net --name scraper-localstack --network-alias localstack localstack/localstack
 ```
+#### Run backend with docker
 
-To check the tables with aws cli:
-    
-```shell
-aws --endpoint-url=http://scraper-localstack:4566 dynamodb describe-table --table-name scraper-backend-test-pictureProcess
-aws dynamodb scan --endpoint-url=http://scraper-localstack:4566 --table-name scraper-backend-test-pictureProcess
-```
-
-#### Backend with Docker
 ```shell
 sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
-#### Backend without docker
+#### Run backend without docker (devcontainer)
     go run src/main.go
 
 ## Build
@@ -39,34 +32,47 @@ sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-n
     go build -o scraper src/main.go
     ./scraper
 
-## License
+#### Devcontainer
 
-must share photos generated with https://creativecommons.org/licenses/by-sa/2.0/
+```
+CLOUD_HOST=localstack
+URL_LOCALSTACK=http://scraper-localstack:4566
+COMMON_NAME=scraper-backend-test
 
-## Env
+FLICKR_PRIVATE_KEY=***
+FLICKR_PUBLIC_KEY=***
+UNSPLASH_PRIVATE_KEY=***
+UNSPLASH_PUBLIC_KEY=***
+PEXELS_PUBLIC_KEY=***
 
-Create a local.env file:
-
-    CLOUD_HOST=localstack
-    URL_LOCALSTACK=http://scraper-localstack:4566
-    COMMON_NAME=scraper-backend-test
-    
-    FLICKR_PRIVATE_KEY=***
-    FLICKR_PUBLIC_KEY=***
-    UNSPLASH_PRIVATE_KEY=***
-    UNSPLASH_PUBLIC_KEY=***
-    PEXELS_PUBLIC_KEY=***
-    
-    AWS_REGION=us-east-1
-    AWS_PROFILE=dummy
-    AWS_ACCESS_KEY=dummy
-    AWS_SECRET_KEY=dummy
+AWS_REGION=us-west-1
+AWS_PROFILE=KookaS
+AWS_ACCESS_KEY=***
+AWS_SECRET_KEY=***
+```
 
 CLOUD_HOST is either `aws`, `localstack`
 
-## Dependencies
+# Github
 
-    go mod tidy
+Repo secrets:
+- FLICKR_PRIVATE_KEY
+- FLICKR_PUBLIC_KEY
+- GH_INFRA_TOKEN
+- PEXELS_PUBLIC_KEY
+- UNSPLASH_PRIVATE_KEY
+- UNSPLASH_PUBLIC_KEY
+
+Environment secrets:
+- AWS_ACCESS_KEY
+- AWS_SECRET_KEY
+
+Environment variables:
+- AWS_REGION
+- AWS_ACCOUNT_ID
+- AWS_PROFILE
+
+# Code
 
 ## Interfaces
 
