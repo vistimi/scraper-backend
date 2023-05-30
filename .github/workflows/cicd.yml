@@ -51,11 +51,7 @@ jobs:
       - name: Display
         run: |
           printf " \
-          AWS_ACCOUNT_NAME = $AWS_ACCOUNT_NAME\n \
           BRANCH = $BRANCH\n \
-          AWS_REGION = $AWS_REGION\n \
-          AWS_ACCESS_KEY = ${{ secrets.AWS_ACCESS_KEY }}\n \
-          AWS_SECRET_KEY = ${{ secrets.AWS_SECRET_KEY }}\n \
           S3 file = s3://$BUCKET_ENV/$BRANCH.env\n \
           "
 
@@ -92,6 +88,8 @@ jobs:
       DOCKER_FOLDER_PATH: Dockerfile
       ECR_REPOSITORY: ${{ inputs.common-name }}
       IMAGE_TAG: "latest"
+      SCRIPT_NAME: ecr-set.sh
+      LOG_FILE: log.out
     needs: [build]
     outputs:
       IMAGE_TAG: ${{ steps.build-image.outputs.IMAGE_TAG }}
@@ -100,54 +98,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Display non-sensitive variables
+      - name: run script
+        id: script
         run: |
-          printf " \
-          AWS_CLI_SERVICE = $AWS_CLI_SERVICE\n \
-          AWS_ACCOUNT_ID = $AWS_ACCOUNT_ID\n \
-          AWS_REGION = $AWS_REGION\n \
-          ECR_REPOSITORY = $ECR_REPOSITORY\n \
-          "
+          # curl -o $SCRIPT_NAME https://raw.githubusercontent.com/KookaS/infrastructure-modules/dynamodb/.github/workflows/ecr-create.sh?token=GHSAT0AAAAAACCEOEUUZDBFTBEZS66QJV2OZDS4JMA \
+          chmod +x $SCRIPT_NAME
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set region $AWS_REGION
+          eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=true IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
-      - name: Get ECR login password
-        id: get-login-password
-        run: |
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            echo "ECR_LOGIN_PASSWORD=$(aws ecr-public get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          if [ -n "$(grep -i error $LOG_FILE)" ]; then
+            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
-
-      - name: login to ECR
-        run: |
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            docker login --username AWS --password ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }} $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            docker login --username AWS --password ${{ steps.get-login-password.outputs.ECR_LOGIN_PASSWORD }} public.ecr.aws
-          fi
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        run: |
-          export ECR_URI=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY --output text --query "repositories[].[repositoryUri]")
-          echo "ECR_URI= $ECR_URI"
-          # docker build ${GITHUB_WORKSPACE}/$DOCKER_FOLDER_PATH -t $ECR_URI/$IMAGE_TAG
-          docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
-          docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
-          docker push $ECR_URI:$IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
-      
-      - name: Wait for image to be available
-        run: |
-          aws ecr wait image-scan-complete --repository-name $ECR_REPOSITORY --image-id imageTag=$IMAGE_TAG
-          aws ecr describe-images --repository-name $ECR_REPOSITORY --image-ids imageTag=$IMAGE_TAG --output json
 
   ecs:
     name: ECS

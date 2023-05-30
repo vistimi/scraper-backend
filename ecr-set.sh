@@ -47,3 +47,7 @@ export ECR_URI=$(aws ecr describe-repositories --repository-names $COMMON_NAME -
 docker build -t $ECR_URI/$IMAGE_TAG -f $DOCKER_FOLDER_PATH .
 docker tag $(docker images -q $ECR_URI/$IMAGE_TAG) $ECR_URI:$IMAGE_TAG
 docker push $ECR_URI:$IMAGE_TAG
+
+# Wait for image to be available
+aws ecr wait image-scan-complete --repository-name $COMMON_NAME --image-id imageTag=$IMAGE_TAG
+aws ecr describe-images --repository-name $COMMON_NAME --image-ids imageTag=$IMAGE_TAG --output json
