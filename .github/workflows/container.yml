@@ -19,6 +19,7 @@ env:
   GH_BRANCH: master
   GH_SCRIPT_PATH: .github/workflows
   AWS_CLI_SERVICE: ecr  # private
+  GH_INFRA_TOKEN: ${{ secrets.GH_INFRA_TOKEN }}
 
 jobs:
   ecr:
