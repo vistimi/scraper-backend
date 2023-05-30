@@ -111,9 +111,9 @@ jobs:
 
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME AWS_CLI_SERVICE=ecr ECR_CREATE=false IMAGE_TAG=$IMAGE_TAG DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH)
 
-          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          echo -e '\033[44mLOGS\033[0m'; cat $LOG_FILE
           if [ -n "$(grep -i error $LOG_FILE)" ]; then
-            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
+            echo -e '\033[41mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
 
   ecs:
@@ -139,7 +139,7 @@ jobs:
 
           eval res=$(./$SCRIPT_NAME LOG_FILE=$LOG_FILE AWS_ACCESS_KEY=$AWS_ACCESS_KEY AWS_SECRET_KEY=$AWS_SECRET_KEY AWS_REGION=$AWS_REGION AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID COMMON_NAME=$COMMON_NAME)
 
-          echo -e '\033[1mLOGS\033[0m'; cat $LOG_FILE
+          echo -e '\033[44mLOGS\033[0m'; cat $LOG_FILE
           if [ -n "$(grep -i error $LOG_FILE)" ]; then
-            echo -e '\033[1mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
+            echo -e '\033[41mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 10
           fi
