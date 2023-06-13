@@ -46,7 +46,7 @@ type ControllerFlickr interface {
 }
 
 type ControllerUnsplash interface {
-	SearchPhotos(ctx context.Context, quality string) error
+	SearchPhotos(ctx context.Context, quality string, imageStart, imageEnd int) ([]string, error)
 }
 
 type ControllerPexels interface {

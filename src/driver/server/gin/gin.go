@@ -68,7 +68,7 @@ func (d DriverServerGin) Router(port int) *gin.Engine {
 
 	// routes for scraping the internet
 	router.POST("/search/flickr/:quality", wrapperJSONHandlerURI(d.SearchPhotosFlickr))
-	router.POST("/search/unsplash/:quality", wrapperJSONHandlerURI(d.SearchPhotosUnsplash))
+	router.POST("/search/unsplash/:quality/:image_start/:image_end", wrapperJSONHandlerURI(d.SearchPhotosUnsplash))
 	router.POST("/search/pexels/:quality", wrapperJSONHandlerURI(d.SearchPhotosPexels))
 
 	// start the backend

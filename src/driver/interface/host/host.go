@@ -17,6 +17,7 @@ type DriverApiFlickr interface {
 
 type DriverApiUnsplash interface {
 	GetFile(url string) ([]byte, error)
+	GetPerPage() int
 	SearchPhotosPerPage(tag string, page int) (*unsplash.PhotoSearchResult, error)
 }
 

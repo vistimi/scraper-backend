@@ -1,7 +1,6 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"scraper-backend/config"
@@ -105,8 +104,6 @@ func NewConfig() (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		fmt.Printf("%+#v\n", awsConfig)
 
 		AwsS3Client = bucket.S3Client(*awsConfig)
 		AwsDynamodbClient = dynamodb.DynamodbClient(*awsConfig)
@@ -243,12 +240,6 @@ func NewConfig() (*Config, error) {
 			SortKeyType:    &TableUserSortKeyType,
 		},
 	}
-
-	configJSON, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("config: %s\n", string(configJSON))
 
 	return &config, nil
 }
