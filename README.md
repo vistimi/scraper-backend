@@ -19,9 +19,8 @@ Run first localstack and then backend in different terminals
 docker network create scraper-net; docker run --rm -it --net scraper-net --name scraper-localstack --network-alias localstack localstack/localstack
 ```
 #### Run backend with docker
-
 ```shell
-sudo docker build -t scraper-backend .; sudo docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend --env-file .devcontainer/devcontainer.env scraper-backend
+docker rmi scraper-backend; docker build -t scraper-backend .; docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend -p 8080:8080 --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
 #### Run backend without docker (devcontainer)
@@ -39,7 +38,7 @@ go build -o scraper src/main.go
 
 ```
 CLOUD_HOST=localstack
-URL_LOCALSTACK=http://scraper-localstack:4566
+LOCALSTACK_URI=http://scraper-localstack:4566
 COMMON_NAME=scraper-backend-test
 
 FLICKR_PRIVATE_KEY=***
