@@ -1,7 +1,10 @@
 ARG GO_ALPINE_VARIANT=golang:1.19.0-alpine
+ARG VARIANT=alpine:3.16
 
 # builder
-FROM $GO_ALPINE_VARIANT AS builder
+FROM $VARIANT AS builder
+
+RUN apk add --update --no-cache go
 
 WORKDIR /usr/tmp
 
@@ -13,17 +16,19 @@ ENV GIN_MODE=release
 RUN go build -o scraper src/main.go
 
 # runner
-FROM $GO_ALPINE_VARIANT AS runner
+FROM $VARIANT AS runner
 
-RUN apk add --no-cache shadow
+RUN apk add --update --no-cache shadow go
+
+RUN apk add 
 ARG USERNAME=user
 ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 RUN addgroup --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
-    # # Add sudo support. Omit if you don't need to install software after connecting.
-    # && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    # && chmod 0440 /etc/sudoers.d/$USERNAME
+# # Add sudo support. Omit if you don't need to install software after connecting.
+# && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+# && chmod 0440 /etc/sudoers.d/$USERNAME
 USER $USERNAME
 
 WORKDIR /usr/app
