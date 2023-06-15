@@ -20,7 +20,7 @@ docker network create scraper-net; docker run --rm -it --net scraper-net --name 
 ```
 #### Run backend with docker
 ```shell
-docker rmi scraper-backend; docker build -t scraper-backend .; docker run --rm -it --net scraper-net --name scraper-backend --network-alias backend -p 8080:8080 --env-file .devcontainer/devcontainer.env scraper-backend
+docker rmi scraper-backend; docker build -t scraper-backend .; docker run --read-only --rm -it --net scraper-net --name scraper-backend --network-alias backend -p 8080:8080 --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
 #### Run backend without docker (devcontainer)
