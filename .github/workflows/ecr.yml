@@ -28,13 +28,11 @@ env:
   ECR_ORG: KookaS
   ECR_REPO: infrastructure-modules
   ECR_BRANCH: master
-  ECR_REPOSITORY_NAME: "$(shell echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
   DOCKER_FOLDER_PATH: ./Dockerfile
   IMAGE_TAG: ${{ github.sha }}
   AWS_CLI_SERVICE: ecr
   BRANCH_THIS: ${{ github.head_ref || github.ref_name }}
-  ECR_REPOSITORY_NAME_THIS: ${{ github.repository_owner }}-$(shell basename ${{ github.repository }})-${BRANCH_THIS}
 
 jobs:
   ecr:
@@ -49,9 +47,6 @@ jobs:
       - name: Run script
         id: script
         run: |
-          # fail if unset variable
-          set -u
-
           # log
           exec 3>&1 4>&2
           trap 'exec 2>&4 1>&3' 0 1 2 3
@@ -70,10 +65,19 @@ jobs:
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
           fi
 
+          ECR_REPOSITORY_NAME="$(shell echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
+          ECR_REPOSITORY_NAME_THIS: ${{ github.repository_owner }}-$(shell basename ${{ github.repository }})-${BRANCH_THIS}
           ECR_IMAGE_TAG="${{ inputs.image-tag }}"
           ECR_IMAGE_TAG="${ECR_IMAGE_TAG:-latest}"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH_THIS == master ]]; then echo "5"; else echo "1"; fi)
           FORCE_DESTROY=$(if [[ $BRANCH_THIS == master ]]; then echo "false"; else echo "true"; fi)
+          echo "ECR_REPOSITORY_NAME: $ECR_REPOSITORY_NAME"
+          echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
+          echo "ECR_IMAGE_TAG: $ECR_IMAGE_TAG"
+          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
+          echo "FORCE_DESTROY: $FORCE_DESTROY"
+          echo "event_name=${{ github.event_name }}"
+          echo "inputs.event=${{ inputs.event }}"
 
           # action on ECR            
           if [[ ${{ github.event_name }} == push || (${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == push) ]]; then
