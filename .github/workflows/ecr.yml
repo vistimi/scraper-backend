@@ -65,8 +65,8 @@ jobs:
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
           fi
 
-          ECR_REPOSITORY_NAME="$(shell echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
-          ECR_REPOSITORY_NAME_THIS: ${{ github.repository_owner }}-$(shell basename ${{ github.repository }})-${BRANCH_THIS}
+          ECR_REPOSITORY_NAME="$(echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
+          ECR_REPOSITORY_NAME_THIS=${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH_THIS}
           ECR_IMAGE_TAG="${{ inputs.image-tag }}"
           ECR_IMAGE_TAG="${ECR_IMAGE_TAG:-latest}"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH_THIS == master ]]; then echo "5"; else echo "1"; fi)
