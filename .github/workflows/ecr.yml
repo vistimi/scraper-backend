@@ -80,8 +80,9 @@ jobs:
           echo "inputs.event=${{ inputs.event }}"
 
           # action on ECR            
-          if [[ ${{ github.event_name }} == push || (${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == push) ]]; then
+          if [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
 
+            echo -e '\033[43mPushing image to ECR\033[0m'
             docker run \
               -e AWS_REGION=AWS_REGION \
               -e AWS_PROFILE=AWS_PROFILE \
@@ -96,8 +97,9 @@ jobs:
                   IMAGE_TAG=$IMAGE_TAG \
               "            
 
-          elif [[ ${{ github.event_name }} == create || (${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == create) ]]; then
+          if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
 
+            echo -e '\033[43mCreating repository in ECR\033[0m'
             docker run \
               -e AWS_REGION=AWS_REGION \
               -e AWS_PROFILE=AWS_PROFILE \
@@ -112,13 +114,16 @@ jobs:
                   IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT \
               "
 
-          elif [[ ${{ github.event_name }} == delete || ${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == delete ]]; then
+          if [[ "${{ github.event_name }}" == "delete" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "delete") ]]; then
 
+            echo -e '\033[43mDeleting repository in ECR\033[0m'
             aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME_THIS --force
 
           else
 
+            echo -e '\033[41mError\033[0m'
             echo "Error: event do not match, event_name ${{ github.event_name }}, inputs.event ${{ inputs.event }}
+            exit 100
 
           fi
 
