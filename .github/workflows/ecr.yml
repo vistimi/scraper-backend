@@ -82,6 +82,7 @@ jobs:
           # create/push/delete ECR
           if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
             echo -e '\033[43mCreating repository in ECR\033[0m'
+            echo -e '\033[47mPulling worker image\033[0m'
             docker run \
               -v /var/run/docker.sock:/var/run/docker.sock \
               -e AWS_REGION=$AWS_REGION \
@@ -91,6 +92,7 @@ jobs:
               -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
               $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG \
               /bin/sh -c " \
+                make aws-configure; \
                 make set-module-ecr \
                   REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
                   FORCE_DESTROY=$FORCE_DESTROY \
@@ -98,6 +100,7 @@ jobs:
               "
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
             echo -e '\033[43mPushing image to ECR\033[0m'
+            echo -e '\033[47mPulling worker image\033[0m'
             docker run \
               -v /var/run/docker.sock:/var/run/docker.sock \
               -e AWS_REGION=$AWS_REGION \
@@ -107,6 +110,7 @@ jobs:
               -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
               $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG \
               /bin/sh -c " \
+                make aws-configure; \
                 make set-module-ecr-image \
                   REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
                   DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH \
