@@ -69,7 +69,13 @@ jobs:
           echo "ECR_IMAGE_TAG: $ECR_IMAGE_TAG"
           echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-          echo "FORCE_DESTROY: $FORCE_DESTROY"         
+          echo "FORCE_DESTROY: $FORCE_DESTROY"
+
+          # setup docker image
+          DOCKER_SRC=$ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG  
+          docker pull $DOCKER_SRC  
+          echo -e '\033[44mIMAGE ID\033[0m' $(shell sudo docker inspect -f "{{ .Id }}" $DOCKER_SRC )
+          echo -e '\033[44mIMAGE SIZE\033[0m' $(shell sudo docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
 
           # create/push/delete ECR
           if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
