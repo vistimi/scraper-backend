@@ -65,29 +65,30 @@ jobs:
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
           fi
 
-          ECR_REPOSITORY_NAME="$(echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
+          ECR_REPOSITORY_NAME_SRC="$(echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
           ECR_IMAGE_TAG="${{ inputs.image-tag }}"
           ECR_IMAGE_TAG="${ECR_IMAGE_TAG:-latest}"
           ECR_REPOSITORY_NAME_THIS="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH_THIS} | tr A-Z a-z)"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH_THIS == master ]]; then echo "5"; else echo "1"; fi)
           FORCE_DESTROY=$(if [[ $BRANCH_THIS == master ]]; then echo "false"; else echo "true"; fi)
-          echo "ECR_REPOSITORY_NAME: $ECR_REPOSITORY_NAME"
-          echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
-          echo "ECR_IMAGE_TAG: $ECR_IMAGE_TAG"
-          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-          echo "FORCE_DESTROY: $FORCE_DESTROY"
           echo "event_name=${{ github.event_name }}"
-          echo "inputs.event=${{ inputs.event }}"          
+          echo "inputs.event=${{ inputs.event }}"
+          echo "ECR_REPOSITORY_NAME_SRC: $ECR_REPOSITORY_NAME_SRC"
+          echo "ECR_IMAGE_TAG: $ECR_IMAGE_TAG"
+          echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
+          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
+          echo "FORCE_DESTROY: $FORCE_DESTROY"         
 
           if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
             echo -e '\033[43mCreating repository in ECR\033[0m'
             docker run \
+              -v /var/run/docker.sock:/var/run/docker.sock \
               -e AWS_REGION=$AWS_REGION \
               -e AWS_PROFILE=$AWS_PROFILE \
               -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
               -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
               -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
-              $ECR_URI/$ECR_REPOSITORY_NAME:$ECR_IMAGE_TAG \
+              $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG \
               /bin/sh -c " \
                 make set-module-ecr \
                   REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
@@ -97,12 +98,13 @@ jobs:
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
             echo -e '\033[43mPushing image to ECR\033[0m'
             docker run \
+              -v /var/run/docker.sock:/var/run/docker.sock \
               -e AWS_REGION=$AWS_REGION \
               -e AWS_PROFILE=$AWS_PROFILE \
               -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
               -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
               -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
-              $ECR_URI/$ECR_REPOSITORY_NAME:$ECR_IMAGE_TAG \
+              $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG \
               /bin/sh -c " \
                 make set-module-ecr-image \
                   REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
