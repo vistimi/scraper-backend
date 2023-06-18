@@ -75,10 +75,7 @@ jobs:
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
           echo "FORCE_DESTROY: $FORCE_DESTROY"
 
-          # setup docker image
-          DOCKER_SRC=$ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG
-          docker pull $DOCKER_SRC
-          echo -e '\033[44mIMAGE SIZE\033[0m' $(sudo docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
+          # describe ecr iamge
           echo -e '\033[44mECR IMAGE\033[0m'::
           aws ${AWS_CLI_ECR} describe-images --repository-name ${ECR_REPOSITORY_NAME_SRC} --image-ids imageTag=latest --output json
 
