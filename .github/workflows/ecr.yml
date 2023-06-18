@@ -31,7 +31,7 @@ env:
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
   DOCKER_FOLDER_PATH: ./Dockerfile
   IMAGE_TAG: ${{ github.sha }}
-  AWS_CLI_SERVICE: ecr
+  AWS_CLI_ECR: ecr
   BRANCH_THIS: ${{ github.head_ref || github.ref_name }}
 
 jobs:
