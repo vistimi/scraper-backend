@@ -119,6 +119,7 @@ jobs:
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
             ECR_REPOSITORY_NAME="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH}$DOCKERFILE_EXTENSION | tr A-Z a-z)"
+            echo "DOCKERFILE: $DOCKERFILE"
             echo "ECR_REPOSITORY_NAME: $ECR_REPOSITORY_NAME"
             func_ecr
           done
