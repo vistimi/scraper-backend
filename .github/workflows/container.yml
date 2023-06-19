@@ -1,10 +1,14 @@
 name: Container
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  # push:
+  #   branches: [master]
+  # pull_request:
+  #   branches: [master]
+  workflow_run:
+    workflows: ['Repository']
+    types:
+      - completed
 
 env:
   COMMON_NAME: ${{ github.sha }}
@@ -24,19 +28,13 @@ jobs:
     name: ECR Wait
     runs-on: ubuntu-latest
     environment: KookaS
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       ECR_REPOSITORY_NAME: ${{ steps.get-output.outputs.ECR_REPOSITORY_NAME }}
       ECR_LOGIN_PASSWORD: ${{ steps.get-output.outputs.ECR_LOGIN_PASSWORD }}
 
     steps:
-      - name: Wait for ECR
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.ref }}
-          running-workflow-name: 'ECR maintenance'
-          repo-token: ${{ secrets.GH_INFRA_TOKEN }} # TODO: use custom token
-          wait-interval: 30
-
+      - run: echo 'The Repository workflow passed'
       - name: setup AWS CLI
         run: |
           aws --version
