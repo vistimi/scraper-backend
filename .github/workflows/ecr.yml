@@ -30,7 +30,7 @@ env:
   ECR_BRANCH: master
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
   DOCKER_FOLDER_PATH: ./Dockerfile
-  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_TAG_THIS: ${{ github.sha }}
   AWS_CLI_ECR: ecr
   BRANCH_THIS: ${{ github.head_ref || github.ref_name }}
 
@@ -62,21 +62,21 @@ jobs:
 
           # setup variables
           ECR_REPOSITORY_NAME_SRC="$(echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
-          ECR_IMAGE_TAG="${{ inputs.image-tag }}"
-          ECR_IMAGE_TAG="${ECR_IMAGE_TAG:-latest}"
+          ECR_IMAGE_TAG_SRC="${{ inputs.image-tag }}"
+          ECR_IMAGE_TAG_SRC="${ECR_IMAGE_TAG_SRC:-latest}"
           ECR_REPOSITORY_NAME_THIS="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH_THIS} | tr A-Z a-z)"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH_THIS == master ]]; then echo "5"; else echo "1"; fi)
           FORCE_DESTROY=$(if [[ $BRANCH_THIS == master ]]; then echo "false"; else echo "true"; fi)
           echo "event_name=${{ github.event_name }}"
           echo "inputs.event=${{ inputs.event }}"
           echo "ECR_REPOSITORY_NAME_SRC: $ECR_REPOSITORY_NAME_SRC"
-          echo "ECR_IMAGE_TAG: $ECR_IMAGE_TAG"
+          echo "ECR_IMAGE_TAG_SRC: $ECR_IMAGE_TAG_SRC"
           echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
           echo "FORCE_DESTROY: $FORCE_DESTROY"
 
-          # describe ecr iamge
-          echo -e '\033[44mECR IMAGE\033[0m'::
+          # describe ecr image
+          echo -e '\033[44mECR IMAGE SRC\033[0m'::
           aws ${AWS_CLI_ECR} describe-images --repository-name ${ECR_REPOSITORY_NAME_SRC} --image-ids imageTag=latest --output json
 
           # create/push/delete ECR
@@ -90,7 +90,7 @@ jobs:
               -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
               -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
               -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
-              $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG \
+              $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG_SRC \
               /bin/sh -c " \
                 make aws-configure; \
                 make set-module-ecr \
@@ -101,21 +101,40 @@ jobs:
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
             echo -e '\033[43mPushing image to ECR\033[0m'
             echo -e '\033[47mPulling worker image\033[0m'
-            docker run \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -e AWS_REGION=$AWS_REGION \
-              -e AWS_PROFILE=$AWS_PROFILE \
-              -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
-              -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
-              -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
-              $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG \
-              /bin/sh -c " \
-                make aws-configure; \
-                make set-module-ecr-image \
-                  REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
-                  DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH \
-                  IMAGE_TAG=$IMAGE_TAG \
-              "
+            REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_ECR describe-repositories --repository-names ${ECR_REPOSITORY_NAME_THIS} --query 'repositories[0].repositoryName')
+              if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
+                echo -e '\033[43mCreating missing repository in ECR\033[0m': ${ECR_REPOSITORY_NAME_THIS}
+                echo -e '\033[47mPulling worker image\033[0m'
+                docker run \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  -e AWS_REGION=$AWS_REGION \
+                  -e AWS_PROFILE=$AWS_PROFILE \
+                  -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
+                  -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
+                  -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
+                  $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG_SRC \
+                  /bin/sh -c " \
+                    make aws-configure; \
+                    make set-module-ecr \
+                      REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
+                      FORCE_DESTROY=$FORCE_DESTROY \
+                      IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT \
+                  "
+              else
+                echo -e '\033[46mRepository already exists\033[0m'
+              fi
+              docker build --progress=plain --no-cache -t ${ECR_URI}/${IMAGE_TAG_THIS} -f ${DOCKER_FOLDER_PATH} .
+              $(eval DOCKER_SRC=$(shell docker images -q ${ECR_URI}/${IMAGE_TAG_THIS}))
+              echo -e '\033[44mIMAGE SIZE\033[0m' $(shell docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
+              docker tag ${DOCKER_SRC} ${ECR_URI}:${IMAGE_TAG_THIS}
+              docker push ${ECR_URI}:${IMAGE_TAG_THIS}
+              docker tag ${ECR_URI}:${IMAGE_TAG_THIS} ${ECR_URI}:latest
+              docker push ${ECR_URI}:latest
+
+              echo -e '\033[44mECR IMAGE THIS\033[0m'::
+              aws ${AWS_CLI_ECR} describe-images --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-ids imageTag=latest --output json
+
+
           elif [[ "${{ github.event_name }}" == "delete" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "delete") ]]; then
             echo -e '\033[43mDeleting repository in ECR\033[0m'
             aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME_THIS --force
