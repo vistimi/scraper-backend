@@ -78,7 +78,7 @@ jobs:
           # create/push/delete ECR
           if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
             echo -e '\033[43mCreating repository in ECR\033[0m'
-            aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE
+            aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=${{ github.repository_owner }} Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH_THIS
             json_string=$(
               jq --null-input \
                 --argjson count "${IMAGE_KEEP_COUNT}" \
@@ -90,7 +90,7 @@ jobs:
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_ECR describe-repositories --repository-names ${ECR_REPOSITORY_NAME_THIS} --query 'repositories[0].repositoryName' || true)
             echo REPOSITORY_NAME_EXISTING=$REPOSITORY_NAME_EXISTING
               if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
-                aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE
+                aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=${{ github.repository_owner }} Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH_THIS
                 json_string=$(
                   jq --null-input \
                     --argjson count "${IMAGE_KEEP_COUNT}" \
