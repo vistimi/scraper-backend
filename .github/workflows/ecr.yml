@@ -83,6 +83,7 @@ jobs:
             aws $AWS_CLI_ECR set-repository-policy --repository-name ${ECR_REPOSITORY_NAME_THIS} --policy-text '{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }'
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_ECR describe-repositories --repository-names ${ECR_REPOSITORY_NAME_THIS} --query 'repositories[0].repositoryName')
+            echo REPOSITORY_NAME_EXISTING=$REPOSITORY_NAME_EXISTING
               if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
                 echo -e '\033[43mCreating missing repository in ECR\033[0m': ${ECR_REPOSITORY_NAME_THIS}
                 echo "{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }"
