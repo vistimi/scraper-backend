@@ -66,18 +66,18 @@ jobs:
           # setup function
           func_ecr_create () {
             echo -e '\033[43mCreating repository in ECR\033[0m'
-            aws $AWS_CLI_SERVICE create-repository --repository-name $ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=${{ github.repository_owner }} Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH
+            aws $AWS_CLI_SERVICE create-repository --repository-name $ECR_REPOSITORY_NAME --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=${{ github.repository_owner }} Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH
             json_string=$(
               jq --null-input \
                 --argjson count "${IMAGE_KEEP_COUNT}" \
                 '{rules: [ { rulePriority: 1, description: "Keep only \($count) images", selection: { tagStatus: "any", countType: "imageCountMoreThan", countNumber: $count }, action: { type: "expire" } } ] }'
             )
             echo $json_string > ecr-lifecycle-policy.json
-            aws $AWS_CLI_SERVICE put-lifecycle-policy --repository-name $ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION --lifecycle-policy-text "file://ecr-lifecycle-policy.json"
+            aws $AWS_CLI_SERVICE put-lifecycle-policy --repository-name $ECR_REPOSITORY_NAME --lifecycle-policy-text "file://ecr-lifecycle-policy.json"
           }
           func_ecr_push () {
             # check existance of repository
-            REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION --query 'repositories[0].repositoryName' || true)
+            REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY_NAME --query 'repositories[0].repositoryName' || true)
             echo REPOSITORY_NAME_EXISTING=$REPOSITORY_NAME_EXISTING
             if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
               func_ecr_create
@@ -87,17 +87,17 @@ jobs:
 
             # Push new image
             echo -e '\033[43mPushing image to ECR\033[0m'
-            docker build --progress=plain --no-cache -t $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION/$IMAGE_TAG -f ${DOCKERFILES} .
-            DOCKER_SRC=$(docker images -q $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION/$IMAGE_TAG)
+            docker build --progress=plain --no-cache -t $ECR_URI/$ECR_REPOSITORY_NAME/$IMAGE_TAG -f $DOCKERFILE .
+            DOCKER_SRC=$(docker images -q $ECR_URI/$ECR_REPOSITORY_NAME/$IMAGE_TAG)
             echo -e '\033[44mIMAGE SIZE\033[0m' $(docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
-            docker tag ${DOCKER_SRC} $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION:$IMAGE_TAG
-            docker push $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION:$IMAGE_TAG
-            docker tag $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION:$IMAGE_TAG $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION:latest
-            docker push $ECR_URI/$ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION:latest
+            docker tag ${DOCKER_SRC} $ECR_URI/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+            docker push $ECR_URI/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+            docker tag $ECR_URI/$ECR_REPOSITORY_NAME:$IMAGE_TAG $ECR_URI/$ECR_REPOSITORY_NAME:latest
+            docker push $ECR_URI/$ECR_REPOSITORY_NAME:latest
 
             # Describe new image
             echo -e '\033[44mECR IMAGE THIS\033[0m'::
-            aws $AWS_CLI_SERVICE describe-images --repository-name $ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION --image-ids imageTag=latest --output json
+            aws $AWS_CLI_SERVICE describe-images --repository-name $ECR_REPOSITORY_NAME --image-ids imageTag=latest --output json
           }
           func_ecr () {
             # create/push/delete
@@ -107,7 +107,7 @@ jobs:
               func_ecr_push
             elif [[ "${{ github.event_name }}" == "delete" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "delete") ]]; then
               echo -e '\033[43mDeleting repository in ECR\033[0m'
-              aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME$DOCKERFILE_EXTENSION --force
+              aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME --force
             else
               echo -e '\033[41mError\033[0m'
               echo Error: event do not match, event_name ${{ github.event_name }}, inputs.event ${{ inputs.event }}
