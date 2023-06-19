@@ -34,7 +34,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           running-workflow-name: 'ECR maintenance'
-          repo-token: ${{ secret.GH_INFRA_TOKEN }} # TODO: use custom token
+          repo-token: ${{ secrets.GH_INFRA_TOKEN }} # TODO: use custom token
           wait-interval: 30
 
       - name: setup AWS CLI
