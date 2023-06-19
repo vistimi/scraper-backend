@@ -20,8 +20,8 @@ env:
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
-  ecr-load:
-    name: ECR Loading
+  ecr-wait:
+    name: ECR Wait
     runs-on: ubuntu-latest
     environment: KookaS
     outputs:
@@ -64,7 +64,7 @@ jobs:
   # Container network where we can access with the service name and the port
   localstack:
     name: Container check localstack
-    needs: [ecr]
+    needs: [ecr-wait]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
     environment: KookaS
@@ -79,11 +79,11 @@ jobs:
       local-cloud:
         image: localstack/localstack
       local-project:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr-wait.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
         options: --read-only
         credentials:
           username: AWS
-          password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
+          password: ${{ needs.ecr-wait.outputs.ECR_LOGIN_PASSWORD }}
         env:
           CLOUD_HOST: localstack
           LOCALSTACK_URI: http://local-cloud:4566
@@ -135,7 +135,7 @@ jobs:
 
   dynamodb:
     name: Container check dynamodb
-    needs: [ecr]
+    needs: [ecr-wait]
     runs-on: ubuntu-latest
     container: ubuntu # connect the workflow steps to the network
     environment: KookaS
@@ -144,11 +144,11 @@ jobs:
       HEALTHCHECK: /healthz
     services:
       local-project:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr-wait.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
         options: --read-only
         credentials:
           username: AWS
-          password: ${{ needs.ecr.outputs.ECR_LOGIN_PASSWORD }}
+          password: ${{ needs.ecr-wait.outputs.ECR_LOGIN_PASSWORD }}
         env:
           CLOUD_HOST: aws
           COMMON_NAME: ${{ github.sha }}
@@ -218,8 +218,8 @@ jobs:
   cleanup:
     name: Cleanup
     runs-on: ubuntu-latest
-    needs: [ecr, localstack, dynamodb]
-    if: ${{ always() && contains(join(needs.ecr.result, ','), 'success') }}
+    needs: [ecr-wait, localstack, dynamodb]
+    if: ${{ always() && contains(join(needs.ecr-wait.result, ','), 'success') }}
     environment: KookaS
 
     steps:
