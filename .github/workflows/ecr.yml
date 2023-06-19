@@ -52,7 +52,6 @@ jobs:
           echo "REPO: $REPO"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-          echo TOKEN: ${{ github.token }}
 
           # setup AWS CLI
           aws --version
