@@ -27,7 +27,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_CLI_SERVICE: ecr
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  DOCKERFILES: (./Dockerfile)
+  DOCKERFILES: (Dockerfile) # list of dockerfiles
   IMAGE_TAG: ${{ github.sha }}
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
