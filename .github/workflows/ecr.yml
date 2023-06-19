@@ -37,36 +37,32 @@ jobs:
     name: ECR
     runs-on: ubuntu-latest
     environment: KookaS
-    env:
-      LOG_FILE: log.out
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Run script
-        id: script
+      - name: Setup variables
         run: |
-          # variables
           echo "event_name=${{ github.event_name }}"
           echo "inputs.event=${{ inputs.event }}"
           REPO=$(basename ${{ github.repository }})
           echo "REPO: $REPO"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-
-          # setup AWS CLI
+      - name: Setup AWS CLI
+        run: |
           aws --version
           aws configure set aws_access_key_id $AWS_ACCESS_KEY
           aws configure set aws_secret_access_key $AWS_SECRET_KEY
           aws configure set region $AWS_REGION
-
-          # login to ECR
+      - name: Login to ECR
+        run: |
           if [[ $AWS_CLI_SERVICE == ecr ]]; then
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
           elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
           fi
-
-          # setup function
+      - name: Setup func_ecr_create
+        run: |
           func_ecr_create () {
             echo -e '\033[43mCreating repository in ECR\033[0m'
             aws $AWS_CLI_SERVICE create-repository \
@@ -82,6 +78,8 @@ jobs:
             echo $json_string > ecr-lifecycle-policy.json
             aws $AWS_CLI_SERVICE put-lifecycle-policy --repository-name $ECR_REPOSITORY_NAME --lifecycle-policy-text "file://ecr-lifecycle-policy.json"
           }
+      - name: Setup func_ecr_push
+        run: |
           func_ecr_push () {
             # check existance of repository
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY_NAME --query 'repositories[0].repositoryName' || true)
@@ -106,6 +104,8 @@ jobs:
             echo -e '\033[44mECR IMAGE THIS\033[0m'::
             aws $AWS_CLI_SERVICE describe-images --repository-name $ECR_REPOSITORY_NAME --image-ids imageTag=latest --output json
           }
+      - name: Setup func_ecr
+        run: |
           func_ecr () {
             # create/push/delete
             if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
@@ -121,7 +121,8 @@ jobs:
               exit 100
             fi
           }
-
+      - name: Run workflow for each Dockerfile
+        run: |
           for DOCKERFILE in $DOCKERFILES; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')

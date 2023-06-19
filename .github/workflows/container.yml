@@ -32,8 +32,8 @@ jobs:
       - name: Wait for ECR
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
-          ref: $BRANCH
-          check-name: ECR
+          ref: ${{ github.ref }}
+          running-workflow-name: 'ECR'
           repo-token: ${{ github.token }}
           wait-interval: 10
 
