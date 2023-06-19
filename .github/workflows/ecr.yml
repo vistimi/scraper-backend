@@ -66,17 +66,16 @@ jobs:
           ECR_IMAGE_TAG_SRC="${ECR_IMAGE_TAG_SRC:-latest}"
           ECR_REPOSITORY_NAME_THIS="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH_THIS} | tr A-Z a-z)"
           IMAGE_KEEP_COUNT=$(if [[ $BRANCH_THIS == master ]]; then echo "5"; else echo "1"; fi)
-          FORCE_DESTROY=$(if [[ $BRANCH_THIS == master ]]; then echo "false"; else echo "true"; fi)
           echo "event_name=${{ github.event_name }}"
           echo "inputs.event=${{ inputs.event }}"
           echo "ECR_REPOSITORY_NAME_SRC: $ECR_REPOSITORY_NAME_SRC"
           echo "ECR_IMAGE_TAG_SRC: $ECR_IMAGE_TAG_SRC"
           echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-          echo "FORCE_DESTROY: $FORCE_DESTROY"
 
           # create/push/delete ECR
           if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
+
             echo -e '\033[43mCreating repository in ECR\033[0m'
             aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=${{ github.repository_owner }} Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH_THIS
             json_string=$(
@@ -86,7 +85,9 @@ jobs:
             )
             echo $json_string > ecr-lifecycle-policy.json
             aws $AWS_CLI_ECR put-lifecycle-policy --repository-name ${ECR_REPOSITORY_NAME_THIS} --lifecycle-policy-text "file://ecr-lifecycle-policy.json"
+
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
+
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_ECR describe-repositories --repository-names ${ECR_REPOSITORY_NAME_THIS} --query 'repositories[0].repositoryName' || true)
             echo REPOSITORY_NAME_EXISTING=$REPOSITORY_NAME_EXISTING
               if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
@@ -101,6 +102,7 @@ jobs:
               else
                 echo -e '\033[46mRepository already exists\033[0m'
               fi
+
               echo -e '\033[43mPushing image to ECR\033[0m'
               docker build --progress=plain --no-cache -t $ECR_URI/$ECR_REPOSITORY_NAME_THIS/$ECR_IMAGE_TAG_THIS -f ${DOCKER_FOLDER_PATH} .
               DOCKER_SRC=$(docker images -q $ECR_URI/$ECR_REPOSITORY_NAME_THIS/$ECR_IMAGE_TAG_THIS)
@@ -113,11 +115,14 @@ jobs:
               echo -e '\033[44mECR IMAGE THIS\033[0m'::
               aws $AWS_CLI_ECR describe-images --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-ids imageTag=latest --output json
 
-
           elif [[ "${{ github.event_name }}" == "delete" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "delete") ]]; then
+
             echo -e '\033[43mDeleting repository in ECR\033[0m'
             aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME_THIS --force
+
           else
+
             echo -e '\033[41mError\033[0m'
             echo Error: event do not match, event_name ${{ github.event_name }}, inputs.event ${{ inputs.event }}
+            exit 100
           fi
