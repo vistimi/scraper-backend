@@ -12,7 +12,7 @@ on:
         - create
         - delete
       image-tag:
-        description: 'Image tag'
+        description: 'Image tag for worker image'
         required: false
         default: 'latest'
   push:
@@ -30,7 +30,7 @@ env:
   ECR_BRANCH: master
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
   DOCKER_FOLDER_PATH: ./Dockerfile
-  IMAGE_TAG_THIS: ${{ github.sha }}
+  ECR_IMAGE_TAG_THIS: ${{ github.sha }}
   AWS_CLI_ECR: ecr
   BRANCH_THIS: ${{ github.head_ref || github.ref_name }}
 
@@ -122,13 +122,13 @@ jobs:
               else
                 echo -e '\033[46mRepository already exists\033[0m'
               fi
-              docker build --progress=plain --no-cache -t ${ECR_URI}/${IMAGE_TAG_THIS} -f ${DOCKER_FOLDER_PATH} .
-              DOCKER_SRC=$(docker images -q ${ECR_URI}/${IMAGE_TAG_THIS})
+              docker build --progress=plain --no-cache -t $ECR_URI/$ECR_REPOSITORY_NAME_THIS/$ECR_IMAGE_TAG_THIS -f ${DOCKER_FOLDER_PATH} .
+              DOCKER_SRC=$(docker images -q $ECR_URI/$ECR_REPOSITORY_NAME_THIS/$ECR_IMAGE_TAG_THIS)
               echo -e '\033[44mIMAGE SIZE\033[0m' $(docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
-              docker tag ${DOCKER_SRC} ${ECR_URI}:${IMAGE_TAG_THIS}
-              docker push ${ECR_URI}:${IMAGE_TAG_THIS}
-              docker tag ${ECR_URI}:${IMAGE_TAG_THIS} ${ECR_URI}:latest
-              docker push ${ECR_URI}:latest
+              docker tag ${DOCKER_SRC} $ECR_URI/$ECR_REPOSITORY_NAME_THIS:$ECR_IMAGE_TAG_THIS
+              docker push $ECR_URI/$ECR_REPOSITORY_NAME_THIS:$ECR_IMAGE_TAG_THIS
+              docker tag $ECR_URI/$ECR_REPOSITORY_NAME_THIS:$ECR_IMAGE_TAG_THIS $ECR_URI/$ECR_REPOSITORY_NAME_THIS:latest
+              docker push $ECR_URI/$ECR_REPOSITORY_NAME_THIS:latest
 
               echo -e '\033[44mECR IMAGE THIS\033[0m'::
               aws ${AWS_CLI_ECR} describe-images --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-ids imageTag=latest --output json
