@@ -30,7 +30,6 @@ env:
   DOCKERFILES: "Dockerfile" # list of dockerfiles in one string
   IMAGE_TAG: ${{ github.sha }}
   ORG: ${{ github.repository_owner }}
-  REPO: $(basename ${{ github.repository }})
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
@@ -46,6 +45,14 @@ jobs:
       - name: Run script
         id: script
         run: |
+          # variables
+          REPO=$(basename ${{ github.repository }})
+          echo "REPO: $REPO"
+          echo "event_name=${{ github.event_name }}"
+          echo "inputs.event=${{ inputs.event }}"
+          IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
+          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
+
           # setup AWS CLI
           aws --version
           aws configure set aws_access_key_id $AWS_ACCESS_KEY
@@ -59,16 +66,10 @@ jobs:
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
           fi
 
-          # setup variables
-          echo "event_name=${{ github.event_name }}"
-          echo "inputs.event=${{ inputs.event }}"
-          IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
-          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-
           # setup function
           func_ecr_create () {
             echo -e '\033[43mCreating repository in ECR\033[0m'
-            aws $AWS_CLI_SERVICE create-repository --repository-name $ECR_REPOSITORY_NAME --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=$ORG Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH
+            aws $AWS_CLI_SERVICE create-repository --repository-name $ECR_REPOSITORY_NAME --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=$ORG Key=Repository,Value=$REPO Key=Branch,Value=$BRANCH
             json_string=$(
               jq --null-input \
                 --argjson count "${IMAGE_KEEP_COUNT}" \
