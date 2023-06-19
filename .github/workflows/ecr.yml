@@ -115,8 +115,7 @@ jobs:
             fi
           }
 
-          arr=$DOCKERFILES
-
+          arr=("Dockerfile") 
           echo "List of dockerfiles: $arr"
           for DOCKERFILE in ${arr[@]}; do
           echo $DOCKERFILE
