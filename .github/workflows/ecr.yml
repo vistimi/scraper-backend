@@ -115,11 +115,20 @@ jobs:
             fi
           }
 
+          arr=("hello")
+          for f in ${arr[@]}; do
+              echo $f
+          done
+          arr=( "hello" )
+          for f in ${arr[@]}; do
+              echo $f
+          done
+
           echo "List of dockerfiles: $DOCKERFILES"
           for DOCKERFILE in ${DOCKERFILES[@]}; do
           echo "DOCKERFILE: $DOCKERFILE"
           done
-          for i in ${!myArray[@]}; do
+          for i in ${!DOCKERFILES[@]}; do
             echo DOCKERFILE with idx: "$DOCKERFILES[$i]]"
           done
           for DOCKERFILE in ${DOCKERFILES[@]}; do
