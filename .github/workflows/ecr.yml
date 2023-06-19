@@ -34,7 +34,7 @@ env:
   DOCKERFILES: "Dockerfile" # list of dockerfiles in one string
   IMAGE_TAG: ${{ github.sha }}
   ORG: ${{ github.repository_owner }}
-  BRANCH: ${{ github.event_name == 'delete' && (github.event.head_ref || github.event.ref_name) || (github.head_ref || github.ref_name) }}
+  BRANCH: ${{ github.event_name == 'delete' && github.event.ref || (github.head_ref || github.ref_name) }}
 
 jobs:
   ecr-publish:
@@ -42,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: KookaS
     steps:
-      - run: echo ${{ github.event_name }}; echo ${{ github.event.ref }}; echo ${{ github.event.base_ref }} echo ${{ github.head_ref || github.ref_name }}
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup AWS CLI
