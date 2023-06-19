@@ -115,6 +115,7 @@ jobs:
             fi
           }
 
+          echo "List of dockerfiles: $DOCKERFILES"
           for DOCKERFILE in ${DOCKERFILES[@]}; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
