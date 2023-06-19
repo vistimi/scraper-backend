@@ -27,7 +27,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_CLI_SERVICE: ecr
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  DOCKERFILES: ( Dockerfile ) # list of dockerfiles
+  DOCKERFILES: ( "Dockerfile" ) # list of dockerfiles
   IMAGE_TAG: ${{ github.sha }}
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
@@ -120,7 +120,7 @@ jobs:
           echo "DOCKERFILE: $DOCKERFILE"
           done
           for i in ${!myArray[@]}; do
-            echo DOCKERFILE: "$DOCKERFILES[$i]]"
+            echo DOCKERFILE with idx: "$DOCKERFILES[$i]]"
           done
           for DOCKERFILE in ${DOCKERFILES[@]}; do
             # extract possible extension
