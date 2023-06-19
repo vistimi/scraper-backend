@@ -10,7 +10,7 @@ on:
   workflow_run:
     workflows: [Repository]
     types: [completed]
-    branches-ignore: [dependabot/**]
+    # branches-ignore: [dependabot/**]
 
 env:
   COMMON_NAME: ${{ github.sha }}
@@ -38,10 +38,10 @@ jobs:
     steps:
       # workaround for triggering the workflow on a non default branch
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2 
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
-          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          # repository: ${{ github.event.workflow_run.head_repository.full_name }}
       - name: setup AWS CLI
         run: |
           aws --version
