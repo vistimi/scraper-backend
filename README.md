@@ -23,6 +23,27 @@ docker network create scraper-net; docker run --rm -it --net scraper-net --name 
 docker rmi scraper-backend; docker build -t scraper-backend --progress=plain .; docker run --read-only --rm -it --net scraper-net --name scraper-backend --network-alias backend -p 8080:8080 --env-file .devcontainer/devcontainer.env scraper-backend
 ```
 
+          # # describe ecr image
+          # echo -e '\033[44mECR IMAGE SRC\033[0m'::
+          # aws $AWS_CLI_ECR describe-images --repository-name ${ECR_REPOSITORY_NAME_SRC} --image-ids imageTag=latest --output json
+
+                      # echo -e '\033[47mPulling worker image\033[0m'
+            # docker run \
+            #   -v /var/run/docker.sock:/var/run/docker.sock \
+            #   -e AWS_REGION=$AWS_REGION \
+            #   -e AWS_PROFILE=$AWS_PROFILE \
+            #   -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
+            #   -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
+            #   -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
+            #   $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG_SRC \
+            #   /bin/sh -c " \
+            #     make aws-configure; \
+            #     make set-module-ecr \
+            #       REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
+            #       FORCE_DESTROY=$FORCE_DESTROY \
+            #       IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT \
+            #   "
+
 #### Run backend without docker (devcontainer)
 ```shell
 go run src/main.go

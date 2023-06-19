@@ -1,4 +1,4 @@
-name: ECR Create
+name: Repository
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
         - create
         - delete
       image-tag:
-        description: 'Image tag'
+        description: 'Image tag for worker image'
         required: false
         default: 'latest'
   push:
@@ -25,104 +25,108 @@ env:
   AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
   AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
-  ECR_ORG: KookaS
-  ECR_REPO: infrastructure-modules
-  ECR_BRANCH: master
-  ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  DOCKER_FOLDER_PATH: ./Dockerfile
-  IMAGE_TAG: ${{ github.sha }}
   AWS_CLI_SERVICE: ecr
-  BRANCH_THIS: ${{ github.head_ref || github.ref_name }}
+  ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+  DOCKERFILES: "Dockerfile" # list of dockerfiles in one string
+  IMAGE_TAG: ${{ github.sha }}
+  ORG: ${{ github.repository_owner }}
+  BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
-  ecr:
-    name: ECR
+  ecr-publish:
+    name: ECR publish steps
     runs-on: ubuntu-latest
     environment: KookaS
-    env:
-      LOG_FILE: log.out
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Run script
-        id: script
+      - name: Setup AWS CLI
         run: |
-          # # log
-          # exec 3>&1 4>&2
-          # trap 'exec 2>&4 1>&3' 0 1 2 3
-          # exec 1>$LOG_FILE 2>&1
-
-          # setup AWS CLI
           aws --version
           aws configure set aws_access_key_id $AWS_ACCESS_KEY
           aws configure set aws_secret_access_key $AWS_SECRET_KEY
           aws configure set region $AWS_REGION
-
-          # login to ECR
+      - name: Login to ECR
+        run: |
           if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
           elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
-          fi
-
-          ECR_REPOSITORY_NAME="$(shell echo ${ECR_ORG}-${ECR_REPO}-${ECR_BRANCH} | tr A-Z a-z)"
-          ECR_REPOSITORY_NAME_THIS: ${{ github.repository_owner }}-$(shell basename ${{ github.repository }})-${BRANCH_THIS}
-          ECR_IMAGE_TAG="${{ inputs.image-tag }}"
-          ECR_IMAGE_TAG="${ECR_IMAGE_TAG:-latest}"
-          IMAGE_KEEP_COUNT=$(if [[ $BRANCH_THIS == master ]]; then echo "5"; else echo "1"; fi)
-          FORCE_DESTROY=$(if [[ $BRANCH_THIS == master ]]; then echo "false"; else echo "true"; fi)
-          echo "ECR_REPOSITORY_NAME: $ECR_REPOSITORY_NAME"
-          echo "ECR_REPOSITORY_NAME_THIS: $ECR_REPOSITORY_NAME_THIS"
-          echo "ECR_IMAGE_TAG: $ECR_IMAGE_TAG"
-          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
-          echo "FORCE_DESTROY: $FORCE_DESTROY"
+          fi          
+      - name: Run workflow for each Dockerfile
+        run: |
+          # variables
           echo "event_name=${{ github.event_name }}"
           echo "inputs.event=${{ inputs.event }}"
+          REPO=$(basename ${{ github.repository }})
+          echo "REPO: $REPO"
+          IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
+          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
 
-          # action on ECR            
-          if [[ ${{ github.event_name }} == push || (${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == push) ]]; then
+          # functions
+          func_ecr_create () {
+            echo -e '\033[43mCreating repository in ECR\033[0m'
+            aws $AWS_CLI_SERVICE create-repository \
+              --repository-name $ECR_REPOSITORY_NAME \
+              --image-tag-mutability MUTABLE \
+              --image-scanning-configuration scanOnPush=true \
+              --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=$ORG Key=Repository,Value=$REPO Key=Branch,Value=$BRANCH
+            json_string=$(
+              jq --null-input \
+                --argjson count "${IMAGE_KEEP_COUNT}" \
+                '{rules: [ { rulePriority: 1, description: "Keep only \($count) images", selection: { tagStatus: "any", countType: "imageCountMoreThan", countNumber: $count }, action: { type: "expire" } } ] }'
+            )
+            echo $json_string > ecr-lifecycle-policy.json
+            aws $AWS_CLI_SERVICE put-lifecycle-policy --repository-name $ECR_REPOSITORY_NAME --lifecycle-policy-text "file://ecr-lifecycle-policy.json"
+          }
+          func_ecr_push () {
+            # check existance of repository
+            REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY_NAME --query 'repositories[0].repositoryName' || true)
+            echo REPOSITORY_NAME_EXISTING=$REPOSITORY_NAME_EXISTING
+            if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
+              func_ecr_create
+            else
+              echo -e '\033[46mRepository already exists\033[0m'
+            fi
 
-            docker run \
-              -e AWS_REGION=AWS_REGION \
-              -e AWS_PROFILE=AWS_PROFILE \
-              -e AWS_ACCESS_KEY=AWS_ACCESS_KEY \
-              -e AWS_SECRET_KEY=AWS_SECRET_KEY \
-              -e AWS_ACCOUNT_ID=AWS_ACCOUNT_ID \
-              $ECR_URI/$ECR_REPOSITORY_NAME:$ECR_IMAGE_TAG \
-              /bin/sh -c " \
-                make set-module-ecr-image \
-                  REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
-                  DOCKER_FOLDER_PATH=$DOCKER_FOLDER_PATH \
-                  IMAGE_TAG=$IMAGE_TAG \
-              "            
+            # Push new image
+            echo -e '\033[43mPushing image to ECR\033[0m'
+            docker build --progress=plain --no-cache -t $ECR_URI/$ECR_REPOSITORY_NAME/$IMAGE_TAG -f $DOCKERFILE .
+            DOCKER_SRC=$(docker images -q $ECR_URI/$ECR_REPOSITORY_NAME/$IMAGE_TAG)
+            echo -e '\033[44mIMAGE SIZE\033[0m' $(docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
+            docker tag ${DOCKER_SRC} $ECR_URI/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+            docker push $ECR_URI/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+            docker tag $ECR_URI/$ECR_REPOSITORY_NAME:$IMAGE_TAG $ECR_URI/$ECR_REPOSITORY_NAME:latest
+            docker push $ECR_URI/$ECR_REPOSITORY_NAME:latest
 
-          elif [[ ${{ github.event_name }} == create || (${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == create) ]]; then
+            # Describe new image
+            echo -e '\033[44mECR IMAGE THIS\033[0m'::
+            aws $AWS_CLI_SERVICE describe-images --repository-name $ECR_REPOSITORY_NAME --image-ids imageTag=latest --output json
+          }
+          func_ecr () {
+            # create/push/delete
+            if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
+              func_ecr_create
+            elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
+              func_ecr_push
+            elif [[ "${{ github.event_name }}" == "delete" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "delete") ]]; then
+              echo -e '\033[43mDeleting repository in ECR\033[0m'
+              aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME --force
+            else
+              echo -e '\033[41mError\033[0m'
+              echo Error: event do not match, event_name ${{ github.event_name }}, inputs.event ${{ inputs.event }}
+              exit 100
+            fi
+          }
 
-            docker run \
-              -e AWS_REGION=AWS_REGION \
-              -e AWS_PROFILE=AWS_PROFILE \
-              -e AWS_ACCESS_KEY=AWS_ACCESS_KEY \
-              -e AWS_SECRET_KEY=AWS_SECRET_KEY \
-              -e AWS_ACCOUNT_ID=AWS_ACCOUNT_ID \
-              $ECR_URI/$ECR_REPOSITORY_NAME:$ECR_IMAGE_TAG \
-              /bin/sh -c " \
-                make set-module-ecr \
-                  REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
-                  FORCE_DESTROY=$FORCE_DESTROY \
-                  IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT \
-              "
+          # loop over dockerfiles
+          for DOCKERFILE in $DOCKERFILES; do
+            # extract possible extension
+            DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
+            ECR_REPOSITORY_NAME="$(echo $ORG-$REPO-$BRANCH$DOCKERFILE_EXTENSION | tr A-Z a-z)"
+            echo "DOCKERFILE: $DOCKERFILE"
+            echo "ECR_REPOSITORY_NAME: $ECR_REPOSITORY_NAME"
+            func_ecr
+          done
 
-          elif [[ ${{ github.event_name }} == delete || ${{ github.event_name }} == workflow_dispatch && ${{ inputs.event }} == delete ]]; then
-
-            aws ecr delete-repository --repository-name $ECR_REPOSITORY_NAME_THIS --force
-
-          else
-
-            echo "Error: event do not match, event_name ${{ github.event_name }}, inputs.event ${{ inputs.event }}
-
-          fi
-
-          # echo -e '\033[46mLOGS\033[0m'; cat $LOG_FILE
-          # if [ -n "$(grep -i error $LOG_FILE)" ]; then
-          #   echo -e '\033[41mERRORS\033[0m'; grep -ni error $LOG_FILE | sed 's/$/\n/'; exit 100
-          # fi
+          
