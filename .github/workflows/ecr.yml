@@ -27,8 +27,10 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_CLI_SERVICE: ecr
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  DOCKERFILES: "Dockerfile Dockerfile.test" # list of dockerfiles in one string
+  DOCKERFILES: "Dockerfile" # list of dockerfiles in one string
   IMAGE_TAG: ${{ github.sha }}
+  ORG: ${{ github.repository_owner }}
+  REPO: $(basename ${{ github.repository }})
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
@@ -66,7 +68,7 @@ jobs:
           # setup function
           func_ecr_create () {
             echo -e '\033[43mCreating repository in ECR\033[0m'
-            aws $AWS_CLI_SERVICE create-repository --repository-name $ECR_REPOSITORY_NAME --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=${{ github.repository_owner }} Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH
+            aws $AWS_CLI_SERVICE create-repository --repository-name $ECR_REPOSITORY_NAME --image-tag-mutability MUTABLE --tags Key=Account,Value=$AWS_PROFILE Key=Region,Value=$AWS_REGION Key=Organization,Value=$ORG Key=Repository,Value=$(basename ${{ github.repository }}) Key=Branch,Value=$BRANCH
             json_string=$(
               jq --null-input \
                 --argjson count "${IMAGE_KEEP_COUNT}" \
@@ -118,7 +120,7 @@ jobs:
           for DOCKERFILE in $DOCKERFILES; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
-            ECR_REPOSITORY_NAME="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH}$DOCKERFILE_EXTENSION | tr A-Z a-z)"
+            ECR_REPOSITORY_NAME="$(echo $ORG-$REPO-$BRANCH$DOCKERFILE_EXTENSION | tr A-Z a-z)"
             echo "DOCKERFILE: $DOCKERFILE"
             echo "ECR_REPOSITORY_NAME: $ECR_REPOSITORY_NAME"
             func_ecr
