@@ -117,6 +117,12 @@ jobs:
 
           echo "List of dockerfiles: $DOCKERFILES"
           for DOCKERFILE in ${DOCKERFILES[@]}; do
+          echo "DOCKERFILE: $DOCKERFILE"
+          done
+          for i in ${!myArray[@]}; do
+            echo DOCKERFILE: "$DOCKERFILES[$i]]"
+          done
+          for DOCKERFILE in ${DOCKERFILES[@]}; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
             ECR_REPOSITORY_NAME="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH}$DOCKERFILE_EXTENSION | tr A-Z a-z)"
