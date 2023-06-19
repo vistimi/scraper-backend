@@ -1,252 +1,254 @@
-name: Container
+# name: Container
 
-on:
-  # push:
-  #   branches: [master]
-  # pull_request:
-  #   branches: [master]
-  workflow_run:
-    workflows:
-      - Repository
-    types:
-      - completed
+# # FIXME: not triggered
+# # TODO: only on push
+# on:
+#   # push:
+#   #   branches: [master]
+#   # pull_request:
+#   #   branches: [master]
+#   workflow_run:
+#     workflows: [Repository]
+#     types: [completed]
+#     branches-ignore: [dependabot/**]
 
-env:
-  COMMON_NAME: ${{ github.sha }}
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_PROFILE: ${{ vars.AWS_PROFILE }}
-  AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-  AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
-  AWS_CLI_SERVICE: ecr  # private
-  ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  IMAGE_TAG: latest # ${{ github.sha }}
-  ORG: ${{ github.repository_owner }}
-  BRANCH: ${{ github.head_ref || github.ref_name }}
+# env:
+#   COMMON_NAME: ${{ github.sha }}
+#   AWS_REGION: ${{ vars.AWS_REGION }}
+#   AWS_PROFILE: ${{ vars.AWS_PROFILE }}
+#   AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+#   AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+#   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+#   AWS_CLI_SERVICE: ecr  # private
+#   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+#   IMAGE_TAG: latest # ${{ github.sha }}
+#   ORG: ${{ github.repository_owner }}
+#   BRANCH: ${{ github.head_ref || github.ref_name }}
 
-jobs:
-  ecr-wait:
-    name: ECR Wait
-    runs-on: ubuntu-latest
-    environment: KookaS
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    outputs:
-      ECR_REPOSITORY_NAME: ${{ steps.get-output.outputs.ECR_REPOSITORY_NAME }}
-      ECR_LOGIN_PASSWORD: ${{ steps.get-output.outputs.ECR_LOGIN_PASSWORD }}
+# jobs:
+#   ecr-wait:
+#     name: ECR Wait
+#     runs-on: ubuntu-latest
+#     environment: KookaS
+#     # if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event_name == 'push' }}
+#     outputs:
+#       ECR_REPOSITORY_NAME: ${{ steps.get-output.outputs.ECR_REPOSITORY_NAME }}
+#       ECR_LOGIN_PASSWORD: ${{ steps.get-output.outputs.ECR_LOGIN_PASSWORD }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-          # repository: ${{ github.event.workflow_run.head_repository.full_name }}
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY
-          aws configure set aws_secret_access_key $AWS_SECRET_KEY
-          aws configure set region $AWS_REGION
+#     steps:
+#       # workaround for triggering the workflow on a non default branch
+#       - name: Checkout
+#         uses: actions/checkout@v3
+#         with:
+#           ref: ${{ github.event.workflow_run.head_branch }}
+#           # repository: ${{ github.event.workflow_run.head_repository.full_name }}
+#       - name: setup AWS CLI
+#         run: |
+#           aws --version
+#           aws configure set aws_access_key_id $AWS_ACCESS_KEY
+#           aws configure set aws_secret_access_key $AWS_SECRET_KEY
+#           aws configure set region $AWS_REGION
 
-      - name: Get ECR information
-        id: get-output
-        run: |
-          # variables
-          REPO=$(basename ${{ github.repository }})
+#       - name: Get ECR information
+#         id: get-output
+#         run: |
+#           # variables
+#           REPO=$(basename ${{ github.repository }})
 
-          # outputs
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          if [[ $AWS_CLI_SERVICE == ecr ]]; then
-            echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
-          elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
-            echo "ECR_LOGIN_PASSWORD=$(aws ecr-public get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
-          fi
+#           # outputs
+#           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+#           if [[ $AWS_CLI_SERVICE == ecr ]]; then
+#             echo "ECR_LOGIN_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+#           elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
+#             echo "ECR_LOGIN_PASSWORD=$(aws ecr-public get-login-password --region $AWS_REGION)" >> $GITHUB_OUTPUT
+#           fi
 
-          echo "ECR_REPOSITORY_NAME=$(echo $ORG-$REPO-$BRANCH | tr A-Z a-z)" >> $GITHUB_OUTPUT
+#           echo "ECR_REPOSITORY_NAME=$(echo $ORG-$REPO-$BRANCH | tr A-Z a-z)" >> $GITHUB_OUTPUT
           
 
-  # Container network where we can access with the service name and the port
-  localstack:
-    name: Container check localstack
-    needs: [ecr-wait]
-    runs-on: ubuntu-latest
-    container: ubuntu # connect the workflow steps to the network
-    environment: KookaS
-    env:
-      AWS_REGION: us-east-1
-      AWS_PROFILE: dummy
-      AWS_ACCESS_KEY: dummy
-      AWS_SECRET_KEY: dummy
-      ROOT: /
-      HEALTHCHECK: /healthz
-    services:
-      local-cloud:
-        image: localstack/localstack
-      local-project:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr-wait.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-        options: --read-only
-        credentials:
-          username: AWS
-          password: ${{ needs.ecr-wait.outputs.ECR_LOGIN_PASSWORD }}
-        env:
-          CLOUD_HOST: localstack
-          LOCALSTACK_URI: http://local-cloud:4566
-          COMMON_NAME: ${{ github.sha }}
-          FLICKR_PRIVATE_KEY: 123
-          FLICKR_PUBLIC_KEY: 123
-          UNSPLASH_PRIVATE_KEY: 123
-          UNSPLASH_PUBLIC_KEY: 123
-          PEXELS_PUBLIC_KEY: 123
-          AWS_REGION: $AWS_REGION
-          AWS_ACCESS_KEY: $AWS_ACCESS_KEY
-          AWS_SECRET_KEY: $AWS_SECRET_KEY
+#   # Container network where we can access with the service name and the port
+#   localstack:
+#     name: Container check localstack
+#     needs: [ecr-wait]
+#     runs-on: ubuntu-latest
+#     container: ubuntu # connect the workflow steps to the network
+#     environment: KookaS
+#     env:
+#       AWS_REGION: us-east-1
+#       AWS_PROFILE: dummy
+#       AWS_ACCESS_KEY: dummy
+#       AWS_SECRET_KEY: dummy
+#       ROOT: /
+#       HEALTHCHECK: /healthz
+#     services:
+#       local-cloud:
+#         image: localstack/localstack
+#       local-project:
+#         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr-wait.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+#         options: --read-only
+#         credentials:
+#           username: AWS
+#           password: ${{ needs.ecr-wait.outputs.ECR_LOGIN_PASSWORD }}
+#         env:
+#           CLOUD_HOST: localstack
+#           LOCALSTACK_URI: http://local-cloud:4566
+#           COMMON_NAME: ${{ github.sha }}
+#           FLICKR_PRIVATE_KEY: 123
+#           FLICKR_PUBLIC_KEY: 123
+#           UNSPLASH_PRIVATE_KEY: 123
+#           UNSPLASH_PUBLIC_KEY: 123
+#           PEXELS_PUBLIC_KEY: 123
+#           AWS_REGION: $AWS_REGION
+#           AWS_ACCESS_KEY: $AWS_ACCESS_KEY
+#           AWS_SECRET_KEY: $AWS_SECRET_KEY
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v3
         
-      - name: Setup
-        id: setup
-        run: |
-          apt update -qq
-          apt install curl unzip wget -y -qq
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -qq awscliv2.zip
-          ./aws/install
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq
-          echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT
+#       - name: Setup
+#         id: setup
+#         run: |
+#           apt update -qq
+#           apt install curl unzip wget -y -qq
+#           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+#           unzip -qq awscliv2.zip
+#           ./aws/install
+#           wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq
+#           echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY
-          aws configure set aws_secret_access_key $AWS_SECRET_KEY
-          aws configure set region $AWS_REGION
+#       - name: setup AWS CLI
+#         run: |
+#           aws --version
+#           aws configure set aws_access_key_id $AWS_ACCESS_KEY
+#           aws configure set aws_secret_access_key $AWS_SECRET_KEY
+#           aws configure set region $AWS_REGION
 
-      - name: Status localstack
-        run: |
-          curl -Is http://local-cloud:4566 | grep HTTP
-      - name: Status localstack table
-        run: |
-          aws dynamodb list-tables --endpoint-url=http://local-cloud:4566 --region=us-east-1
+#       - name: Status localstack
+#         run: |
+#           curl -Is http://local-cloud:4566 | grep HTTP
+#       - name: Status localstack table
+#         run: |
+#           aws dynamodb list-tables --endpoint-url=http://local-cloud:4566 --region=us-east-1
 
-      - name: Status root
-        run: |
-          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$ROOT | grep HTTP
-      - name: Status healthz
-        run: |
-          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$HEALTHCHECK | grep HTTP
+#       - name: Status root
+#         run: |
+#           curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$ROOT | grep HTTP
+#       - name: Status healthz
+#         run: |
+#           curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$HEALTHCHECK | grep HTTP
 
-  dynamodb:
-    name: Container check dynamodb
-    needs: [ecr-wait]
-    runs-on: ubuntu-latest
-    container: ubuntu # connect the workflow steps to the network
-    environment: KookaS
-    env:
-      ROOT: /
-      HEALTHCHECK: /healthz
-    services:
-      local-project:
-        image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr-wait.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-        options: --read-only
-        credentials:
-          username: AWS
-          password: ${{ needs.ecr-wait.outputs.ECR_LOGIN_PASSWORD }}
-        env:
-          CLOUD_HOST: aws
-          COMMON_NAME: ${{ github.sha }}
-          FLICKR_PRIVATE_KEY: 123
-          FLICKR_PUBLIC_KEY: 123
-          UNSPLASH_PRIVATE_KEY: 123
-          UNSPLASH_PUBLIC_KEY: 123
-          PEXELS_PUBLIC_KEY: 123
-          AWS_REGION: $AWS_REGION
-          AWS_ACCESS_KEY: $AWS_ACCESS_KEY
-          AWS_SECRET_KEY: $AWS_SECRET_KEY
+#   dynamodb:
+#     name: Container check dynamodb
+#     needs: [ecr-wait]
+#     runs-on: ubuntu-latest
+#     container: ubuntu # connect the workflow steps to the network
+#     environment: KookaS
+#     env:
+#       ROOT: /
+#       HEALTHCHECK: /healthz
+#     services:
+#       local-project:
+#         image:  ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ needs.ecr-wait.outputs.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+#         options: --read-only
+#         credentials:
+#           username: AWS
+#           password: ${{ needs.ecr-wait.outputs.ECR_LOGIN_PASSWORD }}
+#         env:
+#           CLOUD_HOST: aws
+#           COMMON_NAME: ${{ github.sha }}
+#           FLICKR_PRIVATE_KEY: 123
+#           FLICKR_PUBLIC_KEY: 123
+#           UNSPLASH_PRIVATE_KEY: 123
+#           UNSPLASH_PUBLIC_KEY: 123
+#           PEXELS_PUBLIC_KEY: 123
+#           AWS_REGION: $AWS_REGION
+#           AWS_ACCESS_KEY: $AWS_ACCESS_KEY
+#           AWS_SECRET_KEY: $AWS_SECRET_KEY
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v3
 
-      - name: Setup
-        id: setup
-        run: |
-          apt update -qq
-          apt install curl unzip wget -y -qq
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -qq awscliv2.zip
-          ./aws/install
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq
-          echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT          
+#       - name: Setup
+#         id: setup
+#         run: |
+#           apt update -qq
+#           apt install curl unzip wget -y -qq
+#           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+#           unzip -qq awscliv2.zip
+#           ./aws/install
+#           wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq
+#           echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT          
 
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY
-          aws configure set aws_secret_access_key $AWS_SECRET_KEY
-          aws configure set region $AWS_REGION
+#       - name: setup AWS CLI
+#         run: |
+#           aws --version
+#           aws configure set aws_access_key_id $AWS_ACCESS_KEY
+#           aws configure set aws_secret_access_key $AWS_SECRET_KEY
+#           aws configure set region $AWS_REGION
 
-      - name: create tables
-        shell: bash
-        run: |
-          names=($(yq eval '.dynamodb.*.name' config/config.yml))
-          primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
-          primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
-          sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
-          sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
-          i=0
-          for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
-          do
-            aws dynamodb create-table \
-              --region $AWS_REGION \
-              --table-name $COMMON_NAME-${names[$i]} \
-              --attribute-definitions AttributeName=${primaryKeyNames[$i]},AttributeType=${primaryKeyTypes[$i]} AttributeName=${sortKeyNames[$i]},AttributeType=${sortKeyTypes[$i]}\
-              --key-schema AttributeName=${primaryKeyNames[$i]},KeyType=HASH AttributeName=${sortKeyNames[$i]},KeyType=RANGE \
-              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
-            i=$((i+1))
-          done
+#       - name: create tables
+#         shell: bash
+#         run: |
+#           names=($(yq eval '.dynamodb.*.name' config/config.yml))
+#           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
+#           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
+#           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
+#           sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
+#           i=0
+#           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
+#           do
+#             aws dynamodb create-table \
+#               --region $AWS_REGION \
+#               --table-name $COMMON_NAME-${names[$i]} \
+#               --attribute-definitions AttributeName=${primaryKeyNames[$i]},AttributeType=${primaryKeyTypes[$i]} AttributeName=${sortKeyNames[$i]},AttributeType=${sortKeyTypes[$i]}\
+#               --key-schema AttributeName=${primaryKeyNames[$i]},KeyType=HASH AttributeName=${sortKeyNames[$i]},KeyType=RANGE \
+#               --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+#             i=$((i+1))
+#           done
 
-      - name: Status dynamodb table
-        run: |
-          tables=$(aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]')
-          if [ "$tables" = "[]" ]; then exit 1; fi
+#       - name: Status dynamodb table
+#         run: |
+#           tables=$(aws dynamodb list-tables --region=$AWS_REGION --query 'TableNames[?starts_with(@, `'$COMMON_NAME'`)]')
+#           if [ "$tables" = "[]" ]; then exit 1; fi
       
-      - name: Status root
-        run: |
-          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$ROOT | grep HTTP
-      - name: Status healthz
-        run: |
-          curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$HEALTHCHECK | grep HTTP
+#       - name: Status root
+#         run: |
+#           curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$ROOT | grep HTTP
+#       - name: Status healthz
+#         run: |
+#           curl -Is http://local-project:${{ steps.setup.outputs.PORT }}$HEALTHCHECK | grep HTTP
 
-  cleanup:
-    name: Cleanup
-    runs-on: ubuntu-latest
-    needs: [ecr-wait, localstack, dynamodb]
-    if: ${{ always() && contains(join(needs.ecr-wait.result, ','), 'success') }}
-    environment: KookaS
+#   cleanup:
+#     name: Cleanup
+#     runs-on: ubuntu-latest
+#     needs: [ecr-wait, localstack, dynamodb]
+#     if: ${{ always() && contains(join(needs.ecr-wait.result, ','), 'success') }}
+#     environment: KookaS
 
-    steps:
-      - name: setup AWS CLI
-        run: |
-          aws --version
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY
-          aws configure set aws_secret_access_key $AWS_SECRET_KEY
-          aws configure set region $AWS_REGION
+#     steps:
+#       - name: setup AWS CLI
+#         run: |
+#           aws --version
+#           aws configure set aws_access_key_id $AWS_ACCESS_KEY
+#           aws configure set aws_secret_access_key $AWS_SECRET_KEY
+#           aws configure set region $AWS_REGION
 
-      - name: Delete Dynamodb tables
-        if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
-        shell: bash
-        run: |
-          names=($(yq eval '.dynamodb.*.name' config/config.yml))
-          primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
-          primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
-          sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
-          sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
-          i=0
-          for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
-          do
-            aws dynamodb delete-table \
-              --region $AWS_REGION \
-              --table-name $COMMON_NAME-${names[$i]}
-            i=$((i+1))
-          done
+#       - name: Delete Dynamodb tables
+#         if: ${{ always() && contains(join(needs.dynamodb.result, ','), 'success') }}
+#         shell: bash
+#         run: |
+#           names=($(yq eval '.dynamodb.*.name' config/config.yml))
+#           primaryKeyNames=($(yq eval '.dynamodb.*.primaryKeyName' config/config.yml))
+#           primaryKeyTypes=($(yq eval '.dynamodb.*.primaryKeyType' config/config.yml))
+#           sortKeyNames=($(yq eval '.dynamodb.*.sortKeyName' config/config.yml))
+#           sortKeyTypes=($(yq eval '.dynamodb.*.sortKeyType' config/config.yml))
+#           i=0
+#           for _ in $(yq eval '.dynamodb.*.name' config/config.yml)
+#           do
+#             aws dynamodb delete-table \
+#               --region $AWS_REGION \
+#               --table-name $COMMON_NAME-${names[$i]}
+#             i=$((i+1))
+#           done
