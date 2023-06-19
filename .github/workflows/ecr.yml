@@ -100,7 +100,6 @@ jobs:
               "
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
             echo -e '\033[43mPushing image to ECR\033[0m'
-            echo -e '\033[47mPulling worker image\033[0m'
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_ECR describe-repositories --repository-names ${ECR_REPOSITORY_NAME_THIS} --query 'repositories[0].repositoryName')
               if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
                 echo -e '\033[43mCreating missing repository in ECR\033[0m': ${ECR_REPOSITORY_NAME_THIS}
@@ -124,7 +123,7 @@ jobs:
                 echo -e '\033[46mRepository already exists\033[0m'
               fi
               docker build --progress=plain --no-cache -t ${ECR_URI}/${IMAGE_TAG_THIS} -f ${DOCKER_FOLDER_PATH} .
-              $(eval DOCKER_SRC=$(docker images -q ${ECR_URI}/${IMAGE_TAG_THIS}))
+              DOCKER_SRC=$(docker images -q ${ECR_URI}/${IMAGE_TAG_THIS})
               echo -e '\033[44mIMAGE SIZE\033[0m' $(docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
               docker tag ${DOCKER_SRC} ${ECR_URI}:${IMAGE_TAG_THIS}
               docker push ${ECR_URI}:${IMAGE_TAG_THIS}
