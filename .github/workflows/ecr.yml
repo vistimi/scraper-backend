@@ -115,21 +115,14 @@ jobs:
             fi
           }
 
-          arr=("hello")
-          for f in ${arr[@]}; do
-              echo $f
-          done
-          arr=( "hello" )
-          for f in ${arr[@]}; do
-              echo $f
-          done
+          arr=$DOCKERFILES
 
-          echo "List of dockerfiles: $DOCKERFILES"
-          for DOCKERFILE in ${DOCKERFILES[@]}; do
-          echo "DOCKERFILE: $DOCKERFILE"
+          echo "List of dockerfiles: $arr"
+          for DOCKERFILE in ${arr[@]}; do
+          echo $DOCKERFILE
           done
-          for i in ${!DOCKERFILES[@]}; do
-            echo DOCKERFILE with idx: "$DOCKERFILES[$i]]"
+          for tt in ${arr[@]}; do
+          echo $tt
           done
           for DOCKERFILE in ${DOCKERFILES[@]}; do
             # extract possible extension
