@@ -124,8 +124,8 @@ jobs:
                 echo -e '\033[46mRepository already exists\033[0m'
               fi
               docker build --progress=plain --no-cache -t ${ECR_URI}/${IMAGE_TAG_THIS} -f ${DOCKER_FOLDER_PATH} .
-              $(eval DOCKER_SRC=$(shell docker images -q ${ECR_URI}/${IMAGE_TAG_THIS}))
-              echo -e '\033[44mIMAGE SIZE\033[0m' $(shell docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
+              $(eval DOCKER_SRC=$(docker images -q ${ECR_URI}/${IMAGE_TAG_THIS}))
+              echo -e '\033[44mIMAGE SIZE\033[0m' $(docker inspect -f "{{ .Size }}" ${DOCKER_SRC} | numfmt --to=si)
               docker tag ${DOCKER_SRC} ${ECR_URI}:${IMAGE_TAG_THIS}
               docker push ${ECR_URI}:${IMAGE_TAG_THIS}
               docker tag ${ECR_URI}:${IMAGE_TAG_THIS} ${ECR_URI}:latest
