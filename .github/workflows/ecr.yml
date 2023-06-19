@@ -88,23 +88,7 @@ jobs:
                 echo -e '\033[43mCreating missing repository in ECR\033[0m': ${ECR_REPOSITORY_NAME_THIS}
                 aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE
                 cat <<-EOF > ecr-lifecycle-policy.json
-                {
-                  "rules": [
-                    {
-                      "rulePriority": 1,
-                      "description": "Keep only $IMAGE_KEEP_COUNT images",
-                      "selection": {
-                        "tagStatus": "any",
-                        "countType": "imageCountMoreThan",
-                        "countNumber": $IMAGE_KEEP_COUNT
-                      },
-                      "action": {
-                        "type": "expire"
-                      }
-                    }
-                  ]
-                }
-                EOF
+                echo {"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] } EOF
                 cat ecr-lifecycle-policy.json
                 aws $AWS_CLI_ECR set-repository-policy --repository-name ${ECR_REPOSITORY_NAME_THIS} --policy-text "file://ecr-lifecycle-policy.json"
               else
