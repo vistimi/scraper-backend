@@ -27,7 +27,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_CLI_SERVICE: ecr
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  DOCKERFILES: ("Dockerfile") # list of dockerfiles
+  DOCKERFILES: "Dockerfile" # list of dockerfiles
   IMAGE_TAG: ${{ github.sha }}
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
@@ -115,15 +115,15 @@ jobs:
             fi
           }
 
-          arr=("Dockerfile") 
+          arr=("Dockerfile")
           echo "List of dockerfiles: $arr"
           for DOCKERFILE in ${arr[@]}; do
           echo $DOCKERFILE
           done
-          for tt in ${arr[@]}; do
+          for tt in $DOCKERFILES; do
           echo $tt
           done
-          for DOCKERFILE in ${DOCKERFILES[@]}; do
+          for DOCKERFILE in $DOCKERFILES; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
             ECR_REPOSITORY_NAME="$(echo ${{ github.repository_owner }}-$(basename ${{ github.repository }})-${BRANCH}$DOCKERFILE_EXTENSION | tr A-Z a-z)"
