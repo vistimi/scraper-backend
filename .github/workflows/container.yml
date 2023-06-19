@@ -15,7 +15,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_CLI_SERVICE: ecr  # private
   ECR_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_TAG: latest # ${{ github.sha }}
   ORG: ${{ github.repository_owner }}
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
@@ -35,7 +35,7 @@ jobs:
           ref: ${{ github.ref }}
           running-workflow-name: 'ECR'
           repo-token: ${{ github.token }}
-          wait-interval: 10
+          wait-interval: 30
 
       - name: setup AWS CLI
         run: |

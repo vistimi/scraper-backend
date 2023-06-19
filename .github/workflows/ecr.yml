@@ -60,9 +60,10 @@ jobs:
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
           elif [[ $AWS_CLI_SERVICE == ecr-public ]]; then
             aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS ---password-stdin public.ecr.aws
-          fi
-      - name: Setup func_ecr_create
+          fi          
+      - name: Run workflow for each Dockerfile
         run: |
+          # functions
           func_ecr_create () {
             echo -e '\033[43mCreating repository in ECR\033[0m'
             aws $AWS_CLI_SERVICE create-repository \
@@ -78,8 +79,6 @@ jobs:
             echo $json_string > ecr-lifecycle-policy.json
             aws $AWS_CLI_SERVICE put-lifecycle-policy --repository-name $ECR_REPOSITORY_NAME --lifecycle-policy-text "file://ecr-lifecycle-policy.json"
           }
-      - name: Setup func_ecr_push
-        run: |
           func_ecr_push () {
             # check existance of repository
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_SERVICE describe-repositories --repository-names $ECR_REPOSITORY_NAME --query 'repositories[0].repositoryName' || true)
@@ -104,8 +103,6 @@ jobs:
             echo -e '\033[44mECR IMAGE THIS\033[0m'::
             aws $AWS_CLI_SERVICE describe-images --repository-name $ECR_REPOSITORY_NAME --image-ids imageTag=latest --output json
           }
-      - name: Setup func_ecr
-        run: |
           func_ecr () {
             # create/push/delete
             if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
@@ -121,8 +118,7 @@ jobs:
               exit 100
             fi
           }
-      - name: Run workflow for each Dockerfile
-        run: |
+
           for DOCKERFILE in $DOCKERFILES; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')
