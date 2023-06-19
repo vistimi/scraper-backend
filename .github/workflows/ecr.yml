@@ -75,52 +75,16 @@ jobs:
           echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
           echo "FORCE_DESTROY: $FORCE_DESTROY"
 
-          # # describe ecr image
-          # echo -e '\033[44mECR IMAGE SRC\033[0m'::
-          # aws $AWS_CLI_ECR describe-images --repository-name ${ECR_REPOSITORY_NAME_SRC} --image-ids imageTag=latest --output json
-
           # create/push/delete ECR
           if [[ "${{ github.event_name }}" == "create" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "create") ]]; then
             echo -e '\033[43mCreating repository in ECR\033[0m'
-            # echo -e '\033[47mPulling worker image\033[0m'
-            # docker run \
-            #   -v /var/run/docker.sock:/var/run/docker.sock \
-            #   -e AWS_REGION=$AWS_REGION \
-            #   -e AWS_PROFILE=$AWS_PROFILE \
-            #   -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
-            #   -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
-            #   -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
-            #   $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG_SRC \
-            #   /bin/sh -c " \
-            #     make aws-configure; \
-            #     make set-module-ecr \
-            #       REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
-            #       FORCE_DESTROY=$FORCE_DESTROY \
-            #       IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT \
-            #   "
-          echo "{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }"
-          aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE
-          aws $AWS_CLI_ECR set-repository-policy --repository-name ${ECR_REPOSITORY_NAME_THIS} --policy-text '{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }'
+            echo "{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }"
+            aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE
+            aws $AWS_CLI_ECR set-repository-policy --repository-name ${ECR_REPOSITORY_NAME_THIS} --policy-text '{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }'
           elif [[ "${{ github.event_name }}" == "push" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.event }}" == "push") ]]; then
             REPOSITORY_NAME_EXISTING=$(aws $AWS_CLI_ECR describe-repositories --repository-names ${ECR_REPOSITORY_NAME_THIS} --query 'repositories[0].repositoryName')
               if [ -z ${REPOSITORY_NAME_EXISTING} ]; then
-                # echo -e '\033[43mCreating missing repository in ECR\033[0m': ${ECR_REPOSITORY_NAME_THIS}
-                # echo -e '\033[47mPulling worker image\033[0m'
-                # docker run \
-                #   -v /var/run/docker.sock:/var/run/docker.sock \
-                #   -e AWS_REGION=$AWS_REGION \
-                #   -e AWS_PROFILE=$AWS_PROFILE \
-                #   -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
-                #   -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
-                #   -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
-                #   $ECR_URI/$ECR_REPOSITORY_NAME_SRC:$ECR_IMAGE_TAG_SRC \
-                #   /bin/sh -c " \
-                #     make aws-configure; \
-                #     make set-module-ecr \
-                #       REPOSITORY_NAME=$ECR_REPOSITORY_NAME_THIS \
-                #       FORCE_DESTROY=$FORCE_DESTROY \
-                #       IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT \
-                #   "
+                echo -e '\033[43mCreating missing repository in ECR\033[0m': ${ECR_REPOSITORY_NAME_THIS}
                 echo "{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }"
                 aws $AWS_CLI_ECR create-repository --repository-name ${ECR_REPOSITORY_NAME_THIS} --image-tag-mutability MUTABLE
                 aws $AWS_CLI_ECR set-repository-policy --repository-name ${ECR_REPOSITORY_NAME_THIS} --policy-text '{"rules": [ { "rulePriority": 1,    "description": "Keep only $IMAGE_KEEP_COUNT images", "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": $IMAGE_KEEP_COUNT }, "action": { "type": "expire" } } ] }'
