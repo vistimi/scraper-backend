@@ -1,4 +1,4 @@
-name: ECR
+name: Repository
 
 on:
   workflow_dispatch:
@@ -33,21 +33,13 @@ env:
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
-  ecr:
-    name: ECR
+  ecr-maintenance:
+    name: ECR maintenance
     runs-on: ubuntu-latest
     environment: KookaS
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup variables
-        run: |
-          echo "event_name=${{ github.event_name }}"
-          echo "inputs.event=${{ inputs.event }}"
-          REPO=$(basename ${{ github.repository }})
-          echo "REPO: $REPO"
-          IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
-          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
       - name: Setup AWS CLI
         run: |
           aws --version
@@ -63,6 +55,14 @@ jobs:
           fi          
       - name: Run workflow for each Dockerfile
         run: |
+          # variables
+          echo "event_name=${{ github.event_name }}"
+          echo "inputs.event=${{ inputs.event }}"
+          REPO=$(basename ${{ github.repository }})
+          echo "REPO: $REPO"
+          IMAGE_KEEP_COUNT=$(if [[ $BRANCH == master ]]; then echo "5"; else echo "1"; fi)
+          echo "IMAGE_KEEP_COUNT: $IMAGE_KEEP_COUNT"
+
           # functions
           func_ecr_create () {
             echo -e '\033[43mCreating repository in ECR\033[0m'
@@ -119,6 +119,7 @@ jobs:
             fi
           }
 
+          # loop over dockerfiles
           for DOCKERFILE in $DOCKERFILES; do
             # extract possible extension
             DOCKERFILE_EXTENSION=$([[ "$DOCKERFILE" = *.* ]] && echo "-${DOCKERFILE##*.}" || echo '')

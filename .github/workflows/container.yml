@@ -20,8 +20,8 @@ env:
   BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
-  ecr:
-    name: setup ECR
+  ecr-load:
+    name: ECR Loading
     runs-on: ubuntu-latest
     environment: KookaS
     outputs:
@@ -32,8 +32,8 @@ jobs:
       - name: Wait for ECR
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
-          ref: ${{ github.ref }}
-          running-workflow-name: 'ECR'
+          ref: $BRANCH
+          running-workflow-name: 'ECR maintenance'
           repo-token: ${{ github.token }}
           wait-interval: 30
 
