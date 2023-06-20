@@ -29,18 +29,13 @@ jobs:
     name: ECR Wait
     runs-on: ubuntu-latest
     environment: KookaS
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event_name == 'push' }}
+    # if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event_name == 'push' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       ECR_REPOSITORY_NAME: ${{ steps.get-output.outputs.ECR_REPOSITORY_NAME }}
       ECR_LOGIN_PASSWORD: ${{ steps.get-output.outputs.ECR_LOGIN_PASSWORD }}
 
     steps:
-      # workaround for triggering the workflow on a non default branch
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-          # repository: ${{ github.event.workflow_run.head_repository.full_name }}
       - name: setup AWS CLI
         run: |
           aws --version
