@@ -107,7 +107,7 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq && yq --version
           echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT
 
       - name: setup AWS CLI
@@ -171,7 +171,7 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -qq awscliv2.zip
           ./aws/install
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && chmod +x /usr/bin/yq && yq --version
           echo "PORT=$(yq eval '.port' config/config.yml)" >> $GITHUB_OUTPUT          
 
       - name: setup AWS CLI
@@ -227,9 +227,7 @@ jobs:
       - name: Setup
         id: setup
         run: |
-          sudo apt update -qq
-          sudo apt install curl wget -y -qq
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64  -qq -O /usr/local/bin/yq && sudo chmod a+x /usr/local/bin/yq && yq --version
 
       - name: setup AWS CLI
         run: |
