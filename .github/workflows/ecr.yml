@@ -18,8 +18,9 @@ on:
         default: 'latest'
   push:
     branches-ignore: [dependabot/**]
-  create:
-    branches-ignore: [dependabot/**]
+  # will also run if push and create happen together
+  # create:
+  #   branches-ignore: [dependabot/**]
   delete:
     branches-ignore: [dependabot/**]
 
