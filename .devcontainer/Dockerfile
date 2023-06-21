@@ -38,7 +38,7 @@ RUN find /usr/local/aws-cli/v2/current/dist/awscli/botocore/data -name examples-
 FROM $ALPINE_VARIANT AS runner
 
 # # non-root user
-# # FIXME: cannot edit files from base user
+# # FIXME: use vscode user
 # RUN apk add --no-cache shadow sudo
 # ARG USERNAME=user
 # ARG USER_UID=1001

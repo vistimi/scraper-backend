@@ -191,5 +191,5 @@ jobs:
             echo DOCKERFILE_ARGS:: $DOCKERFILE_ARGS
 
             # run function
-            func_ecr
+            echo $(func_ecr)
           done
