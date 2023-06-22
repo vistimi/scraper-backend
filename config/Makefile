@@ -4,8 +4,8 @@ MAKEFLAGS += --warn-undefined-variables
 
 export OVERRIDE_EXTENSION OUTPUT_FOLDER
 
-.ONESHELL: prepare-scraper-backend
-prepare-scraper-backend:
+.ONESHELL: prepare
+prepare:
 	cat <<-EOF > ${OUTPUT_FOLDER}/${OVERRIDE_EXTENSION}.env
 		COMMON_NAME=${COMMON_NAME}
 		CLOUD_HOST=${CLOUD_HOST}
