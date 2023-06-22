@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	Port      *int                           `mapstructure:"port"`
-	Databases map[string]ConfigDynamodbTable `mapstructure:"dynamodb"`
-	Buckets   map[string]ConfigS3Bucket      `mapstructure:"buckets"`
+	Port            *int                           `mapstructure:"port"`
+	HealthCheckPath *string                        `mapstructure:"healthCheckPath"`
+	Databases       map[string]ConfigDynamodbTable `mapstructure:"dynamodb"`
+	Buckets         map[string]ConfigS3Bucket      `mapstructure:"buckets"`
 }
 
 type ConfigDynamodbTable struct {

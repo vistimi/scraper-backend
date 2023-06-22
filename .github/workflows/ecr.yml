@@ -187,7 +187,7 @@ jobs:
                 echo arg:: $arg
                 DOCKERFILE_ARGS="$DOCKERFILE_ARGS --build-arg=$arg"
               fi
-            done <<< "$(jq -rc '.args[]' <<< "$dockerfile")"
+            done <<< "$(jq -rc '.args[]?' <<< "$dockerfile")"
             echo DOCKERFILE_ARGS:: $DOCKERFILE_ARGS
 
             # run function

@@ -21,13 +21,13 @@ type DriverServerGin struct {
 }
 
 // TODO: check Body and URI match path
-func (d DriverServerGin) Router(port int) *gin.Engine {
+func (d DriverServerGin) Router(port int, healthCheckPath string) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
 	// health check
 	router.Any("/", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
-	router.Any("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
+	router.Any(healthCheckPath, func(c *gin.Context) { c.JSON(http.StatusOK, "ok") })
 
 	router.GET("/image/file/:origin/:name/:extension", wrapperDataHandlerURI(d.ReadPictureFile))
 	router.GET("/image/:origin/:id/:collection", wrapperJSONHandlerURI(d.ReadPicture))
