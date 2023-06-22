@@ -163,7 +163,7 @@ jobs:
           }
 
           # loop over dockerfiles
-          jq -rc '.[]' <<< "$DOCKERFILES" | while read dockerfile; do
+          jq -rc '.[]?' <<< "$DOCKERFILES" | while read dockerfile; do
             echo $dockerfile
 
             DOCKERFILE_PATH=$(jq -r '.path' <<< "$dockerfile")
@@ -187,7 +187,7 @@ jobs:
                 echo arg:: $arg
                 DOCKERFILE_ARGS="$DOCKERFILE_ARGS --build-arg=$arg"
               fi
-            done <<< "$(jq -rc '.args[]?' <<< "$dockerfile")"
+            done <<< "$(jq -rc '.args[]' <<< "$dockerfile")"
             echo DOCKERFILE_ARGS:: $DOCKERFILE_ARGS
 
             # run function
