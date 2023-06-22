@@ -2,7 +2,10 @@ SHELL:= /bin/bash
 .SILENT:
 MAKEFLAGS += --warn-undefined-variables
 
-export GH_ORG GH_REPO GH_PATH GH_BRANCH OVERRIDE_EXTENSION OUTPUT_FOLDER
+GH_ORG=KookaS
+GH_REPO=scraper-backend
+
+export GH_PATH GH_BRANCH OVERRIDE_EXTENSION OUTPUT_FOLDER
 
 gh-load-folder:
 	$(eval res=$(shell curl -L \
@@ -22,8 +25,6 @@ gh-load-file:
 
 .ONESHELL: prepare-scraper-backend
 prepare-scraper-backend:
-	$(eval GH_ORG=KookaS)
-	$(eval GH_REPO=scraper-backend)
 	cat <<-EOF > ${OUTPUT_FOLDER}/${OVERRIDE_EXTENSION}.env
 		COMMON_NAME=${COMMON_NAME}
 		CLOUD_HOST=${CLOUD_HOST}
@@ -37,4 +38,4 @@ prepare-scraper-backend:
 		AWS_SECRET_KEY=${AWS_SECRET_KEY}
 	EOF
 	make -f ${MAKEFILE} gh-load-folder GH_PATH=config
-	sed -i 's/package .*/package scraper_backend_test/' ${OUTPUT_FOLDER}/config_override.go;
+	sed -i 's/package .*/package scraper_backend_test/' ${OUTPUT_FOLDER}/config_override.go
