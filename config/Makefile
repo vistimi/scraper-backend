@@ -2,26 +2,7 @@ SHELL:= /bin/bash
 .SILENT:
 MAKEFLAGS += --warn-undefined-variables
 
-GH_ORG=KookaS
-GH_REPO=scraper-backend
-
-export GH_PATH GH_BRANCH OVERRIDE_EXTENSION OUTPUT_FOLDER
-
-gh-load-folder:
-	$(eval res=$(shell curl -L \
-		-H "Accept: application/vnd.github+json" \
-		-H "Authorization: Bearer ${GITHUB_TOKEN}" \
-		-H "X-GitHub-Api-Version: 2022-11-28" \
-		https://api.github.com/repos/${GH_ORG}/${GH_REPO}/contents/${GH_PATH}?ref=${GH_BRANCH} | jq -c '.[] | .path'))
-	for file in ${res}; do \
-		make -f ${MAKEFILE} gh-load-file OUTPUT_FOLDER=${OUTPUT_FOLDER} GH_PATH="$$file"; \
-    done
-gh-load-file:
-	curl -L -o ${OUTPUT_FOLDER}/$(shell basename ${GH_PATH} | cut -d. -f1)_${OVERRIDE_EXTENSION}$(shell [[ "${GH_PATH}" = *.* ]] && echo .$(shell basename ${GH_PATH} | cut -d. -f2) || echo '') \
-			-H "Accept: application/vnd.github.v3.raw" \
-			-H "Authorization: Bearer ${GITHUB_TOKEN}" \
-			-H "X-GitHub-Api-Version: 2022-11-28" \
-			https://api.github.com/repos/${GH_ORG}/${GH_REPO}/contents/${GH_PATH}?ref=${GH_BRANCH}
+export OVERRIDE_EXTENSION OUTPUT_FOLDER
 
 .ONESHELL: prepare-scraper-backend
 prepare-scraper-backend:
@@ -37,5 +18,4 @@ prepare-scraper-backend:
 		AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
 		AWS_SECRET_KEY=${AWS_SECRET_KEY}
 	EOF
-	make -f ${MAKEFILE} gh-load-folder GH_PATH=config
 	sed -i 's/package .*/package scraper_backend_test/' ${OUTPUT_FOLDER}/config_override.go
