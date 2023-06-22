@@ -1,6 +1,7 @@
 SHELL:= /bin/bash
 .SILENT:
 .ONESHELL:
+MAKEFLAGS += --warn-undefined-variables
 
 prepare-scraper-backend:
 	cat <<-EOF > ${PATH_NAME}
