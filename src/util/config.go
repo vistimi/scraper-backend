@@ -40,7 +40,7 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	commonName := GetEnvVariable("COMMON_NAME")
 	cloudHost := GetEnvVariable("CLOUD_HOST")
-	awsRegion := GetEnvVariable("AWS_REGION")
+	awsRegion := GetEnvVariable("AWS_REGION_NAME")
 	accessKeyID := GetEnvVariable("AWS_ACCESS_KEY")
 	secretAccessKey := GetEnvVariable("AWS_SECRET_KEY")
 

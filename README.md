@@ -30,8 +30,8 @@ docker rmi scraper-backend; docker build -t scraper-backend --progress=plain .; 
                       # echo -e '\033[47mPulling worker image\033[0m'
             # docker run \
             #   -v /var/run/docker.sock:/var/run/docker.sock \
-            #   -e AWS_REGION=$AWS_REGION \
-            #   -e AWS_PROFILE=$AWS_PROFILE \
+            #   -e AWS_REGION_NAME=$AWS_REGION_NAME \
+            #   -e AWS_PROFILE_NAME=$AWS_PROFILE_NAME \
             #   -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
             #   -e AWS_SECRET_KEY=$AWS_SECRET_KEY \
             #   -e AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID \
@@ -68,8 +68,8 @@ UNSPLASH_PRIVATE_KEY=***
 UNSPLASH_PUBLIC_KEY=***
 PEXELS_PUBLIC_KEY=***
 
-AWS_REGION=us-west-1
-AWS_PROFILE=KookaS
+AWS_REGION_NAME=us-west-1
+AWS_PROFILE_NAME=KookaS
 AWS_ACCESS_KEY=***
 AWS_SECRET_KEY=***
 ```
@@ -91,9 +91,9 @@ Environment secrets:
 - AWS_SECRET_KEY
 
 Environment variables:
-- AWS_REGION
+- AWS_REGION_NAME
 - AWS_ACCOUNT_ID
-- AWS_PROFILE
+- AWS_PROFILE_NAME
 
 # Code
 

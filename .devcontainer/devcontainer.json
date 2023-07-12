@@ -25,7 +25,7 @@
 		"scraper-net"
 	],
 	"initializeCommand": "if [ ! \"$(docker network ls | grep scraper-net)\" ]; then docker network create scraper-net; fi",
-	"postStartCommand": "aws configure set aws_access_key_id $AWS_ACCESS_KEY --profile $AWS_PROFILE && aws configure set --profile $AWS_PROFILE aws_secret_access_key $AWS_SECRET_KEY --profile $AWS_PROFILE && aws configure set region $AWS_REGION --profile $AWS_PROFILE && aws configure set output 'text' --profile $AWS_PROFILE && aws configure list && echo USER: $(whoami)",
+	"postStartCommand": "aws configure set aws_access_key_id $AWS_ACCESS_KEY --profile $AWS_PROFILE_NAME && aws configure set --profile $AWS_PROFILE_NAME aws_secret_access_key $AWS_SECRET_KEY --profile $AWS_PROFILE_NAME && aws configure set region $AWS_REGION_NAME --profile $AWS_PROFILE_NAME && aws configure set output 'text' --profile $AWS_PROFILE_NAME && aws configure list && echo USER: $(whoami)",
 	"customizations": {
 		"vscode": {
 			"settings": {
