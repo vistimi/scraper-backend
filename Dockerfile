@@ -4,8 +4,6 @@ ARG VARIANT=alpine:3.16
 # builder
 FROM $VARIANT AS builder
 
-ARG TARGETOS TARGETARCH
-
 RUN apk add --update --no-cache go
 
 WORKDIR /usr/tmp
@@ -15,6 +13,7 @@ RUN go mod download && go mod verify
 
 COPY ./config ./config
 
+ARG TARGETOS TARGETARCH
 ENV GOPATH /go
 ENV USERNAME root
 ENV GIN_MODE=release
