@@ -1,12 +1,18 @@
 SHELL:= /bin/bash
 .SILENT:
 MAKEFLAGS += --warn-undefined-variables
+.ONESHELL:
 
-export OVERRIDE_EXTENSION OUTPUT_FOLDER
+# error for undefined variables
+check_defined = \
+    $(strip $(foreach 1,$1, \
+        $(call __check_defined,$1,$(strip $(value 2)))))
+__check_defined = \
+    $(if $(value $1),, \
+      $(error Undefined $1$(if $2, ($2))))
 
-.ONESHELL: prepare
 prepare:
-	cat <<-EOF > ${OUTPUT_FOLDER}/${OVERRIDE_EXTENSION}.env
+	cat <<-EOF > ${ENV_FOLDER_PATH}/${OVERRIDE_EXTENSION}.env
 		COMMON_NAME=${COMMON_NAME}
 		CLOUD_HOST=${CLOUD_HOST}
 		FLICKR_PRIVATE_KEY=${FLICKR_PRIVATE_KEY}
@@ -18,4 +24,4 @@ prepare:
 		AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
 		AWS_SECRET_KEY=${AWS_SECRET_KEY}
 	EOF
-	sed -i 's/package .*/package scraper_backend_test/' ${OUTPUT_FOLDER}/config_override.go
+	sed -i 's/package .*/package ${PACKAGE_NAME}/' ${CONFIG_FOLDER_PATH}/config_override.go
