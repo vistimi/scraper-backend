@@ -4,6 +4,8 @@ ARG VARIANT=alpine:3.16
 # builder
 FROM $VARIANT AS builder
 
+ARG TARGETOS TARGETARCH
+
 RUN apk add --update --no-cache go
 
 WORKDIR /usr/tmp
@@ -11,9 +13,16 @@ WORKDIR /usr/tmp
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
-COPY . .
+COPY ./config ./config
+
+ENV GOPATH /go
+ENV USERNAME root
 ENV GIN_MODE=release
-RUN go build -o scraper src/main.go
+RUN --mount=target=. \
+    --mount=type=cache,target=/$USERNAME/.cache/go-build \
+    --mount=type=cache,target=$GOPATH/pkg \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -o /out/scraper src/main.go
 
 # runner
 FROM $VARIANT AS runner
@@ -32,7 +41,7 @@ RUN addgroup --gid $USER_GID $USERNAME \
 USER $USERNAME
 
 WORKDIR /usr/app
-COPY --chown=$USERNAME:$USER_GID --from=builder /usr/tmp/scraper ./
+COPY --chown=$USERNAME:$USER_GID --from=builder /out/scraper ./
 COPY --chown=$USERNAME:$USER_GID --from=builder /usr/tmp/config/config.yml ./config/config.yml
 
 # TODO: port as arg
