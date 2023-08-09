@@ -1,5 +1,6 @@
 ARG GO_ALPINE_VARIANT=golang:1.19.0-alpine
 ARG VARIANT=alpine:3.16
+ARG PORT=3000
 
 # builder
 FROM $VARIANT AS builder
@@ -43,7 +44,6 @@ WORKDIR /usr/app
 COPY --chown=$USERNAME:$USER_GID --from=builder /out/scraper ./
 COPY --chown=$USERNAME:$USER_GID --from=builder /usr/tmp/config/config.yml ./config/config.yml
 
-# TODO: port as arg
-EXPOSE 8080
+EXPOSE $PORT
 
 CMD ["./scraper"]
