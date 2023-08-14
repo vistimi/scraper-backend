@@ -3,7 +3,7 @@ module scraper-backend
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.17.3
+	github.com/aws/aws-sdk-go-v2 v1.20.1
 	github.com/aws/aws-sdk-go-v2/config v1.17.4
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.4
@@ -16,31 +16,31 @@ require (
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.21 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.15.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.32 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.4 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.17 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.9
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.35
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.17
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.36
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.63
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.14 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.27 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.38 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.32 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.21 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.0
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.2
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.12 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.20 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.16 // indirect
-	github.com/aws/smithy-go v1.13.5 // indirect
+	github.com/aws/smithy-go v1.14.1 // indirect
 	github.com/foolin/pagser v0.1.5
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -49,7 +49,6 @@ require (
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/hbagdi/go-unsplash v0.0.0-20220920231246-14121bdf6d94
-	github.com/jinzhu/copier v0.3.5
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
