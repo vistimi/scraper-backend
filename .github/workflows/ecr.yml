@@ -27,8 +27,8 @@ env:
   DEFAULT_BRANCH_NAME: ${{ 'trunk' || github.event.repository.default_branch }}
   ARCHITECTURES: "x86-64 arm-64" # "arm-32"   "arm-64"   "x86-32"   "x86-64"
   OS: '"Linux"' # "Windows"
-  IMAGE_KEEP_COUNT_DEFAULT: 3
-  IMAGE_KEEP_COUNT_NON_DEFAULT: 1
+  IMAGE_KEEP_COUNT_DEFAULT: 10
+  IMAGE_KEEP_COUNT_NON_DEFAULT: 5
 
 jobs:
   ecr:
@@ -55,8 +55,8 @@ jobs:
           echo IMAGE_KEEP_COUNT=$IMAGE_KEEP_COUNT >> $GITHUB_ENV
 
           DOCKERFILES=$(jq --null-input -c \
-          ${{ vars.CONTAINER_REGISTRY_ARGS }} \
-          '${{ vars.CONTAINER_REGISTRY_JSON }}')
+          --arg repo_bin  "VARIANT=$(if [[ $ECR_PRIVACY == private ]]; then echo $ECR_REGISTRY_PRIVATE_URI; else echo $ECR_REGISTRY_PUBLIC_URI/$ECR_REGISTRY_PUBLIC_ALIAS; fi)/$(echo $REPOSITORY_NAME-$BRANCH_NAME-bin | tr A-Z a-z)" \
+          '[{ "path":"Dockerfile.bin" },{ "path":"Dockerfile","args": [ $repo_bin ] },{ "path":"Dockerfile.bin","args": [ "TERRAFORM_VERSION=1.4.4","TERRAGRUNT_VERSION=0.45.0"], "tags":["1.4.4"]},{ "path":"Dockerfile","args": [ $repo_bin:1.4.4 ], "tags":["1.4.4"] },{ "path":"Dockerfile.bin","args": [ "VARIANT=mcr.microsoft.com/devcontainers/base:alpine-3.16" ], "extension": "devcontainer" }]')
           echo DOCKERFILES=$DOCKERFILES
           echo DOCKERFILES=$DOCKERFILES >> $GITHUB_ENV
 
@@ -296,6 +296,7 @@ jobs:
             DOCKERFILE_TAGS=[\"latest\",\"${IMAGE_TAG:0:8}\"]
             tags=$(jq -r '.tags' <<< "$dockerfile")
             if [[ -n "$tags" && $tags != null ]]; then
+              # TODO: add \"${IMAGE_TAG:0:8}\" to tags
               DOCKERFILE_TAGS=$tags
             fi
             echo DOCKERFILE_TAGS:: $DOCKERFILE_TAGS
